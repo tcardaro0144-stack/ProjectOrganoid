@@ -13,6 +13,8 @@
 #include "Perception/AISense_Hearing.h"
 #include "Perception/AISense.h"
 #include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
 
 AProjectOrganoidHostBase::AProjectOrganoidHostBase()
 {
@@ -641,4 +643,12 @@ void AProjectOrganoidHostBase::HandleDeath()
 
 	OnHostDied.Broadcast();
 	BP_OnHostDied();
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(TEXT("Event_HostNeutralized"));
+		}
+	}
 }

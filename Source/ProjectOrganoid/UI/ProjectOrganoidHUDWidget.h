@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidHUDWidget.generated.h"
 
 class AProjectOrganoidCharacter;
+class UProjectOrganoidObjectiveSubsystem;
 
 /**
- *  Diegetic vitals overlay for Avery Vance.
- *  Bind to AProjectOrganoidCharacter to mirror Suit Vitals and Tactical Mode state.
+ *  Diegetic vitals overlay + objective pop-up notifications for Avery Vance.
  */
 UCLASS()
 class UProjectOrganoidHUDWidget : public UUserWidget
@@ -26,6 +27,13 @@ public:
 	/** Clear the character binding and stop listening for tactical mode changes */
 	UFUNCTION(BlueprintCallable, Category = "HUD|Vitals")
 	void UnbindFromCharacter();
+
+	/** Subscribe to objective subsystem pop-up events */
+	UFUNCTION(BlueprintCallable, Category = "HUD|Objectives")
+	void BindToObjectiveSubsystem();
+
+	UFUNCTION(BlueprintCallable, Category = "HUD|Objectives")
+	void UnbindFromObjectiveSubsystem();
 
 	/** Pull current Suit Vitals from the bound character into the overlay */
 	UFUNCTION(BlueprintCallable, Category = "HUD|Vitals")
@@ -55,15 +63,33 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Tactical")
 	void OnTacticalModeDeactivated();
 
+	/**
+	 *  Objective toast / pop-up. PopupReason: Activated, Updated, Completed, Failed.
+	 *  Implement fade/slide animation in Blueprint.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Objectives")
+	void ShowObjectivePopup(const FProjectOrganoidObjective& Objective, FName PopupReason);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Objectives")
+	void RefreshObjectiveList(const TArray<FProjectOrganoidObjective>& ActiveObjectives);
+
 protected:
 
+	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void NativeDestruct() override;
 
-	/** Bound Avery Vance character providing Suit Vitals */
 	UPROPERTY(BlueprintReadOnly, Category = "HUD|Vitals")
 	TObjectPtr<AProjectOrganoidCharacter> BoundCharacter;
 
+	UPROPERTY()
+	TObjectPtr<UProjectOrganoidObjectiveSubsystem> BoundObjectiveSubsystem;
+
 	UFUNCTION()
 	void HandleTacticalModeChanged(bool bIsActive);
+
+	UFUNCTION()
+	void HandleObjectivePopup(const FProjectOrganoidObjective& Objective, FName PopupReason);
+
+	void RefreshActiveObjectiveList();
 };

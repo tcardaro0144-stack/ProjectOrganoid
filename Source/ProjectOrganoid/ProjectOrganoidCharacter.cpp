@@ -17,6 +17,7 @@
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoidFeedbackComponent.h"
+#include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -67,6 +68,9 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 
 	// Diegetic heartbeat / post-process / weak-point feedback
 	FeedbackComponent = CreateDefaultSubobject<UProjectOrganoidFeedbackComponent>(TEXT("FeedbackComponent"));
+
+	// Facility data-pad lore archive
+	LogComponent = CreateDefaultSubobject<UProjectOrganoidLogComponent>(TEXT("LogComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)

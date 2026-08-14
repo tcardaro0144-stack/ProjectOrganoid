@@ -4,6 +4,7 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidInventoryComponent.h"
 #include "ProjectOrganoidSaveSubsystem.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidItemData.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
@@ -27,9 +28,14 @@ bool AProjectOrganoidUpgradeTerminal::Interact_Implementation(AProjectOrganoidCh
 
 	BP_OnTerminalOpened(Interactor);
 
-	if (bAutoSaveOnInteract && Interactor)
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
-		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(TEXT("Event_SterlingTerminalUsed"));
+		}
+
+		if (bAutoSaveOnInteract && Interactor)
 		{
 			if (UProjectOrganoidSaveSubsystem* SaveSubsystem = GI->GetSubsystem<UProjectOrganoidSaveSubsystem>())
 			{

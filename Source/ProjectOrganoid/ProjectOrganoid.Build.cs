@@ -33,6 +33,7 @@ public class ProjectOrganoid : ModuleRules
 			"ProjectOrganoid/Progression",
 			"ProjectOrganoid/Feedback",
 			"ProjectOrganoid/LevelStreaming",
+			"ProjectOrganoid/Narrative",
 			"ProjectOrganoid/Variant_Platforming",
 			"ProjectOrganoid/Variant_Platforming/Animation",
 			"ProjectOrganoid/Variant_Combat",

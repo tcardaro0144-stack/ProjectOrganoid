@@ -2,6 +2,14 @@
 
 #include "ProjectOrganoidHUDWidget.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
+#include "Kismet/GameplayStatics.h"
+
+void UProjectOrganoidHUDWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	BindToObjectiveSubsystem();
+}
 
 void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCharacter)
 {
@@ -20,6 +28,7 @@ void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCha
 
 	BoundCharacter->OnTacticalModeChanged.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleTacticalModeChanged);
 	UpdateVitalsFromCharacter();
+	BindToObjectiveSubsystem();
 
 	if (BoundCharacter->IsTacticalModeActive())
 	{
@@ -33,6 +42,31 @@ void UProjectOrganoidHUDWidget::UnbindFromCharacter()
 	{
 		BoundCharacter->OnTacticalModeChanged.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleTacticalModeChanged);
 		BoundCharacter = nullptr;
+	}
+}
+
+void UProjectOrganoidHUDWidget::BindToObjectiveSubsystem()
+{
+	UnbindFromObjectiveSubsystem();
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		BoundObjectiveSubsystem = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	}
+
+	if (BoundObjectiveSubsystem)
+	{
+		BoundObjectiveSubsystem->OnObjectivePopupRequested.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleObjectivePopup);
+		RefreshActiveObjectiveList();
+	}
+}
+
+void UProjectOrganoidHUDWidget::UnbindFromObjectiveSubsystem()
+{
+	if (BoundObjectiveSubsystem)
+	{
+		BoundObjectiveSubsystem->OnObjectivePopupRequested.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleObjectivePopup);
+		BoundObjectiveSubsystem = nullptr;
 	}
 }
 
@@ -62,6 +96,7 @@ void UProjectOrganoidHUDWidget::NativeTick(const FGeometry& MyGeometry, float In
 void UProjectOrganoidHUDWidget::NativeDestruct()
 {
 	UnbindFromCharacter();
+	UnbindFromObjectiveSubsystem();
 	Super::NativeDestruct();
 }
 
@@ -74,5 +109,19 @@ void UProjectOrganoidHUDWidget::HandleTacticalModeChanged(bool bIsActive)
 	else
 	{
 		OnTacticalModeDeactivated();
+	}
+}
+
+void UProjectOrganoidHUDWidget::HandleObjectivePopup(const FProjectOrganoidObjective& Objective, FName PopupReason)
+{
+	ShowObjectivePopup(Objective, PopupReason);
+	RefreshActiveObjectiveList();
+}
+
+void UProjectOrganoidHUDWidget::RefreshActiveObjectiveList()
+{
+	if (BoundObjectiveSubsystem)
+	{
+		RefreshObjectiveList(BoundObjectiveSubsystem->GetActiveObjectives());
 	}
 }

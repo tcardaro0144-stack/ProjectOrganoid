@@ -15,6 +15,7 @@ class UProjectOrganoidInventoryComponent;
 class UProjectOrganoidWeaponComponent;
 class UProjectOrganoidInteractionComponent;
 class UProjectOrganoidFeedbackComponent;
+class UProjectOrganoidLogComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -53,6 +54,10 @@ class AProjectOrganoidCharacter : public ACharacter
 	/** Diegetic audio / post-process / weak-point feedback */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidFeedbackComponent* FeedbackComponent;
+
+	/** Facility lore / data-pad archive */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidLogComponent* LogComponent;
 
 	/** Maximum suit health */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
@@ -280,4 +285,7 @@ public:
 
 	/** Returns feedback component **/
 	FORCEINLINE UProjectOrganoidFeedbackComponent* GetFeedbackComponent() const { return FeedbackComponent; }
+
+	/** Returns lore log component **/
+	FORCEINLINE UProjectOrganoidLogComponent* GetLogComponent() const { return LogComponent; }
 };
