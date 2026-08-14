@@ -298,3 +298,57 @@ bool UProjectOrganoidInventoryComponent::GetItemById(FGuid InstanceId, FProjectO
 	OutItem = PlacedItems[ItemIndex];
 	return OutItem.IsValid();
 }
+
+bool UProjectOrganoidInventoryComponent::HasKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier) const
+{
+	if (RequiredTier == EProjectOrganoidSecurityTier::None)
+	{
+		return true;
+	}
+
+	const uint8 Required = static_cast<uint8>(RequiredTier);
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (!Placed.IsValid() || Placed.ItemData->ItemType != EProjectOrganoidItemType::KeyItem)
+		{
+			continue;
+		}
+
+		if (static_cast<uint8>(Placed.ItemData->SecurityTier) >= Required)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UProjectOrganoidInventoryComponent::ConsumeKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier)
+{
+	const uint8 Required = static_cast<uint8>(RequiredTier);
+	int32 BestIndex = INDEX_NONE;
+	uint8 BestTier = 255;
+
+	for (int32 Index = 0; Index < PlacedItems.Num(); ++Index)
+	{
+		const FProjectOrganoidPlacedItem& Placed = PlacedItems[Index];
+		if (!Placed.IsValid() || Placed.ItemData->ItemType != EProjectOrganoidItemType::KeyItem)
+		{
+			continue;
+		}
+
+		const uint8 Tier = static_cast<uint8>(Placed.ItemData->SecurityTier);
+		if (Tier >= Required && Tier <= BestTier)
+		{
+			BestTier = Tier;
+			BestIndex = Index;
+		}
+	}
+
+	if (BestIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	return RemoveItem(PlacedItems[BestIndex].InstanceId);
+}

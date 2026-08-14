@@ -12,6 +12,7 @@ class UCameraComponent;
 class UInputAction;
 class UProjectOrganoidInventoryComponent;
 class UProjectOrganoidWeaponComponent;
+class UProjectOrganoidInteractionComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -42,6 +43,18 @@ class AProjectOrganoidCharacter : public ACharacter
 	/** Equipped firearm manager (default P226-style sidearm) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidWeaponComponent* WeaponComponent;
+
+	/** World interaction scanner (doors, terminals, locks) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidInteractionComponent* InteractionComponent;
+
+	/** Maximum suit health */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
+	float MaxHealth = 100.0f;
+
+	/** Maximum toxicity before critical contamination */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
+	float MaxToxicity = 100.0f;
 	
 protected:
 
@@ -149,6 +162,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
 	float GetMaxPEEnergy() const { return MaxPEEnergy; }
 
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetMaxHealth() const { return MaxHealth; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetMaxToxicity() const { return MaxToxicity; }
+
+	/** Apply a signed health change (hazards pass negative values) */
+	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
+	void ApplyHealthDelta(float Delta);
+
+	/** Apply a signed toxicity change */
+	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
+	void ApplyToxicityDelta(float Delta);
+
+	/** Apply a signed heart-rate change (clamped to a survivable BPM band) */
+	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
+	void ApplyHeartRateDelta(float Delta);
+
 	UFUNCTION(BlueprintPure, Category = "Tactical")
 	bool IsTacticalModeActive() const { return bIsTacticalModeActive; }
 
@@ -181,4 +212,7 @@ public:
 
 	/** Returns weapon component **/
 	FORCEINLINE UProjectOrganoidWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
+
+	/** Returns interaction component **/
+	FORCEINLINE UProjectOrganoidInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 };

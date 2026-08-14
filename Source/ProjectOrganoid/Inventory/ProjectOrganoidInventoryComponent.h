@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "ProjectOrganoidInventoryTypes.h"
+#include "ProjectOrganoidInteractionTypes.h"
 #include "ProjectOrganoidInventoryComponent.generated.h"
 
 class UProjectOrganoidItemData;
@@ -93,6 +94,14 @@ public:
 	/** Flattened occupancy: INDEX_NONE = empty, else index into PlacedItems */
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	TArray<int32> GetOccupancyMap() const { return Occupancy; }
+
+	/** True if inventory holds a KeyItem whose SecurityTier >= RequiredTier */
+	UFUNCTION(BlueprintPure, Category = "Inventory|Security")
+	bool HasKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier) const;
+
+	/** Remove one matching keycard (highest qualifying tier preferred). Returns false if none. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Security")
+	bool ConsumeKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier);
 
 protected:
 

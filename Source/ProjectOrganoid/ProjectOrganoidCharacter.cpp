@@ -14,6 +14,7 @@
 #include "InputActionValue.h"
 #include "ProjectOrganoidInventoryComponent.h"
 #include "ProjectOrganoidWeaponComponent.h"
+#include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -58,6 +59,9 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	// Default firearm component (spawns AProjectOrganoidDefaultWeapon on BeginPlay)
 	WeaponComponent = CreateDefaultSubobject<UProjectOrganoidWeaponComponent>(TEXT("WeaponComponent"));
 	WeaponComponent->SetupAttachment(RootComponent);
+
+	// Environmental / world interaction scanner
+	InteractionComponent = CreateDefaultSubobject<UProjectOrganoidInteractionComponent>(TEXT("InteractionComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -120,6 +124,21 @@ void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
 	UGameplayStatics::SetGlobalTimeDilation(this, NewDilation);
 
 	OnTacticalModeChanged.Broadcast(bIsTacticalModeActive);
+}
+
+void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta)
+{
+	Health = FMath::Clamp(Health + Delta, 0.0f, MaxHealth);
+}
+
+void AProjectOrganoidCharacter::ApplyToxicityDelta(float Delta)
+{
+	Toxicity = FMath::Clamp(Toxicity + Delta, 0.0f, MaxToxicity);
+}
+
+void AProjectOrganoidCharacter::ApplyHeartRateDelta(float Delta)
+{
+	HeartRate = FMath::Clamp(HeartRate + Delta, 40.0f, 220.0f);
 }
 
 void AProjectOrganoidCharacter::ToggleTacticalMode()

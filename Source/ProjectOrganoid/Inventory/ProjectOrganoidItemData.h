@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "ProjectOrganoidInteractionTypes.h"
 #include "ProjectOrganoidItemData.generated.h"
 
 class UTexture2D;
@@ -51,6 +52,13 @@ public:
 	/** Grid footprint height in slots (rows) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Grid", meta = (ClampMin = "1"))
 	int32 GridHeight = 1;
+
+	/**
+	 *  Keycard clearance (used when ItemType == KeyItem).
+	 *  Higher tiers satisfy lower-tier door locks.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security")
+	EProjectOrganoidSecurityTier SecurityTier = EProjectOrganoidSecurityTier::None;
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
