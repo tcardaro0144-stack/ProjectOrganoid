@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UProjectOrganoidInventoryComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -32,6 +33,10 @@ class AProjectOrganoidCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** Grid inventory for weapons, ammo, and survival items */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidInventoryComponent* InventoryComponent;
 	
 protected:
 
@@ -165,4 +170,7 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Returns grid inventory component **/
+	FORCEINLINE UProjectOrganoidInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 };

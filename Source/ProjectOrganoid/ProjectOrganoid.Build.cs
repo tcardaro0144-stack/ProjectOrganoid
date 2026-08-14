@@ -26,6 +26,7 @@ public class ProjectOrganoid : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {
 			"ProjectOrganoid",
 			"ProjectOrganoid/UI",
+			"ProjectOrganoid/Inventory",
 			"ProjectOrganoid/Variant_Platforming",
 			"ProjectOrganoid/Variant_Platforming/Animation",
 			"ProjectOrganoid/Variant_Combat",
