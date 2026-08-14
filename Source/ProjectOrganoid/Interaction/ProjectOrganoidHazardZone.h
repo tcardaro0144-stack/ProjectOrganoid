@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ProjectOrganoidInteractionTypes.h"
+#include "ProjectOrganoidLevelTypes.h"
 #include "ProjectOrganoidHazardZone.generated.h"
 
 class UBoxComponent;
@@ -48,8 +49,33 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard")
 	bool bIsActive = true;
 
+	/**
+	 *  If not None, this zone only stays active while the matching sub-level is current
+	 *  (or when its HazardType is listed as ambient for that floor).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Level")
+	EProjectOrganoidSubLevelTag AssociatedSubLevelTag = EProjectOrganoidSubLevelTag::None;
+
+	/** If true, ignore sub-level gating and remain controllable only via bIsActive */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Level")
+	bool bIgnoreSubLevelContext = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Hazard|Level")
+	float EnvironmentDamageMultiplier = 1.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Hazard|Level")
+	float EnvironmentToxicityMultiplier = 1.0f;
+
 	UPROPERTY(BlueprintAssignable, Category = "Hazard")
 	FOnProjectOrganoidHazardApplied OnHazardApplied;
+
+	/** Called by LevelManager when the active Epitope floor changes */
+	UFUNCTION(BlueprintCallable, Category = "Hazard|Level")
+	void ApplySubLevelEnvironmentContext(
+		EProjectOrganoidSubLevelTag ActiveTag,
+		float DamageMultiplier,
+		float ToxicityMultiplier,
+		bool bHazardTypeIsAmbient);
 
 protected:
 
@@ -64,4 +90,7 @@ protected:
 
 	void ApplyHazardDefaultsForType();
 	void ApplyHazardToCharacter(AProjectOrganoidCharacter* Character, float DeltaSeconds);
+
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 };

@@ -2,7 +2,9 @@
 
 #include "ProjectOrganoidHazardZone.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidLevelManagerSubsystem.h"
 #include "Components/BoxComponent.h"
+#include "Engine/World.h"
 
 AProjectOrganoidHazardZone::AProjectOrganoidHazardZone()
 {
@@ -20,6 +22,57 @@ AProjectOrganoidHazardZone::AProjectOrganoidHazardZone()
 	HazardVolume->OnComponentEndOverlap.AddDynamic(this, &AProjectOrganoidHazardZone::OnHazardEndOverlap);
 
 	ApplyHazardDefaultsForType();
+}
+
+void AProjectOrganoidHazardZone::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidLevelManagerSubsystem* LevelManager = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+		{
+			LevelManager->RegisterHazardZone(this);
+		}
+	}
+}
+
+void AProjectOrganoidHazardZone::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidLevelManagerSubsystem* LevelManager = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+		{
+			LevelManager->UnregisterHazardZone(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void AProjectOrganoidHazardZone::ApplySubLevelEnvironmentContext(
+	EProjectOrganoidSubLevelTag ActiveTag,
+	float DamageMultiplier,
+	float ToxicityMultiplier,
+	bool bHazardTypeIsAmbient)
+{
+	EnvironmentDamageMultiplier = DamageMultiplier;
+	EnvironmentToxicityMultiplier = ToxicityMultiplier;
+
+	if (bIgnoreSubLevelContext)
+	{
+		return;
+	}
+
+	if (AssociatedSubLevelTag == EProjectOrganoidSubLevelTag::None)
+	{
+		// Untagged zones follow ambient hazard type for the active floor
+		bIsActive = bHazardTypeIsAmbient || ActiveTag == EProjectOrganoidSubLevelTag::None;
+	}
+	else
+	{
+		bIsActive = (AssociatedSubLevelTag == ActiveTag) || bHazardTypeIsAmbient;
+	}
 }
 
 void AProjectOrganoidHazardZone::ApplyHazardDefaultsForType()
@@ -103,8 +156,8 @@ void AProjectOrganoidHazardZone::ApplyHazardToCharacter(AProjectOrganoidCharacte
 		return;
 	}
 
-	float HealthDamage = DamagePerSecond * DeltaSeconds;
-	float ToxicityGain = ToxicityPerSecond * DeltaSeconds;
+	float HealthDamage = DamagePerSecond * EnvironmentDamageMultiplier * DeltaSeconds;
+	float ToxicityGain = ToxicityPerSecond * EnvironmentToxicityMultiplier * DeltaSeconds;
 	float HeartRateGain = HeartRateSpikePerSecond * DeltaSeconds;
 
 	// Hazard-specific emphasis
