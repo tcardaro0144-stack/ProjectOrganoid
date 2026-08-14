@@ -30,6 +30,7 @@ public class ProjectOrganoid : ModuleRules
 			"ProjectOrganoid/Weapons",
 			"ProjectOrganoid/Hosts",
 			"ProjectOrganoid/Interaction",
+			"ProjectOrganoid/Progression",
 			"ProjectOrganoid/Variant_Platforming",
 			"ProjectOrganoid/Variant_Platforming/Animation",
 			"ProjectOrganoid/Variant_Combat",

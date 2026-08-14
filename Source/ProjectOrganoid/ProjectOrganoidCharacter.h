@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "ProjectOrganoidUpgradeTypes.h"
 #include "ProjectOrganoidCharacter.generated.h"
 
 class USpringArmComponent;
@@ -114,6 +115,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
 	float TacticalTimeDilation = 0.2f;
 
+	/** Sterling terminal upgrade levels */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
+	int32 SuitHealthUpgradeLevel = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
+	int32 SuitToxicityUpgradeLevel = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
+	int32 SuitPEUpgradeLevel = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
+	int32 WeaponDamageUpgradeLevel = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
+	int32 WeaponFireRateUpgradeLevel = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
+	int32 WeaponPenetrationUpgradeLevel = 0;
+
 public:
 
 	/** Constructor */
@@ -179,6 +199,39 @@ public:
 	/** Apply a signed heart-rate change (clamped to a survivable BPM band) */
 	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
 	void ApplyHeartRateDelta(float Delta);
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void ApplySavedVitals(float InHealth, float InMaxHealth, float InToxicity, float InMaxToxicity, float InHeartRate, float InPEEnergy, float InMaxPEEnergy);
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void ApplySavedUpgradeLevels(int32 InHealthLvl, int32 InToxicityLvl, int32 InPELvl, int32 InWeaponDmgLvl, int32 InWeaponFireRateLvl, int32 InWeaponPenLvl);
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void ApplySavedWeaponStats(float InDamage, float InFireRate, float InPenetration);
+
+	UFUNCTION(BlueprintCallable, Category = "Upgrade")
+	bool ApplyUpgrade(EProjectOrganoidUpgradeType UpgradeType, float HealthPerLevel, float ToxicityPerLevel, float PEPerLevel, float WeaponDamagePerLevel, float WeaponFireRatePerLevel, float WeaponPenetrationPerLevel);
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetUpgradeLevel(EProjectOrganoidUpgradeType UpgradeType) const;
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetSuitHealthUpgradeLevel() const { return SuitHealthUpgradeLevel; }
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetSuitToxicityUpgradeLevel() const { return SuitToxicityUpgradeLevel; }
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetSuitPEUpgradeLevel() const { return SuitPEUpgradeLevel; }
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetWeaponDamageUpgradeLevel() const { return WeaponDamageUpgradeLevel; }
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetWeaponFireRateUpgradeLevel() const { return WeaponFireRateUpgradeLevel; }
+
+	UFUNCTION(BlueprintPure, Category = "Upgrade")
+	int32 GetWeaponPenetrationUpgradeLevel() const { return WeaponPenetrationUpgradeLevel; }
 
 	UFUNCTION(BlueprintPure, Category = "Tactical")
 	bool IsTacticalModeActive() const { return bIsTacticalModeActive; }

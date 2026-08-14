@@ -352,3 +352,64 @@ bool UProjectOrganoidInventoryComponent::ConsumeKeycardOfTier(EProjectOrganoidSe
 
 	return RemoveItem(PlacedItems[BestIndex].InstanceId);
 }
+
+int32 UProjectOrganoidInventoryComponent::CountItemsOfType(EProjectOrganoidItemType ItemType) const
+{
+	int32 Count = 0;
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (Placed.IsValid() && Placed.ItemData->ItemType == ItemType)
+		{
+			++Count;
+		}
+	}
+	return Count;
+}
+
+bool UProjectOrganoidInventoryComponent::ConsumeItemsOfType(EProjectOrganoidItemType ItemType, int32 Count)
+{
+	if (Count <= 0)
+	{
+		return true;
+	}
+
+	if (CountItemsOfType(ItemType) < Count)
+	{
+		return false;
+	}
+
+	TArray<FGuid> ToRemove;
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (Placed.IsValid() && Placed.ItemData->ItemType == ItemType)
+		{
+			ToRemove.Add(Placed.InstanceId);
+			if (ToRemove.Num() >= Count)
+			{
+				break;
+			}
+		}
+	}
+
+	for (const FGuid& Id : ToRemove)
+	{
+		RemoveItem(Id);
+	}
+
+	return true;
+}
+
+void UProjectOrganoidInventoryComponent::ClearAllItems()
+{
+	PlacedItems.Reset();
+	RebuildOccupancy();
+	NotifyInventoryChanged();
+}
+
+void UProjectOrganoidInventoryComponent::SetGridDimensions(int32 NewWidth, int32 NewHeight)
+{
+	GridWidth = FMath::Max(1, NewWidth);
+	GridHeight = FMath::Max(1, NewHeight);
+	InitializeGrid();
+	NotifyInventoryChanged();
+}

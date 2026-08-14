@@ -103,6 +103,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory|Security")
 	bool ConsumeKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier);
 
+	/** Count stacked items of a given type (e.g. SOT tissue units) */
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	int32 CountItemsOfType(EProjectOrganoidItemType ItemType) const;
+
+	/** Remove up to Count items of the given type. Returns false if not enough. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool ConsumeItemsOfType(EProjectOrganoidItemType ItemType, int32 Count);
+
+	/** Wipe the grid (used by save restore) */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void ClearAllItems();
+
+	/** Resize grid and rebuild occupancy */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetGridDimensions(int32 NewWidth, int32 NewHeight);
+
 protected:
 
 	/** Placed item instances currently in the grid */

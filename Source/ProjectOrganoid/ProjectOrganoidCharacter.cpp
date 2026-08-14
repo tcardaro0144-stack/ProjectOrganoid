@@ -14,6 +14,7 @@
 #include "InputActionValue.h"
 #include "ProjectOrganoidInventoryComponent.h"
 #include "ProjectOrganoidWeaponComponent.h"
+#include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoid.h"
 
@@ -139,6 +140,133 @@ void AProjectOrganoidCharacter::ApplyToxicityDelta(float Delta)
 void AProjectOrganoidCharacter::ApplyHeartRateDelta(float Delta)
 {
 	HeartRate = FMath::Clamp(HeartRate + Delta, 40.0f, 220.0f);
+}
+
+void AProjectOrganoidCharacter::ApplySavedVitals(
+	float InHealth,
+	float InMaxHealth,
+	float InToxicity,
+	float InMaxToxicity,
+	float InHeartRate,
+	float InPEEnergy,
+	float InMaxPEEnergy)
+{
+	MaxHealth = FMath::Max(1.0f, InMaxHealth);
+	MaxToxicity = FMath::Max(1.0f, InMaxToxicity);
+	MaxPEEnergy = FMath::Max(1.0f, InMaxPEEnergy);
+	Health = FMath::Clamp(InHealth, 0.0f, MaxHealth);
+	Toxicity = FMath::Clamp(InToxicity, 0.0f, MaxToxicity);
+	HeartRate = FMath::Clamp(InHeartRate, 40.0f, 220.0f);
+	PEEnergy = FMath::Clamp(InPEEnergy, 0.0f, MaxPEEnergy);
+}
+
+void AProjectOrganoidCharacter::ApplySavedUpgradeLevels(
+	int32 InHealthLvl,
+	int32 InToxicityLvl,
+	int32 InPELvl,
+	int32 InWeaponDmgLvl,
+	int32 InWeaponFireRateLvl,
+	int32 InWeaponPenLvl)
+{
+	SuitHealthUpgradeLevel = FMath::Max(0, InHealthLvl);
+	SuitToxicityUpgradeLevel = FMath::Max(0, InToxicityLvl);
+	SuitPEUpgradeLevel = FMath::Max(0, InPELvl);
+	WeaponDamageUpgradeLevel = FMath::Max(0, InWeaponDmgLvl);
+	WeaponFireRateUpgradeLevel = FMath::Max(0, InWeaponFireRateLvl);
+	WeaponPenetrationUpgradeLevel = FMath::Max(0, InWeaponPenLvl);
+}
+
+void AProjectOrganoidCharacter::ApplySavedWeaponStats(float InDamage, float InFireRate, float InPenetration)
+{
+	if (UProjectOrganoidWeaponComponent* WeaponComp = GetWeaponComponent())
+	{
+		if (AProjectOrganoidWeapon* Weapon = WeaponComp->GetEquippedWeapon())
+		{
+			Weapon->Damage = InDamage;
+			Weapon->FireRate = FMath::Max(0.1f, InFireRate);
+			Weapon->Penetration = FMath::Clamp(InPenetration, 0.0f, 1.0f);
+		}
+	}
+}
+
+int32 AProjectOrganoidCharacter::GetUpgradeLevel(EProjectOrganoidUpgradeType UpgradeType) const
+{
+	switch (UpgradeType)
+	{
+	case EProjectOrganoidUpgradeType::SuitMaxHealth: return SuitHealthUpgradeLevel;
+	case EProjectOrganoidUpgradeType::SuitToxicityThreshold: return SuitToxicityUpgradeLevel;
+	case EProjectOrganoidUpgradeType::SuitPEEnergyMax: return SuitPEUpgradeLevel;
+	case EProjectOrganoidUpgradeType::WeaponDamage: return WeaponDamageUpgradeLevel;
+	case EProjectOrganoidUpgradeType::WeaponFireRate: return WeaponFireRateUpgradeLevel;
+	case EProjectOrganoidUpgradeType::WeaponPenetration: return WeaponPenetrationUpgradeLevel;
+	default: return 0;
+	}
+}
+
+bool AProjectOrganoidCharacter::ApplyUpgrade(
+	EProjectOrganoidUpgradeType UpgradeType,
+	float HealthPerLevel,
+	float ToxicityPerLevel,
+	float PEPerLevel,
+	float WeaponDamagePerLevel,
+	float WeaponFireRatePerLevel,
+	float WeaponPenetrationPerLevel)
+{
+	switch (UpgradeType)
+	{
+	case EProjectOrganoidUpgradeType::SuitMaxHealth:
+		++SuitHealthUpgradeLevel;
+		MaxHealth += HealthPerLevel;
+		Health = FMath::Min(Health + HealthPerLevel, MaxHealth);
+		return true;
+
+	case EProjectOrganoidUpgradeType::SuitToxicityThreshold:
+		++SuitToxicityUpgradeLevel;
+		MaxToxicity += ToxicityPerLevel;
+		return true;
+
+	case EProjectOrganoidUpgradeType::SuitPEEnergyMax:
+		++SuitPEUpgradeLevel;
+		MaxPEEnergy += PEPerLevel;
+		PEEnergy = FMath::Min(PEEnergy + PEPerLevel, MaxPEEnergy);
+		return true;
+
+	case EProjectOrganoidUpgradeType::WeaponDamage:
+		++WeaponDamageUpgradeLevel;
+		if (UProjectOrganoidWeaponComponent* WeaponComp = GetWeaponComponent())
+		{
+			if (AProjectOrganoidWeapon* Weapon = WeaponComp->GetEquippedWeapon())
+			{
+				Weapon->Damage += WeaponDamagePerLevel;
+			}
+		}
+		return true;
+
+	case EProjectOrganoidUpgradeType::WeaponFireRate:
+		++WeaponFireRateUpgradeLevel;
+		if (UProjectOrganoidWeaponComponent* WeaponComp = GetWeaponComponent())
+		{
+			if (AProjectOrganoidWeapon* Weapon = WeaponComp->GetEquippedWeapon())
+			{
+				Weapon->FireRate += WeaponFireRatePerLevel;
+			}
+		}
+		return true;
+
+	case EProjectOrganoidUpgradeType::WeaponPenetration:
+		++WeaponPenetrationUpgradeLevel;
+		if (UProjectOrganoidWeaponComponent* WeaponComp = GetWeaponComponent())
+		{
+			if (AProjectOrganoidWeapon* Weapon = WeaponComp->GetEquippedWeapon())
+			{
+				Weapon->Penetration = FMath::Clamp(Weapon->Penetration + WeaponPenetrationPerLevel, 0.0f, 1.0f);
+			}
+		}
+		return true;
+
+	default:
+		return false;
+	}
 }
 
 void AProjectOrganoidCharacter::ToggleTacticalMode()
