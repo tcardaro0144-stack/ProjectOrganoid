@@ -49,7 +49,23 @@ void UProjectOrganoidSettingsSubsystem::SetMusicVolume(float NewVolume)
 void UProjectOrganoidSettingsSubsystem::SetGraphicsQuality(EProjectOrganoidGraphicsQuality NewQuality)
 {
 	GraphicsQuality = NewQuality;
-	ApplyGraphicsSettings();
+	ApplyDisplaySettings();
+	SaveSettingsToConfig();
+	OnSettingsChanged.Broadcast();
+}
+
+void UProjectOrganoidSettingsSubsystem::SetWindowMode(EProjectOrganoidWindowMode NewMode)
+{
+	WindowMode = NewMode;
+	ApplyDisplaySettings();
+	SaveSettingsToConfig();
+	OnSettingsChanged.Broadcast();
+}
+
+void UProjectOrganoidSettingsSubsystem::SetResolutionScalePercent(float NewPercent)
+{
+	ResolutionScalePercent = ClampResolutionScale(NewPercent);
+	ApplyDisplaySettings();
 	SaveSettingsToConfig();
 	OnSettingsChanged.Broadcast();
 }
@@ -57,13 +73,29 @@ void UProjectOrganoidSettingsSubsystem::SetGraphicsQuality(EProjectOrganoidGraph
 void UProjectOrganoidSettingsSubsystem::ApplyAllSettings()
 {
 	ApplyAudioSettings();
-	ApplyGraphicsSettings();
+	ApplyDisplaySettings();
 	SaveSettingsToConfig();
 	OnSettingsChanged.Broadcast();
 }
 
 void UProjectOrganoidSettingsSubsystem::LoadSettingsFromConfig()
 {
+	if (UGameUserSettings* UserSettings = GetUserSettings())
+	{
+		UserSettings->LoadSettings(true);
+
+		GraphicsQuality = static_cast<EProjectOrganoidGraphicsQuality>(
+			FMath::Clamp(UserSettings->GetOverallScalabilityLevel(), 0, 4));
+		WindowMode = FromEngineWindowMode(UserSettings->GetFullscreenMode());
+
+		float CurrentNormalized = 1.0f;
+		float CurrentScaleValue = 100.0f;
+		float MinScaleValue = MinResolutionScalePercent;
+		float MaxScaleValue = MaxResolutionScalePercent;
+		UserSettings->GetResolutionScaleInformationEx(CurrentNormalized, CurrentScaleValue, MinScaleValue, MaxScaleValue);
+		ResolutionScalePercent = ClampResolutionScale(CurrentScaleValue);
+	}
+
 	if (!GConfig)
 	{
 		return;
@@ -73,30 +105,41 @@ void UProjectOrganoidSettingsSubsystem::LoadSettingsFromConfig()
 	float LoadedSFX = SFXVolume;
 	float LoadedMusic = MusicVolume;
 	int32 LoadedQuality = static_cast<int32>(GraphicsQuality);
+	int32 LoadedWindow = static_cast<int32>(WindowMode);
+	float LoadedResScale = ResolutionScalePercent;
 
 	GConfig->GetFloat(ProjectOrganoidSettings::Section, TEXT("MasterVolume"), LoadedMaster, GGameUserSettingsIni);
 	GConfig->GetFloat(ProjectOrganoidSettings::Section, TEXT("SFXVolume"), LoadedSFX, GGameUserSettingsIni);
 	GConfig->GetFloat(ProjectOrganoidSettings::Section, TEXT("MusicVolume"), LoadedMusic, GGameUserSettingsIni);
 	GConfig->GetInt(ProjectOrganoidSettings::Section, TEXT("GraphicsQuality"), LoadedQuality, GGameUserSettingsIni);
+	GConfig->GetInt(ProjectOrganoidSettings::Section, TEXT("WindowMode"), LoadedWindow, GGameUserSettingsIni);
+	GConfig->GetFloat(ProjectOrganoidSettings::Section, TEXT("ResolutionScalePercent"), LoadedResScale, GGameUserSettingsIni);
 
 	MasterVolume = FMath::Clamp(LoadedMaster, 0.0f, 1.0f);
 	SFXVolume = FMath::Clamp(LoadedSFX, 0.0f, 1.0f);
 	MusicVolume = FMath::Clamp(LoadedMusic, 0.0f, 1.0f);
 	GraphicsQuality = static_cast<EProjectOrganoidGraphicsQuality>(FMath::Clamp(LoadedQuality, 0, 4));
+	WindowMode = static_cast<EProjectOrganoidWindowMode>(FMath::Clamp(LoadedWindow, 0, 2));
+	ResolutionScalePercent = ClampResolutionScale(LoadedResScale);
 }
 
 void UProjectOrganoidSettingsSubsystem::SaveSettingsToConfig() const
 {
-	if (!GConfig)
+	if (GConfig)
 	{
-		return;
+		GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("MasterVolume"), MasterVolume, GGameUserSettingsIni);
+		GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("SFXVolume"), SFXVolume, GGameUserSettingsIni);
+		GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("MusicVolume"), MusicVolume, GGameUserSettingsIni);
+		GConfig->SetInt(ProjectOrganoidSettings::Section, TEXT("GraphicsQuality"), static_cast<int32>(GraphicsQuality), GGameUserSettingsIni);
+		GConfig->SetInt(ProjectOrganoidSettings::Section, TEXT("WindowMode"), static_cast<int32>(WindowMode), GGameUserSettingsIni);
+		GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("ResolutionScalePercent"), ResolutionScalePercent, GGameUserSettingsIni);
+		GConfig->Flush(false, GGameUserSettingsIni);
 	}
 
-	GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("MasterVolume"), MasterVolume, GGameUserSettingsIni);
-	GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("SFXVolume"), SFXVolume, GGameUserSettingsIni);
-	GConfig->SetFloat(ProjectOrganoidSettings::Section, TEXT("MusicVolume"), MusicVolume, GGameUserSettingsIni);
-	GConfig->SetInt(ProjectOrganoidSettings::Section, TEXT("GraphicsQuality"), static_cast<int32>(GraphicsQuality), GGameUserSettingsIni);
-	GConfig->Flush(false, GGameUserSettingsIni);
+	if (UGameUserSettings* UserSettings = GetUserSettings())
+	{
+		UserSettings->SaveSettings();
+	}
 }
 
 void UProjectOrganoidSettingsSubsystem::ApplyAudioSettings()
@@ -141,16 +184,85 @@ void UProjectOrganoidSettingsSubsystem::ApplySoundClassVolume(USoundMix* Mix, US
 	UGameplayStatics::SetSoundMixClassOverride(World, Mix, SoundClass, Volume, 1.0f, 0.0f, true);
 }
 
-void UProjectOrganoidSettingsSubsystem::ApplyGraphicsSettings()
+void UProjectOrganoidSettingsSubsystem::ApplyDisplaySettings()
 {
-	if (!GEngine)
+	UGameUserSettings* UserSettings = GetUserSettings();
+	if (!UserSettings)
 	{
 		return;
 	}
 
-	if (UGameUserSettings* UserSettings = GEngine->GetGameUserSettings())
+	UserSettings->SetOverallScalabilityLevel(static_cast<int32>(GraphicsQuality));
+	UserSettings->SetFullscreenMode(ToEngineWindowMode(WindowMode));
+	UserSettings->SetResolutionScaleValueEx(ResolutionScalePercent);
+	UserSettings->ApplySettings(false);
+	UserSettings->SaveSettings();
+}
+
+UGameUserSettings* UProjectOrganoidSettingsSubsystem::GetUserSettings() const
+{
+	return GEngine ? GEngine->GetGameUserSettings() : nullptr;
+}
+
+float UProjectOrganoidSettingsSubsystem::ClampResolutionScale(float Percent) const
+{
+	const float MinScale = FMath::Min(MinResolutionScalePercent, MaxResolutionScalePercent);
+	const float MaxScale = FMath::Max(MinResolutionScalePercent, MaxResolutionScalePercent);
+	return FMath::Clamp(Percent, MinScale, MaxScale);
+}
+
+EWindowMode::Type UProjectOrganoidSettingsSubsystem::ToEngineWindowMode(EProjectOrganoidWindowMode Mode) const
+{
+	switch (Mode)
 	{
-		UserSettings->SetOverallScalabilityLevel(static_cast<int32>(GraphicsQuality));
-		UserSettings->ApplySettings(false);
+	case EProjectOrganoidWindowMode::WindowedFullscreen:
+		return EWindowMode::WindowedFullscreen;
+	case EProjectOrganoidWindowMode::Windowed:
+		return EWindowMode::Windowed;
+	case EProjectOrganoidWindowMode::Fullscreen:
+	default:
+		return EWindowMode::Fullscreen;
 	}
+}
+
+EProjectOrganoidWindowMode UProjectOrganoidSettingsSubsystem::FromEngineWindowMode(EWindowMode::Type Mode) const
+{
+	switch (Mode)
+	{
+	case EWindowMode::WindowedFullscreen:
+		return EProjectOrganoidWindowMode::WindowedFullscreen;
+	case EWindowMode::Windowed:
+		return EProjectOrganoidWindowMode::Windowed;
+	case EWindowMode::Fullscreen:
+	default:
+		return EProjectOrganoidWindowMode::Fullscreen;
+	}
+}
+
+FString UProjectOrganoidSettingsSubsystem::WindowModeToLabel(EProjectOrganoidWindowMode Mode)
+{
+	switch (Mode)
+	{
+	case EProjectOrganoidWindowMode::WindowedFullscreen:
+		return TEXT("Borderless Window");
+	case EProjectOrganoidWindowMode::Windowed:
+		return TEXT("Windowed");
+	case EProjectOrganoidWindowMode::Fullscreen:
+	default:
+		return TEXT("Fullscreen");
+	}
+}
+
+EProjectOrganoidWindowMode UProjectOrganoidSettingsSubsystem::WindowModeFromLabel(const FString& Label)
+{
+	if (Label.Equals(TEXT("Borderless Window"), ESearchCase::IgnoreCase)
+		|| Label.Equals(TEXT("WindowedFullscreen"), ESearchCase::IgnoreCase))
+	{
+		return EProjectOrganoidWindowMode::WindowedFullscreen;
+	}
+	if (Label.Equals(TEXT("Windowed"), ESearchCase::IgnoreCase))
+	{
+		return EProjectOrganoidWindowMode::Windowed;
+	}
+	return EProjectOrganoidWindowMode::Fullscreen;
 }

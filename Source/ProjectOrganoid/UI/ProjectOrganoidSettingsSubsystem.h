@@ -9,12 +9,16 @@
 
 class USoundClass;
 class USoundMix;
+class UGameUserSettings;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnProjectOrganoidSettingsChanged);
 
 /**
- *  Master / SFX / Music volumes and graphics scalability for menus.
- *  Volumes apply via optional SoundMix overrides; master also uses the audio device.
+ *  Game options director:
+ *  - Master / SFX / Music volumes via SoundMix class overrides (+ device master)
+ *  - Graphics quality scalability
+ *  - Dynamic resolution scale + window mode through UGameUserSettings
+ *  - Persistent write to GameUserSettings.ini
  */
 UCLASS()
 class UProjectOrganoidSettingsSubsystem : public UGameInstanceSubsystem
@@ -28,6 +32,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Settings")
 	FOnProjectOrganoidSettingsChanged OnSettingsChanged;
 
+	// -------------------------------------------------------------------------
+	// Audio
+	// -------------------------------------------------------------------------
+
 	UFUNCTION(BlueprintPure, Category = "Settings|Audio")
 	float GetMasterVolume() const { return MasterVolume; }
 
@@ -36,9 +44,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Settings|Audio")
 	float GetMusicVolume() const { return MusicVolume; }
-
-	UFUNCTION(BlueprintPure, Category = "Settings|Graphics")
-	EProjectOrganoidGraphicsQuality GetGraphicsQuality() const { return GraphicsQuality; }
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
 	void SetMasterVolume(float NewVolume);
@@ -49,10 +54,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
 	void SetMusicVolume(float NewVolume);
 
+	// -------------------------------------------------------------------------
+	// Graphics / display
+	// -------------------------------------------------------------------------
+
+	UFUNCTION(BlueprintPure, Category = "Settings|Graphics")
+	EProjectOrganoidGraphicsQuality GetGraphicsQuality() const { return GraphicsQuality; }
+
+	UFUNCTION(BlueprintPure, Category = "Settings|Display")
+	EProjectOrganoidWindowMode GetWindowMode() const { return WindowMode; }
+
+	/** 50–100 screen-percentage resolution scale */
+	UFUNCTION(BlueprintPure, Category = "Settings|Display")
+	float GetResolutionScalePercent() const { return ResolutionScalePercent; }
+
 	UFUNCTION(BlueprintCallable, Category = "Settings|Graphics")
 	void SetGraphicsQuality(EProjectOrganoidGraphicsQuality NewQuality);
 
-	/** Apply current audio + graphics to the engine and persist to config. */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Display")
+	void SetWindowMode(EProjectOrganoidWindowMode NewMode);
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Display")
+	void SetResolutionScalePercent(float NewPercent);
+
+	/** Apply audio + display to the engine and persist to GameUserSettings. */
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ApplyAllSettings();
 
@@ -61,6 +86,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void SaveSettingsToConfig() const;
+
+	UFUNCTION(BlueprintPure, Category = "Settings|Display")
+	static FString WindowModeToLabel(EProjectOrganoidWindowMode Mode);
+
+	UFUNCTION(BlueprintPure, Category = "Settings|Display")
+	static EProjectOrganoidWindowMode WindowModeFromLabel(const FString& Label);
 
 	/** Optional SoundMix used for class volume overrides (assign in BP defaults / soft load). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio")
@@ -74,6 +105,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Audio")
 	TSoftObjectPtr<USoundClass> MusicSoundClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Display", meta = (ClampMin = "50.0", ClampMax = "100.0"))
+	float MinResolutionScalePercent = 50.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Display", meta = (ClampMin = "50.0", ClampMax = "100.0"))
+	float MaxResolutionScalePercent = 100.0f;
 
 protected:
 
@@ -89,7 +126,17 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Settings|Graphics")
 	EProjectOrganoidGraphicsQuality GraphicsQuality = EProjectOrganoidGraphicsQuality::High;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Settings|Display")
+	EProjectOrganoidWindowMode WindowMode = EProjectOrganoidWindowMode::Fullscreen;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Settings|Display")
+	float ResolutionScalePercent = 100.0f;
+
 	void ApplyAudioSettings();
-	void ApplyGraphicsSettings();
+	void ApplyDisplaySettings();
 	void ApplySoundClassVolume(USoundMix* Mix, USoundClass* SoundClass, float Volume) const;
+	UGameUserSettings* GetUserSettings() const;
+	float ClampResolutionScale(float Percent) const;
+	EWindowMode::Type ToEngineWindowMode(EProjectOrganoidWindowMode Mode) const;
+	EProjectOrganoidWindowMode FromEngineWindowMode(EWindowMode::Type Mode) const;
 };

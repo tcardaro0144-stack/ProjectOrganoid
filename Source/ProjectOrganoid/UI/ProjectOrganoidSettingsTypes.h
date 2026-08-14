@@ -16,6 +16,15 @@ enum class EProjectOrganoidGraphicsQuality : uint8
 	Cinematic = 4
 };
 
+/** Window presentation mode (maps to EWindowMode). */
+UENUM(BlueprintType)
+enum class EProjectOrganoidWindowMode : uint8
+{
+	Fullscreen UMETA(DisplayName = "Fullscreen"),
+	WindowedFullscreen UMETA(DisplayName = "Borderless Window"),
+	Windowed UMETA(DisplayName = "Windowed")
+};
+
 /** Lightweight save-slot summary for main-menu load UI. */
 USTRUCT(BlueprintType)
 struct FProjectOrganoidSaveSlotInfo

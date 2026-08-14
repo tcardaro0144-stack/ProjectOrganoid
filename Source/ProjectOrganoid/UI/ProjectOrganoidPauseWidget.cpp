@@ -16,10 +16,24 @@ namespace ProjectOrganoidPauseUI
 		TEXT("Low"), TEXT("Medium"), TEXT("High"), TEXT("Epic"), TEXT("Cinematic")
 	};
 
+	static const TArray<FString> WindowModeLabels = {
+		TEXT("Fullscreen"), TEXT("Borderless Window"), TEXT("Windowed")
+	};
+
 	static EProjectOrganoidGraphicsQuality QualityFromLabel(const FString& Label)
 	{
 		const int32 Index = GraphicsQualityLabels.IndexOfByKey(Label);
 		return static_cast<EProjectOrganoidGraphicsQuality>(FMath::Clamp(Index, 0, 4));
+	}
+
+	static float ResolutionPercentFromNormalized(float Normalized)
+	{
+		return FMath::Lerp(50.0f, 100.0f, FMath::Clamp(Normalized, 0.0f, 1.0f));
+	}
+
+	static float ResolutionNormalizedFromPercent(float Percent)
+	{
+		return FMath::GetMappedRangeValueClamped(FVector2D(50.0f, 100.0f), FVector2D(0.0f, 1.0f), Percent);
 	}
 }
 
@@ -61,6 +75,14 @@ void UProjectOrganoidPauseWidget::BindWidgetCallbacks()
 	{
 		GraphicsQualityCombo->OnSelectionChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleGraphicsQualityChanged);
 	}
+	if (WindowModeCombo)
+	{
+		WindowModeCombo->OnSelectionChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleWindowModeChanged);
+	}
+	if (ResolutionScaleSlider)
+	{
+		ResolutionScaleSlider->OnValueChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleResolutionScaleChanged);
+	}
 }
 
 void UProjectOrganoidPauseWidget::SyncSettingsWidgets()
@@ -89,6 +111,19 @@ void UProjectOrganoidPauseWidget::SyncSettingsWidgets()
 		{
 			GraphicsQualityCombo->SetSelectedOption(ProjectOrganoidPauseUI::GraphicsQualityLabels[QualityIndex]);
 		}
+	}
+	if (WindowModeCombo)
+	{
+		WindowModeCombo->ClearOptions();
+		for (const FString& Label : ProjectOrganoidPauseUI::WindowModeLabels)
+		{
+			WindowModeCombo->AddOption(Label);
+		}
+		WindowModeCombo->SetSelectedOption(UProjectOrganoidSettingsSubsystem::WindowModeToLabel(GetWindowMode()));
+	}
+	if (ResolutionScaleSlider)
+	{
+		ResolutionScaleSlider->SetValue(ProjectOrganoidPauseUI::ResolutionNormalizedFromPercent(GetResolutionScalePercent()));
 	}
 }
 
@@ -129,6 +164,20 @@ void UProjectOrganoidPauseWidget::HandleGraphicsQualityChanged(FString SelectedI
 		return;
 	}
 	SetGraphicsQuality(ProjectOrganoidPauseUI::QualityFromLabel(SelectedItem));
+}
+
+void UProjectOrganoidPauseWidget::HandleWindowModeChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	if (SelectionType == ESelectInfo::Direct)
+	{
+		return;
+	}
+	SetWindowMode(UProjectOrganoidSettingsSubsystem::WindowModeFromLabel(SelectedItem));
+}
+
+void UProjectOrganoidPauseWidget::HandleResolutionScaleChanged(float Value)
+{
+	SetResolutionScalePercent(ProjectOrganoidPauseUI::ResolutionPercentFromNormalized(Value));
 }
 
 void UProjectOrganoidPauseWidget::ResumeGame()
@@ -205,6 +254,22 @@ void UProjectOrganoidPauseWidget::SetGraphicsQuality(EProjectOrganoidGraphicsQua
 	}
 }
 
+void UProjectOrganoidPauseWidget::SetWindowMode(EProjectOrganoidWindowMode NewMode)
+{
+	if (UProjectOrganoidSettingsSubsystem* Settings = GetSettingsSubsystem())
+	{
+		Settings->SetWindowMode(NewMode);
+	}
+}
+
+void UProjectOrganoidPauseWidget::SetResolutionScalePercent(float NewPercent)
+{
+	if (UProjectOrganoidSettingsSubsystem* Settings = GetSettingsSubsystem())
+	{
+		Settings->SetResolutionScalePercent(NewPercent);
+	}
+}
+
 float UProjectOrganoidPauseWidget::GetMasterVolume() const
 {
 	if (const UProjectOrganoidSettingsSubsystem* Settings = GetSettingsSubsystem())
@@ -239,6 +304,24 @@ EProjectOrganoidGraphicsQuality UProjectOrganoidPauseWidget::GetGraphicsQuality(
 		return Settings->GetGraphicsQuality();
 	}
 	return EProjectOrganoidGraphicsQuality::High;
+}
+
+EProjectOrganoidWindowMode UProjectOrganoidPauseWidget::GetWindowMode() const
+{
+	if (const UProjectOrganoidSettingsSubsystem* Settings = GetSettingsSubsystem())
+	{
+		return Settings->GetWindowMode();
+	}
+	return EProjectOrganoidWindowMode::Fullscreen;
+}
+
+float UProjectOrganoidPauseWidget::GetResolutionScalePercent() const
+{
+	if (const UProjectOrganoidSettingsSubsystem* Settings = GetSettingsSubsystem())
+	{
+		return Settings->GetResolutionScalePercent();
+	}
+	return 100.0f;
 }
 
 void UProjectOrganoidPauseWidget::ApplySettings()

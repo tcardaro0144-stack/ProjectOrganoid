@@ -51,6 +51,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pause|Settings")
 	void SetGraphicsQuality(EProjectOrganoidGraphicsQuality NewQuality);
 
+	UFUNCTION(BlueprintCallable, Category = "Pause|Settings")
+	void SetWindowMode(EProjectOrganoidWindowMode NewMode);
+
+	UFUNCTION(BlueprintCallable, Category = "Pause|Settings")
+	void SetResolutionScalePercent(float NewPercent);
+
 	UFUNCTION(BlueprintPure, Category = "Pause|Settings")
 	float GetMasterVolume() const;
 
@@ -62,6 +68,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Pause|Settings")
 	EProjectOrganoidGraphicsQuality GetGraphicsQuality() const;
+
+	UFUNCTION(BlueprintPure, Category = "Pause|Settings")
+	EProjectOrganoidWindowMode GetWindowMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "Pause|Settings")
+	float GetResolutionScalePercent() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Pause|Settings")
 	void ApplySettings();
@@ -99,6 +111,13 @@ protected:
 	TObjectPtr<UComboBoxString> GraphicsQualityCombo;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<UComboBoxString> WindowModeCombo;
+
+	/** Expects 0–1 normalized UI value; maps to 50–100% resolution scale. */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<USlider> ResolutionScaleSlider;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
 	TObjectPtr<UTextBlock> TitleText;
 
 	UProjectOrganoidSettingsSubsystem* GetSettingsSubsystem() const;
@@ -126,4 +145,10 @@ protected:
 
 	UFUNCTION()
 	void HandleGraphicsQualityChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+	UFUNCTION()
+	void HandleWindowModeChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+	UFUNCTION()
+	void HandleResolutionScaleChanged(float Value);
 };
