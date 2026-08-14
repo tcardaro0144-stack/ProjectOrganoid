@@ -2,6 +2,7 @@
 
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidSaveGame.h"
+#include "ProjectOrganoidCharacter.h"
 
 void UProjectOrganoidStatsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -84,6 +85,16 @@ void UProjectOrganoidStatsSubsystem::RecordDamageTaken(float Amount)
 
 	PlayerStats.DamageTaken += Amount;
 	NotifyStatChanged(EProjectOrganoidStatMetric::DamageTaken);
+}
+
+void UProjectOrganoidStatsSubsystem::RecordHazardDamageTaken(AActor* Target, EProjectOrganoidHazardType /*HazardType*/, float Amount)
+{
+	if (!Cast<AProjectOrganoidCharacter>(Target))
+	{
+		return;
+	}
+
+	RecordDamageTaken(Amount);
 }
 
 bool UProjectOrganoidStatsSubsystem::IsAchievementUnlocked(FName AchievementId) const

@@ -2,11 +2,10 @@
 
 #include "ProjectOrganoidHazardZone.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidHazardInterface.h"
 #include "ProjectOrganoidLevelManagerSubsystem.h"
-#include "ProjectOrganoidAudioSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
-#include "Kismet/GameplayStatics.h"
 
 AProjectOrganoidHazardZone::AProjectOrganoidHazardZone()
 {
@@ -68,7 +67,6 @@ void AProjectOrganoidHazardZone::ApplySubLevelEnvironmentContext(
 
 	if (AssociatedSubLevelTag == EProjectOrganoidSubLevelTag::None)
 	{
-		// Untagged zones follow ambient hazard type for the active floor
 		bIsActive = bHazardTypeIsAmbient || ActiveTag == EProjectOrganoidSubLevelTag::None;
 	}
 	else
@@ -79,27 +77,23 @@ void AProjectOrganoidHazardZone::ApplySubLevelEnvironmentContext(
 
 void AProjectOrganoidHazardZone::ClearHazardVolume()
 {
-	const bool bWasToxicGas = (HazardType == EProjectOrganoidHazardType::ToxicGas) && OccupyingCharacters.Num() > 0;
+	TArray<AActor*> Occupants = OccupyingActors.Array();
+	for (AActor* Actor : Occupants)
+	{
+		if (IsValid(Actor) && Actor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
+		{
+			IProjectOrganoidHazardInterface::Execute_OnExitedHazard(Actor, HazardType);
+		}
+	}
 
 	bIsActive = false;
-	OccupyingCharacters.Reset();
+	OccupyingActors.Reset();
 	BP_OnHazardCleared();
 
 	if (HazardVolume)
 	{
 		HazardVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		HazardVolume->SetHiddenInGame(true);
-	}
-
-	if (bWasToxicGas)
-	{
-		if (UWorld* World = GetWorld())
-		{
-			if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
-			{
-				AudioSubsystem->SetToxicGasDistortion(0.0f);
-			}
-		}
 	}
 }
 
@@ -122,6 +116,16 @@ void AProjectOrganoidHazardZone::ApplyHazardDefaultsForType()
 		ToxicityPerSecond = 12.0f;
 		HeartRateSpikePerSecond = 5.0f;
 		break;
+	case EProjectOrganoidHazardType::Biohazard:
+		DamagePerSecond = 6.0f;
+		ToxicityPerSecond = 14.0f;
+		HeartRateSpikePerSecond = 7.0f;
+		break;
+	case EProjectOrganoidHazardType::ExtremeHeat:
+		DamagePerSecond = 18.0f;
+		ToxicityPerSecond = 0.0f;
+		HeartRateSpikePerSecond = 10.0f;
+		break;
 	default:
 		break;
 	}
@@ -135,20 +139,16 @@ void AProjectOrganoidHazardZone::OnHazardBeginOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
-	if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(OtherActor))
+	if (!OtherActor || !OtherActor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
 	{
-		OccupyingCharacters.Add(Character);
+		return;
+	}
 
-		if (bIsActive && HazardType == EProjectOrganoidHazardType::ToxicGas)
-		{
-			if (UWorld* World = GetWorld())
-			{
-				if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
-				{
-					AudioSubsystem->SetToxicGasDistortion(1.0f);
-				}
-			}
-		}
+	OccupyingActors.Add(OtherActor);
+
+	if (bIsActive)
+	{
+		IProjectOrganoidHazardInterface::Execute_OnEnteredHazard(OtherActor, HazardType, HazardIntensity);
 	}
 }
 
@@ -158,40 +158,16 @@ void AProjectOrganoidHazardZone::OnHazardEndOverlap(
 	UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex)
 {
-	if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(OtherActor))
+	if (!OtherActor)
 	{
-		OccupyingCharacters.Remove(Character);
+		return;
+	}
 
-		if (HazardType == EProjectOrganoidHazardType::ToxicGas)
-		{
-			if (UWorld* World = GetWorld())
-			{
-				if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
-				{
-					// Clear unless another active toxic-gas volume still contains Avery.
-					bool bStillInToxicGas = false;
-					TArray<AActor*> ToxicZones;
-					UGameplayStatics::GetAllActorsOfClass(World, AProjectOrganoidHazardZone::StaticClass(), ToxicZones);
-					for (AActor* ZoneActor : ToxicZones)
-					{
-						AProjectOrganoidHazardZone* Zone = Cast<AProjectOrganoidHazardZone>(ZoneActor);
-						if (Zone && Zone != this && Zone->bIsActive
-							&& Zone->HazardType == EProjectOrganoidHazardType::ToxicGas
-							&& Zone->HazardVolume
-							&& Zone->HazardVolume->IsOverlappingActor(Character))
-						{
-							bStillInToxicGas = true;
-							break;
-						}
-					}
+	OccupyingActors.Remove(OtherActor);
 
-					if (!bStillInToxicGas)
-					{
-						AudioSubsystem->SetToxicGasDistortion(0.0f);
-					}
-				}
-			}
-		}
+	if (OtherActor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
+	{
+		IProjectOrganoidHazardInterface::Execute_OnExitedHazard(OtherActor, HazardType);
 	}
 }
 
@@ -199,59 +175,42 @@ void AProjectOrganoidHazardZone::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsActive || OccupyingCharacters.Num() == 0)
+	if (!bIsActive || OccupyingActors.Num() == 0)
 	{
 		return;
 	}
 
-	// Copy keys in case a character is destroyed mid-tick
-	TArray<AProjectOrganoidCharacter*> Characters = OccupyingCharacters.Array();
-	for (AProjectOrganoidCharacter* Character : Characters)
+	TArray<AActor*> Actors = OccupyingActors.Array();
+	for (AActor* Actor : Actors)
 	{
-		if (IsValid(Character))
+		if (IsValid(Actor))
 		{
-			ApplyHazardToCharacter(Character, DeltaSeconds);
+			ApplyHazardToActor(Actor, DeltaSeconds);
 		}
 		else
 		{
-			OccupyingCharacters.Remove(Character);
+			OccupyingActors.Remove(Actor);
 		}
 	}
 }
 
-void AProjectOrganoidHazardZone::ApplyHazardToCharacter(AProjectOrganoidCharacter* Character, float DeltaSeconds)
+float AProjectOrganoidHazardZone::ComputeTickDamageAmount(float DeltaSeconds) const
 {
-	if (!Character)
+	return DamagePerSecond * EnvironmentDamageMultiplier * HazardIntensity * DeltaSeconds;
+}
+
+void AProjectOrganoidHazardZone::ApplyHazardToActor(AActor* Actor, float DeltaSeconds)
+{
+	if (!Actor || !Actor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
 	{
 		return;
 	}
 
-	float HealthDamage = DamagePerSecond * EnvironmentDamageMultiplier * DeltaSeconds;
-	float ToxicityGain = ToxicityPerSecond * EnvironmentToxicityMultiplier * DeltaSeconds;
-	float HeartRateGain = HeartRateSpikePerSecond * DeltaSeconds;
+	const float TickDamage = ComputeTickDamageAmount(DeltaSeconds);
+	IProjectOrganoidHazardInterface::Execute_OnTickHazard(Actor, HazardType, TickDamage, DeltaSeconds);
 
-	// Hazard-specific emphasis
-	switch (HazardType)
+	if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(Actor))
 	{
-	case EProjectOrganoidHazardType::UVCRadiation:
-		// Sterilizing UV primarily burns suit integrity
-		HealthDamage *= 1.0f;
-		break;
-	case EProjectOrganoidHazardType::LiquidN2Frost:
-		// Cryo frost is pure thermal damage
-		ToxicityGain = 0.0f;
-		break;
-	case EProjectOrganoidHazardType::ToxicGas:
-		// Contaminant load dominates
-		ToxicityGain *= 1.0f;
-		break;
-	default:
-		break;
+		OnHazardApplied.Broadcast(Character, HazardType);
 	}
-
-	Character->ApplyHealthDelta(-HealthDamage);
-	Character->ApplyToxicityDelta(ToxicityGain);
-	Character->ApplyHeartRateDelta(HeartRateGain);
-
-	OnHazardApplied.Broadcast(Character, HazardType);
 }

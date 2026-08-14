@@ -5,10 +5,12 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "ProjectOrganoidStatsTypes.h"
+#include "ProjectOrganoidInteractionTypes.h"
 #include "ProjectOrganoidStatsSubsystem.generated.h"
 
 class UProjectOrganoidAchievementDataAsset;
 class UProjectOrganoidSaveGame;
+class AActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidStatChanged, EProjectOrganoidStatMetric, Metric, float, NewValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidAchievementUnlocked, FName, AchievementId);
@@ -62,6 +64,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	void RecordDamageTaken(float Amount);
+
+	/** Hazard-volume helper — records damage taken when Target is Avery */
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	void RecordHazardDamageTaken(AActor* Target, EProjectOrganoidHazardType HazardType, float Amount);
 
 	UFUNCTION(BlueprintPure, Category = "Stats|Achievements")
 	bool IsAchievementUnlocked(FName AchievementId) const;

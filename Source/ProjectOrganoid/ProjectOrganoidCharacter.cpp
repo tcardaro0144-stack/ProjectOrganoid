@@ -20,6 +20,8 @@
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidAudioSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
+#include "ProjectOrganoidHazardZone.h"
+#include "Components/BoxComponent.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -200,6 +202,85 @@ void AProjectOrganoidCharacter::ApplyHeartRateDelta(float Delta)
 void AProjectOrganoidCharacter::ApplyPEEnergyDelta(float Delta)
 {
 	PEEnergy = FMath::Clamp(PEEnergy + Delta, 0.0f, MaxPEEnergy);
+}
+
+void AProjectOrganoidCharacter::OnEnteredHazard_Implementation(EProjectOrganoidHazardType HazardType, float Intensity)
+{
+	const float ClampedIntensity = FMath::Max(0.0f, Intensity);
+	ApplyHeartRateDelta(8.0f * ClampedIntensity);
+
+	if (HazardType == EProjectOrganoidHazardType::ToxicGas || HazardType == EProjectOrganoidHazardType::Biohazard)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+			{
+				AudioSubsystem->SetToxicGasDistortion(FMath::Clamp(ClampedIntensity, 0.0f, 1.0f));
+			}
+		}
+	}
+}
+
+void AProjectOrganoidCharacter::OnTickHazard_Implementation(EProjectOrganoidHazardType HazardType, float DamageAmount, float DeltaTime)
+{
+	if (DamageAmount <= KINDA_SMALL_NUMBER || DeltaTime <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	// DamageAmount is already scaled by zone DPS * intensity * delta from the volume.
+	ApplyHealthDelta(-DamageAmount);
+
+	switch (HazardType)
+	{
+	case EProjectOrganoidHazardType::ToxicGas:
+	case EProjectOrganoidHazardType::Biohazard:
+		ApplyToxicityDelta(DamageAmount * 1.25f);
+		ApplyHeartRateDelta(DamageAmount * 0.35f);
+		break;
+	case EProjectOrganoidHazardType::UVCRadiation:
+		ApplyToxicityDelta(DamageAmount * 0.15f);
+		ApplyHeartRateDelta(DamageAmount * 0.45f);
+		break;
+	case EProjectOrganoidHazardType::LiquidN2Frost:
+	case EProjectOrganoidHazardType::ExtremeHeat:
+		ApplyHeartRateDelta(DamageAmount * 0.55f);
+		break;
+	default:
+		ApplyHeartRateDelta(DamageAmount * 0.25f);
+		break;
+	}
+}
+
+void AProjectOrganoidCharacter::OnExitedHazard_Implementation(EProjectOrganoidHazardType HazardType)
+{
+	if (HazardType == EProjectOrganoidHazardType::ToxicGas || HazardType == EProjectOrganoidHazardType::Biohazard)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+			{
+				bool bStillInToxicHazard = false;
+				TArray<AActor*> HazardZones;
+				UGameplayStatics::GetAllActorsOfClass(World, AProjectOrganoidHazardZone::StaticClass(), HazardZones);
+				for (AActor* ZoneActor : HazardZones)
+				{
+					AProjectOrganoidHazardZone* Zone = Cast<AProjectOrganoidHazardZone>(ZoneActor);
+					if (Zone && Zone->bIsActive && Zone->HazardVolume && Zone->HazardVolume->IsOverlappingActor(this)
+						&& (Zone->HazardType == EProjectOrganoidHazardType::ToxicGas || Zone->HazardType == EProjectOrganoidHazardType::Biohazard))
+					{
+						bStillInToxicHazard = true;
+						break;
+					}
+				}
+
+				if (!bStillInToxicHazard)
+				{
+					AudioSubsystem->SetToxicGasDistortion(0.0f);
+				}
+			}
+		}
+	}
 }
 
 void AProjectOrganoidCharacter::ApplySavedVitals(

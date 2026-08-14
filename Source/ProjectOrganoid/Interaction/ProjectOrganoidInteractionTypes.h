@@ -24,5 +24,15 @@ enum class EProjectOrganoidHazardType : uint8
 	None UMETA(DisplayName = "None"),
 	UVCRadiation UMETA(DisplayName = "UV-C Radiation"),
 	LiquidN2Frost UMETA(DisplayName = "Liquid N2 Frost"),
-	ToxicGas UMETA(DisplayName = "Toxic Gas")
+	ToxicGas UMETA(DisplayName = "Toxic Gas / Toxicity"),
+	Biohazard UMETA(DisplayName = "Biohazard"),
+	ExtremeHeat UMETA(DisplayName = "Extreme Heat")
+};
+
+/** How a brush hazard volume applies damage over time */
+UENUM(BlueprintType)
+enum class EProjectOrganoidHazardApplicationType : uint8
+{
+	Continuous UMETA(DisplayName = "Continuous (Over Time)"),
+	Burst UMETA(DisplayName = "Burst (Interval Pulses)")
 };

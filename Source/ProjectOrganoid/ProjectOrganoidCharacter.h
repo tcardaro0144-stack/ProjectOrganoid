@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "ProjectOrganoidUpgradeTypes.h"
+#include "ProjectOrganoidHazardInterface.h"
 #include "ProjectOrganoidCharacter.generated.h"
 
 class USpringArmComponent;
@@ -27,7 +28,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidTacticalModeChange
  *  Suit vitals, PE Energy, and Parasite Eve-style Tactical Sphere targeting.
  */
 UCLASS()
-class AProjectOrganoidCharacter : public ACharacter
+class AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHazardInterface
 {
 	GENERATED_BODY()
 
@@ -216,6 +217,11 @@ public:
 	/** Apply a signed PE Energy change */
 	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
 	void ApplyPEEnergyDelta(float Delta);
+
+	// IProjectOrganoidHazardInterface
+	virtual void OnEnteredHazard_Implementation(EProjectOrganoidHazardType HazardType, float Intensity) override;
+	virtual void OnTickHazard_Implementation(EProjectOrganoidHazardType HazardType, float DamageAmount, float DeltaTime) override;
+	virtual void OnExitedHazard_Implementation(EProjectOrganoidHazardType HazardType) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void ApplySavedVitals(float InHealth, float InMaxHealth, float InToxicity, float InMaxToxicity, float InHeartRate, float InPEEnergy, float InMaxPEEnergy);

@@ -14,8 +14,8 @@ class AProjectOrganoidCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHazardApplied, AProjectOrganoidCharacter*, Character, EProjectOrganoidHazardType, HazardType);
 
 /**
- *  Environmental hazard volume — UV-C, Liquid N2 frost, or toxic gas.
- *  Applies health damage and/or toxicity to Avery while overlapping.
+ *  Environmental hazard volume — UV-C, frost, toxic gas, biohazard, extreme heat.
+ *  Dispatches IProjectOrganoidHazardInterface enter / tick / exit callbacks.
  */
 UCLASS(Blueprintable)
 class AProjectOrganoidHazardZone : public AActor
@@ -34,15 +34,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard")
 	EProjectOrganoidHazardType HazardType = EProjectOrganoidHazardType::ToxicGas;
 
-	/** Health lost per second while inside the zone */
+	/** Scales enter intensity and per-tick damage (1.0 = nominal) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard", meta = (ClampMin = "0.0", ClampMax = "5.0"))
+	float HazardIntensity = 1.0f;
+
+	/** Health lost per second while inside the zone (before intensity / env multipliers) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard", meta = (ClampMin = "0.0"))
 	float DamagePerSecond = 8.0f;
 
-	/** Toxicity gained per second while inside the zone */
+	/** Toxicity gained per second while inside the zone (legacy direct path / defaults) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard", meta = (ClampMin = "0.0"))
 	float ToxicityPerSecond = 5.0f;
 
-	/** Heart-rate spike applied per second (diegetic stress) */
+	/** Heart-rate spike applied per second (legacy / defaults) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard", meta = (ClampMin = "0.0"))
 	float HeartRateSpikePerSecond = 4.0f;
 
@@ -87,7 +91,7 @@ public:
 protected:
 
 	UPROPERTY()
-	TSet<TObjectPtr<AProjectOrganoidCharacter>> OccupyingCharacters;
+	TSet<TObjectPtr<AActor>> OccupyingActors;
 
 	UFUNCTION()
 	void OnHazardBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -96,7 +100,8 @@ protected:
 	void OnHazardEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	void ApplyHazardDefaultsForType();
-	void ApplyHazardToCharacter(AProjectOrganoidCharacter* Character, float DeltaSeconds);
+	void ApplyHazardToActor(AActor* Actor, float DeltaSeconds);
+	float ComputeTickDamageAmount(float DeltaSeconds) const;
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
