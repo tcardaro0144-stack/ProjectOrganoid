@@ -16,6 +16,7 @@
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidInteractionComponent.h"
+#include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -63,6 +64,9 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 
 	// Environmental / world interaction scanner
 	InteractionComponent = CreateDefaultSubobject<UProjectOrganoidInteractionComponent>(TEXT("InteractionComponent"));
+
+	// Diegetic heartbeat / post-process / weak-point feedback
+	FeedbackComponent = CreateDefaultSubobject<UProjectOrganoidFeedbackComponent>(TEXT("FeedbackComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)

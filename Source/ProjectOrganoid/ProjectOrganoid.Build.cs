@@ -31,6 +31,7 @@ public class ProjectOrganoid : ModuleRules
 			"ProjectOrganoid/Hosts",
 			"ProjectOrganoid/Interaction",
 			"ProjectOrganoid/Progression",
+			"ProjectOrganoid/Feedback",
 			"ProjectOrganoid/Variant_Platforming",
 			"ProjectOrganoid/Variant_Platforming/Animation",
 			"ProjectOrganoid/Variant_Combat",

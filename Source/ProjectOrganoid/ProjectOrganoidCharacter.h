@@ -14,6 +14,7 @@ class UInputAction;
 class UProjectOrganoidInventoryComponent;
 class UProjectOrganoidWeaponComponent;
 class UProjectOrganoidInteractionComponent;
+class UProjectOrganoidFeedbackComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -48,6 +49,10 @@ class AProjectOrganoidCharacter : public ACharacter
 	/** World interaction scanner (doors, terminals, locks) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidInteractionComponent* InteractionComponent;
+
+	/** Diegetic audio / post-process / weak-point feedback */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidFeedbackComponent* FeedbackComponent;
 
 	/** Maximum suit health */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
@@ -268,4 +273,7 @@ public:
 
 	/** Returns interaction component **/
 	FORCEINLINE UProjectOrganoidInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
+
+	/** Returns feedback component **/
+	FORCEINLINE UProjectOrganoidFeedbackComponent* GetFeedbackComponent() const { return FeedbackComponent; }
 };
