@@ -4,6 +4,7 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidInventoryComponent.h"
 #include "ProjectOrganoidItemData.h"
+#include "ProjectOrganoidPowerSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 
@@ -14,6 +15,33 @@ AProjectOrganoidDoorLock::AProjectOrganoidDoorLock()
 	DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
 	DoorMesh->SetupAttachment(InteractionSphere);
 	DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
+void AProjectOrganoidDoorLock::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->RegisterDoor(this);
+			HandlePowerStateChanged(Power->GetSectorPowerState(PowerSector), EProjectOrganoidPowerState::Online);
+		}
+	}
+}
+
+void AProjectOrganoidDoorLock::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->UnregisterDoor(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 bool AProjectOrganoidDoorLock::CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const
@@ -78,4 +106,14 @@ void AProjectOrganoidDoorLock::SetLocked(bool bNewLocked)
 void AProjectOrganoidDoorLock::SetOpen(bool bNewOpen)
 {
 	bIsOpen = bNewOpen;
+}
+
+void AProjectOrganoidDoorLock::HandlePowerStateChanged(EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState)
+{
+	if (bDisableInteractDuringBlackout)
+	{
+		bIsInteractable = NewState != EProjectOrganoidPowerState::Blackout;
+	}
+
+	BP_OnPowerStateChanged(NewState);
 }

@@ -6,6 +6,7 @@
 #include "ProjectOrganoidItemData.h"
 #include "ProjectOrganoidSecuritySubsystem.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidPowerSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
@@ -41,6 +42,12 @@ void AProjectOrganoidSecurityGate::BeginPlay()
 		{
 			Security->RegisterSecurityGate(this);
 		}
+
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->RegisterSecurityGate(this);
+			HandlePowerStateChanged(Power->GetSectorPowerState(PowerSector), EProjectOrganoidPowerState::Online);
+		}
 	}
 
 	RefreshBarrierCollision();
@@ -54,6 +61,11 @@ void AProjectOrganoidSecurityGate::EndPlay(const EEndPlayReason::Type EndPlayRea
 		if (UProjectOrganoidSecuritySubsystem* Security = World->GetSubsystem<UProjectOrganoidSecuritySubsystem>())
 		{
 			Security->UnregisterSecurityGate(this);
+		}
+
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->UnregisterSecurityGate(this);
 		}
 	}
 
@@ -245,4 +257,25 @@ void AProjectOrganoidSecurityGate::NotifyObjectiveEvent(FName EventId) const
 			Objectives->TriggerEvent(EventId);
 		}
 	}
+}
+
+void AProjectOrganoidSecurityGate::HandlePowerStateChanged(EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState)
+{
+	if (bFailOpenOnBlackout && BarrierVolume)
+	{
+		if (NewState == EProjectOrganoidPowerState::Blackout)
+		{
+			BarrierVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			bIsInteractable = false;
+			InteractionPrompt = FText::FromString(TEXT("Gate Maglock Offline"));
+		}
+		else
+		{
+			RefreshBarrierCollision();
+			bIsInteractable = true;
+			RefreshInteractionPrompt();
+		}
+	}
+
+	BP_OnPowerStateChanged(NewState);
 }

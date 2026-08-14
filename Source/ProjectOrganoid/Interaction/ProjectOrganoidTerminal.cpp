@@ -9,6 +9,7 @@
 #include "ProjectOrganoidSecurityTypes.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidPowerSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Blueprint/UserWidget.h"
@@ -24,6 +25,33 @@ AProjectOrganoidTerminal::AProjectOrganoidTerminal()
 	TerminalMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	HackingWidgetClass = UProjectOrganoidHackingWidget::StaticClass();
+}
+
+void AProjectOrganoidTerminal::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->RegisterTerminal(this);
+			HandlePowerStateChanged(Power->GetSectorPowerState(PowerSector), EProjectOrganoidPowerState::Online);
+		}
+	}
+}
+
+void AProjectOrganoidTerminal::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->UnregisterTerminal(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 bool AProjectOrganoidTerminal::CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const
@@ -261,4 +289,17 @@ void AProjectOrganoidTerminal::SetInputModeForUI(AProjectOrganoidCharacter* Char
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = false;
 	}
+}
+
+void AProjectOrganoidTerminal::HandlePowerStateChanged(EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState)
+{
+	if (bDisableDuringBlackout && !(bSingleUse && bHasBeenHacked))
+	{
+		bIsInteractable = NewState != EProjectOrganoidPowerState::Blackout;
+		InteractionPrompt = bIsInteractable
+			? FText::FromString(TEXT("Hack Terminal"))
+			: FText::FromString(TEXT("Terminal Offline"));
+	}
+
+	BP_OnPowerStateChanged(NewState);
 }

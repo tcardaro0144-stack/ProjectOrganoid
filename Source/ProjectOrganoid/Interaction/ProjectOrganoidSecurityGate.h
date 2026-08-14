@@ -6,6 +6,7 @@
 #include "ProjectOrganoidInteractable.h"
 #include "ProjectOrganoidInteractionTypes.h"
 #include "ProjectOrganoidSecurityTypes.h"
+#include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidSecurityGate.generated.h"
 
 class UStaticMeshComponent;
@@ -67,6 +68,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Security|Gate")
 	bool bResealOnFacilityLockdown = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Security|Gate|Power")
+	EProjectOrganoidPowerSector PowerSector = EProjectOrganoidPowerSector::Admin;
+
+	/** Maglocks lose power in blackout — barrier collision opens until power returns */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Security|Gate|Power")
+	bool bFailOpenOnBlackout = true;
+
 	UPROPERTY(BlueprintAssignable, Category = "Security|Gate")
 	FOnProjectOrganoidGateStateChanged OnGateStateChanged;
 
@@ -91,6 +99,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Security|Gate")
 	void ClearFacilityLockdownSeal(bool bUnlock);
 
+	UFUNCTION(BlueprintCallable, Category = "Security|Gate|Power")
+	void HandlePowerStateChanged(EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Security|Gate")
 	void BP_OnGateOpened(AProjectOrganoidCharacter* Interactor, EProjectOrganoidSecurityOverrideMethod Method);
 
@@ -99,6 +110,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Security|Gate")
 	void BP_OnGateStateChanged(EProjectOrganoidSecurityGateState NewState, EProjectOrganoidSecurityOverrideMethod Method);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Security|Gate|Power")
+	void BP_OnPowerStateChanged(EProjectOrganoidPowerState NewState);
 
 protected:
 

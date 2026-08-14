@@ -7,6 +7,7 @@
 #include "ProjectOrganoidHackingTypes.h"
 #include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidInteractionTypes.h"
+#include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidTerminal.generated.h"
 
 class UStaticMeshComponent;
@@ -31,11 +32,21 @@ public:
 
 	AProjectOrganoidTerminal();
 
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> TerminalMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal")
 	FName TerminalId = TEXT("Terminal_Unnamed");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Power")
+	EProjectOrganoidPowerSector PowerSector = EProjectOrganoidPowerSector::Admin;
+
+	/** Offline terminals during blackout (cannot start a hack) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Power")
+	bool bDisableDuringBlackout = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Hacking")
 	FProjectOrganoidHackingSessionConfig HackingConfig;
@@ -95,6 +106,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Terminal|Rewards")
 	void ApplyHackRewards(AProjectOrganoidCharacter* Character);
 
+	UFUNCTION(BlueprintCallable, Category = "Terminal|Power")
+	void HandlePowerStateChanged(EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Terminal")
 	void BP_OnTerminalOpened(AProjectOrganoidCharacter* Interactor);
 
@@ -109,6 +123,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Terminal")
 	void BP_OnGateUnlockedByTerminal(AProjectOrganoidSecurityGate* Gate);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Terminal|Power")
+	void BP_OnPowerStateChanged(EProjectOrganoidPowerState NewState);
 
 protected:
 
