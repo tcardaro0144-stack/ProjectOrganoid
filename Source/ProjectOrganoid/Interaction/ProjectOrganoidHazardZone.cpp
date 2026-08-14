@@ -3,8 +3,10 @@
 #include "ProjectOrganoidHazardZone.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidLevelManagerSubsystem.h"
+#include "ProjectOrganoidAudioSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 AProjectOrganoidHazardZone::AProjectOrganoidHazardZone()
 {
@@ -77,6 +79,8 @@ void AProjectOrganoidHazardZone::ApplySubLevelEnvironmentContext(
 
 void AProjectOrganoidHazardZone::ClearHazardVolume()
 {
+	const bool bWasToxicGas = (HazardType == EProjectOrganoidHazardType::ToxicGas) && OccupyingCharacters.Num() > 0;
+
 	bIsActive = false;
 	OccupyingCharacters.Reset();
 	BP_OnHazardCleared();
@@ -85,6 +89,17 @@ void AProjectOrganoidHazardZone::ClearHazardVolume()
 	{
 		HazardVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		HazardVolume->SetHiddenInGame(true);
+	}
+
+	if (bWasToxicGas)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+			{
+				AudioSubsystem->SetToxicGasDistortion(0.0f);
+			}
+		}
 	}
 }
 
@@ -123,6 +138,17 @@ void AProjectOrganoidHazardZone::OnHazardBeginOverlap(
 	if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(OtherActor))
 	{
 		OccupyingCharacters.Add(Character);
+
+		if (bIsActive && HazardType == EProjectOrganoidHazardType::ToxicGas)
+		{
+			if (UWorld* World = GetWorld())
+			{
+				if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+				{
+					AudioSubsystem->SetToxicGasDistortion(1.0f);
+				}
+			}
+		}
 	}
 }
 
@@ -135,6 +161,37 @@ void AProjectOrganoidHazardZone::OnHazardEndOverlap(
 	if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(OtherActor))
 	{
 		OccupyingCharacters.Remove(Character);
+
+		if (HazardType == EProjectOrganoidHazardType::ToxicGas)
+		{
+			if (UWorld* World = GetWorld())
+			{
+				if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+				{
+					// Clear unless another active toxic-gas volume still contains Avery.
+					bool bStillInToxicGas = false;
+					TArray<AActor*> ToxicZones;
+					UGameplayStatics::GetAllActorsOfClass(World, AProjectOrganoidHazardZone::StaticClass(), ToxicZones);
+					for (AActor* ZoneActor : ToxicZones)
+					{
+						AProjectOrganoidHazardZone* Zone = Cast<AProjectOrganoidHazardZone>(ZoneActor);
+						if (Zone && Zone != this && Zone->bIsActive
+							&& Zone->HazardType == EProjectOrganoidHazardType::ToxicGas
+							&& Zone->HazardVolume
+							&& Zone->HazardVolume->IsOverlappingActor(Character))
+						{
+							bStillInToxicGas = true;
+							break;
+						}
+					}
+
+					if (!bStillInToxicGas)
+					{
+						AudioSubsystem->SetToxicGasDistortion(0.0f);
+					}
+				}
+			}
+		}
 	}
 }
 

@@ -18,6 +18,7 @@
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoidLogComponent.h"
+#include "ProjectOrganoidAudioSubsystem.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -76,6 +77,32 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
+void AProjectOrganoidCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+		{
+			AudioSubsystem->BindLocalPlayerCharacter(this);
+		}
+	}
+}
+
+void AProjectOrganoidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+		{
+			AudioSubsystem->UnbindLocalPlayerCharacter(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AProjectOrganoidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -131,6 +158,14 @@ void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
 
 	const float NewDilation = bActive ? TacticalTimeDilation : 1.0f;
 	UGameplayStatics::SetGlobalTimeDilation(this, NewDilation);
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+		{
+			AudioSubsystem->NotifyTacticalModeChanged(bIsTacticalModeActive);
+		}
+	}
 
 	OnTacticalModeChanged.Broadcast(bIsTacticalModeActive);
 }

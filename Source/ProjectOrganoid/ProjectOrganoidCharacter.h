@@ -156,6 +156,9 @@ protected:
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	/** Apply or clear Tactical Mode time dilation and state */
 	void SetTacticalModeActive(bool bActive);
 

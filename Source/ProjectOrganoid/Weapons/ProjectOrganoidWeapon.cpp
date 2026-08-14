@@ -6,6 +6,7 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidHostBase.h"
 #include "ProjectOrganoidHazardZone.h"
+#include "ProjectOrganoidAudioSubsystem.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/DamageType.h"
@@ -130,9 +131,22 @@ void AProjectOrganoidWeapon::ReportGunfireNoise() const
 		return;
 	}
 
+	const FVector NoiseLocation = OwnerCharacter->GetActorLocation();
+
+	if (UProjectOrganoidAudioSubsystem* AudioSubsystem = GetWorld()->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+	{
+		AudioSubsystem->PlayGunfireAtLocation(
+			NoiseLocation,
+			OwnerCharacter,
+			GunfireNoiseLoudness,
+			GunfireNoiseMaxRange);
+		return;
+	}
+
+	// Fallback if subsystem is unavailable
 	UAISense_Hearing::ReportNoiseEvent(
 		GetWorld(),
-		OwnerCharacter->GetActorLocation(),
+		NoiseLocation,
 		GunfireNoiseLoudness,
 		OwnerCharacter,
 		GunfireNoiseMaxRange,
