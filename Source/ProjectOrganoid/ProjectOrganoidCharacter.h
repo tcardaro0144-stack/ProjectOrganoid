@@ -23,7 +23,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidTacticalModeChange
  *  Avery Vance — ProjectOrganoid player character.
  *  Suit vitals, PE Energy, and Parasite Eve-style Tactical Sphere targeting.
  */
-UCLASS(abstract)
+UCLASS()
 class AProjectOrganoidCharacter : public ACharacter
 {
 	GENERATED_BODY()

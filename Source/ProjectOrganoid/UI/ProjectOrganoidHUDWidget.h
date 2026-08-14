@@ -12,7 +12,7 @@ class AProjectOrganoidCharacter;
  *  Diegetic vitals overlay for Avery Vance.
  *  Bind to AProjectOrganoidCharacter to mirror Suit Vitals and Tactical Mode state.
  */
-UCLASS(abstract)
+UCLASS()
 class UProjectOrganoidHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
