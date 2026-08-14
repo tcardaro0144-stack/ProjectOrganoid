@@ -353,6 +353,60 @@ bool UProjectOrganoidInventoryComponent::ConsumeKeycardOfTier(EProjectOrganoidSe
 	return RemoveItem(PlacedItems[BestIndex].InstanceId);
 }
 
+bool UProjectOrganoidInventoryComponent::HasSecurityOverrideTool(EProjectOrganoidSecurityTier RequiredTier) const
+{
+	if (RequiredTier == EProjectOrganoidSecurityTier::None)
+	{
+		return true;
+	}
+
+	const uint8 Required = static_cast<uint8>(RequiredTier);
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (!Placed.IsValid() || !Placed.ItemData->bIsSecurityOverrideTool)
+		{
+			continue;
+		}
+
+		if (static_cast<uint8>(Placed.ItemData->OverrideClearsUpTo) >= Required)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UProjectOrganoidInventoryComponent::ConsumeSecurityOverrideTool(EProjectOrganoidSecurityTier RequiredTier)
+{
+	const uint8 Required = static_cast<uint8>(RequiredTier);
+	int32 BestIndex = INDEX_NONE;
+	uint8 BestClearance = 255;
+
+	for (int32 Index = 0; Index < PlacedItems.Num(); ++Index)
+	{
+		const FProjectOrganoidPlacedItem& Placed = PlacedItems[Index];
+		if (!Placed.IsValid() || !Placed.ItemData->bIsSecurityOverrideTool)
+		{
+			continue;
+		}
+
+		const uint8 Clearance = static_cast<uint8>(Placed.ItemData->OverrideClearsUpTo);
+		if (Clearance >= Required && Clearance <= BestClearance)
+		{
+			BestClearance = Clearance;
+			BestIndex = Index;
+		}
+	}
+
+	if (BestIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	return RemoveItem(PlacedItems[BestIndex].InstanceId);
+}
+
 int32 UProjectOrganoidInventoryComponent::CountItemsOfType(EProjectOrganoidItemType ItemType) const
 {
 	int32 Count = 0;

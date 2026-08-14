@@ -55,10 +55,21 @@ public:
 
 	/**
 	 *  Keycard clearance (used when ItemType == KeyItem).
-	 *  Higher tiers satisfy lower-tier door locks.
+	 *  Higher tiers satisfy lower-tier door locks / security gates.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security")
 	EProjectOrganoidSecurityTier SecurityTier = EProjectOrganoidSecurityTier::None;
+
+	/**
+	 *  Portable terminal / override spike. When true, Avery can lift security
+	 *  gates up to OverrideClearsUpTo without a matching keycard.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security")
+	bool bIsSecurityOverrideTool = false;
+
+	/** Max gate clearance this hacking tool can override (inclusive). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security", meta = (EditCondition = "bIsSecurityOverrideTool"))
+	EProjectOrganoidSecurityTier OverrideClearsUpTo = EProjectOrganoidSecurityTier::Level2_Lab;
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{

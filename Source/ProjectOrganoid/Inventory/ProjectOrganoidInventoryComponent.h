@@ -103,6 +103,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory|Security")
 	bool ConsumeKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier);
 
+	/** True if inventory holds a hacking tool that can clear RequiredTier gates */
+	UFUNCTION(BlueprintPure, Category = "Inventory|Security")
+	bool HasSecurityOverrideTool(EProjectOrganoidSecurityTier RequiredTier) const;
+
+	/** Consume one qualifying hacking tool (lowest sufficient OverrideClearsUpTo preferred). */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Security")
+	bool ConsumeSecurityOverrideTool(EProjectOrganoidSecurityTier RequiredTier);
+
 	/** Count stacked items of a given type (e.g. SOT tissue units) */
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	int32 CountItemsOfType(EProjectOrganoidItemType ItemType) const;
