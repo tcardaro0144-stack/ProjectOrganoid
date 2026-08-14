@@ -7,6 +7,7 @@
 #include "ProjectOrganoidHostBase.h"
 #include "ProjectOrganoidHazardZone.h"
 #include "ProjectOrganoidAudioSubsystem.h"
+#include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidWeaponModComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
@@ -137,6 +138,11 @@ void AProjectOrganoidWeapon::ReportGunfireNoise() const
 	const FVector NoiseLocation = OwnerCharacter->GetActorLocation();
 	const float Loudness = GetEffectiveGunfireNoiseLoudness();
 	const float MaxRange = GetEffectiveGunfireNoiseMaxRange();
+
+	if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = GetWorld()->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+	{
+		Ambience->NotifyCombatStimulus(1.0f);
+	}
 
 	if (UProjectOrganoidAudioSubsystem* AudioSubsystem = GetWorld()->GetSubsystem<UProjectOrganoidAudioSubsystem>())
 	{

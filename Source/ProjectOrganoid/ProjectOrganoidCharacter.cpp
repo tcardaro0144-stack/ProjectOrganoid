@@ -19,6 +19,7 @@
 #include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidAudioSubsystem.h"
+#include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidHazardZone.h"
 #include "Components/BoxComponent.h"
@@ -90,6 +91,11 @@ void AProjectOrganoidCharacter::BeginPlay()
 		{
 			AudioSubsystem->BindLocalPlayerCharacter(this);
 		}
+
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->BindLocalPlayerCharacter(this);
+		}
 	}
 }
 
@@ -100,6 +106,11 @@ void AProjectOrganoidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason
 		if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
 		{
 			AudioSubsystem->UnbindLocalPlayerCharacter(this);
+		}
+
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->UnbindLocalPlayerCharacter(this);
 		}
 	}
 
@@ -184,9 +195,25 @@ void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta)
 				Stats->RecordDamageTaken(-Delta);
 			}
 		}
+
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+			{
+				Ambience->NotifyCombatStimulus(0.45f);
+			}
+		}
 	}
 
 	Health = FMath::Clamp(Health + Delta, 0.0f, MaxHealth);
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->NotifyHealthChanged(Health, MaxHealth);
+		}
+	}
 }
 
 void AProjectOrganoidCharacter::ApplyToxicityDelta(float Delta)
@@ -209,9 +236,14 @@ void AProjectOrganoidCharacter::OnEnteredHazard_Implementation(EProjectOrganoidH
 	const float ClampedIntensity = FMath::Max(0.0f, Intensity);
 	ApplyHeartRateDelta(8.0f * ClampedIntensity);
 
-	if (HazardType == EProjectOrganoidHazardType::ToxicGas || HazardType == EProjectOrganoidHazardType::Biohazard)
+	if (UWorld* World = GetWorld())
 	{
-		if (UWorld* World = GetWorld())
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->NotifyHazardEntered(HazardType, ClampedIntensity);
+		}
+
+		if (HazardType == EProjectOrganoidHazardType::ToxicGas || HazardType == EProjectOrganoidHazardType::Biohazard)
 		{
 			if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
 			{
@@ -254,9 +286,14 @@ void AProjectOrganoidCharacter::OnTickHazard_Implementation(EProjectOrganoidHaza
 
 void AProjectOrganoidCharacter::OnExitedHazard_Implementation(EProjectOrganoidHazardType HazardType)
 {
-	if (HazardType == EProjectOrganoidHazardType::ToxicGas || HazardType == EProjectOrganoidHazardType::Biohazard)
+	if (UWorld* World = GetWorld())
 	{
-		if (UWorld* World = GetWorld())
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->NotifyHazardExited(HazardType);
+		}
+
+		if (HazardType == EProjectOrganoidHazardType::ToxicGas || HazardType == EProjectOrganoidHazardType::Biohazard)
 		{
 			if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
 			{
@@ -299,6 +336,14 @@ void AProjectOrganoidCharacter::ApplySavedVitals(
 	Toxicity = FMath::Clamp(InToxicity, 0.0f, MaxToxicity);
 	HeartRate = FMath::Clamp(InHeartRate, 40.0f, 220.0f);
 	PEEnergy = FMath::Clamp(InPEEnergy, 0.0f, MaxPEEnergy);
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->NotifyHealthChanged(Health, MaxHealth);
+		}
+	}
 }
 
 void AProjectOrganoidCharacter::ApplySavedUpgradeLevels(
