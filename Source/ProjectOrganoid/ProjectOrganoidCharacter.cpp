@@ -146,6 +146,11 @@ void AProjectOrganoidCharacter::ApplyHeartRateDelta(float Delta)
 	HeartRate = FMath::Clamp(HeartRate + Delta, 40.0f, 220.0f);
 }
 
+void AProjectOrganoidCharacter::ApplyPEEnergyDelta(float Delta)
+{
+	PEEnergy = FMath::Clamp(PEEnergy + Delta, 0.0f, MaxPEEnergy);
+}
+
 void AProjectOrganoidCharacter::ApplySavedVitals(
 	float InHealth,
 	float InMaxHealth,

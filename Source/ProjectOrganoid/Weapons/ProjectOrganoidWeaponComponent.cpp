@@ -84,3 +84,8 @@ bool UProjectOrganoidWeaponComponent::FireEquippedWeapon()
 {
 	return EquippedWeapon ? EquippedWeapon->Fire() : false;
 }
+
+bool UProjectOrganoidWeaponComponent::FireOverchargedPulse()
+{
+	return EquippedWeapon ? EquippedWeapon->FireOverchargedPulse() : false;
+}

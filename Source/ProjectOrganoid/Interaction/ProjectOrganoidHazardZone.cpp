@@ -75,6 +75,19 @@ void AProjectOrganoidHazardZone::ApplySubLevelEnvironmentContext(
 	}
 }
 
+void AProjectOrganoidHazardZone::ClearHazardVolume()
+{
+	bIsActive = false;
+	OccupyingCharacters.Reset();
+	BP_OnHazardCleared();
+
+	if (HazardVolume)
+	{
+		HazardVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HazardVolume->SetHiddenInGame(true);
+	}
+}
+
 void AProjectOrganoidHazardZone::ApplyHazardDefaultsForType()
 {
 	switch (HazardType)

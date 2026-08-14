@@ -11,6 +11,7 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISense_Sight.h"
 #include "Perception/AISense_Hearing.h"
+#include "Perception/AISense.h"
 #include "TimerManager.h"
 
 AProjectOrganoidHostBase::AProjectOrganoidHostBase()
@@ -77,10 +78,20 @@ void AProjectOrganoidHostBase::BeginPlay()
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 
 	ConfigureAIPerception();
+
+	if (AIPerception)
+	{
+		AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AProjectOrganoidHostBase::OnTargetPerceptionUpdated);
+	}
 }
 
 void AProjectOrganoidHostBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (AIPerception)
+	{
+		AIPerception->OnTargetPerceptionUpdated.RemoveDynamic(this, &AProjectOrganoidHostBase::OnTargetPerceptionUpdated);
+	}
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearAllTimersForObject(this);
@@ -104,15 +115,54 @@ void AProjectOrganoidHostBase::ConfigureAIPerception()
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 	SightConfig->SetMaxAge(3.0f);
 
-	HearingConfig->HearingRange = HearingRange;
+	const float EffectiveHearing = HearingRange + (bIsEnraged ? RageHearingBonus : 0.0f);
+	HearingConfig->HearingRange = EffectiveHearing;
 	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
-	HearingConfig->SetMaxAge(2.0f);
+	HearingConfig->SetMaxAge(2.5f);
 
 	AIPerception->ConfigureSense(*SightConfig);
 	AIPerception->ConfigureSense(*HearingConfig);
 	AIPerception->SetDominantSense(UAISense_Sight::StaticClass());
+}
+
+void AProjectOrganoidHostBase::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+{
+	if (!Stimulus.WasSuccessfullySensed() || !Actor)
+	{
+		return;
+	}
+
+	// Footstep / gunfire arrive through hearing sense
+	const FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
+	if (Stimulus.Type == HearingID)
+	{
+		LastHeardNoiseLocation = Stimulus.StimulusLocation;
+		LastHeardNoiseInstigator = Actor;
+		LastHeardNoiseTag = Stimulus.Tag;
+		bHasRecentNoiseStimulus = true;
+
+		OnNoiseHeard.Broadcast(Actor, Stimulus.Tag);
+		OnHostStateChanged.Broadcast(
+			Stimulus.Tag == FName(TEXT("Gunfire")) ? TEXT("HeardGunfire") : TEXT("HeardFootstep"));
+
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(NoiseStimulusTimer);
+			World->GetTimerManager().SetTimer(
+				NoiseStimulusTimer,
+				this,
+				&AProjectOrganoidHostBase::ClearNoiseStimulus,
+				3.0f,
+				false);
+		}
+	}
+}
+
+void AProjectOrganoidHostBase::ClearNoiseStimulus()
+{
+	bHasRecentNoiseStimulus = false;
 }
 
 EProjectOrganoidWeakPointType AProjectOrganoidHostBase::ResolveWeakPoint_Implementation(const FHitResult& Hit) const
@@ -120,29 +170,29 @@ EProjectOrganoidWeakPointType AProjectOrganoidHostBase::ResolveWeakPoint_Impleme
 	const UPrimitiveComponent* HitComp = Hit.GetComponent();
 	if (HitComp)
 	{
-		if (HitComp == BioCoreHitbox || HitComp->ComponentHasTag(TEXT("OrganoidCore")) || HitComp->ComponentHasTag(TEXT("BioCore")))
+		if (!bBioCoreDestroyed && (HitComp == BioCoreHitbox || HitComp->ComponentHasTag(TEXT("OrganoidCore")) || HitComp->ComponentHasTag(TEXT("BioCore"))))
 		{
 			return EProjectOrganoidWeakPointType::OrganoidCore;
 		}
-		if (HitComp == LocomotorNervesHitbox || HitComp->ComponentHasTag(TEXT("LocomotorNerves")))
+		if (!bLocomotorNervesDestroyed && (HitComp == LocomotorNervesHitbox || HitComp->ComponentHasTag(TEXT("LocomotorNerves"))))
 		{
 			return EProjectOrganoidWeakPointType::LocomotorNerves;
 		}
-		if (HitComp == OpticalNodesHitbox || HitComp->ComponentHasTag(TEXT("OpticalNodes")))
+		if (!bOpticalNodesDestroyed && (HitComp == OpticalNodesHitbox || HitComp->ComponentHasTag(TEXT("OpticalNodes"))))
 		{
 			return EProjectOrganoidWeakPointType::OpticalNodes;
 		}
 	}
 
-	if (Hit.BoneName == TEXT("OrganoidCore") || Hit.BoneName == TEXT("BioCore") || Hit.BoneName == TEXT("core"))
+	if (!bBioCoreDestroyed && (Hit.BoneName == TEXT("OrganoidCore") || Hit.BoneName == TEXT("BioCore") || Hit.BoneName == TEXT("core")))
 	{
 		return EProjectOrganoidWeakPointType::OrganoidCore;
 	}
-	if (Hit.BoneName == TEXT("LocomotorNerves") || Hit.BoneName == TEXT("spine_01") || Hit.BoneName == TEXT("pelvis"))
+	if (!bLocomotorNervesDestroyed && (Hit.BoneName == TEXT("LocomotorNerves") || Hit.BoneName == TEXT("spine_01") || Hit.BoneName == TEXT("pelvis")))
 	{
 		return EProjectOrganoidWeakPointType::LocomotorNerves;
 	}
-	if (Hit.BoneName == TEXT("OpticalNodes") || Hit.BoneName == TEXT("head") || Hit.BoneName == TEXT("face"))
+	if (!bOpticalNodesDestroyed && (Hit.BoneName == TEXT("OpticalNodes") || Hit.BoneName == TEXT("head") || Hit.BoneName == TEXT("face")))
 	{
 		return EProjectOrganoidWeakPointType::OpticalNodes;
 	}
@@ -157,7 +207,18 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 		return;
 	}
 
-	const float AppliedDamage = FMath::Max(0.0f, HitInfo.FinalDamage);
+	float AppliedDamage = FMath::Max(0.0f, HitInfo.FinalDamage);
+
+	if (bHasBioShield)
+	{
+		AppliedDamage *= (1.0f - BioShieldAbsorption);
+	}
+
+	if (bIsEnraged)
+	{
+		AppliedDamage *= RageIncomingDamageMultiplier;
+	}
+
 	Health = FMath::Max(0.0f, Health - AppliedDamage);
 	Toxicity = FMath::Min(MaxToxicity, Toxicity + (AppliedDamage * ToxicityGainPerDamage));
 
@@ -167,12 +228,24 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 	{
 	case EProjectOrganoidWeakPointType::LocomotorNerves:
 		ApplyLocomotorNerveReaction();
+		if (bDestroyWeakPointOnCriticalHit && (HitInfo.bTacticalModeHit || HitInfo.bTriggeredDismemberment))
+		{
+			DestroyWeakPoint(EProjectOrganoidWeakPointType::LocomotorNerves);
+		}
 		break;
 	case EProjectOrganoidWeakPointType::OpticalNodes:
 		ApplyOpticalNodeReaction();
+		if (bDestroyWeakPointOnCriticalHit && HitInfo.bTacticalModeHit)
+		{
+			DestroyWeakPoint(EProjectOrganoidWeakPointType::OpticalNodes);
+		}
 		break;
 	case EProjectOrganoidWeakPointType::OrganoidCore:
 		ApplyBioCoreReaction(HitInfo.bTriggeredIncapacitation);
+		if (bDestroyWeakPointOnCriticalHit && (HitInfo.bTacticalModeHit || HitInfo.bTriggeredIncapacitation))
+		{
+			DestroyWeakPoint(EProjectOrganoidWeakPointType::OrganoidCore);
+		}
 		break;
 	default:
 		SetStaggered(true);
@@ -183,6 +256,7 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 	{
 		SetDismembered(true);
 		ApplyLocomotorNerveReaction();
+		DestroyWeakPoint(EProjectOrganoidWeakPointType::LocomotorNerves);
 	}
 
 	if (HitInfo.bTriggeredIncapacitation)
@@ -198,14 +272,145 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 	}
 }
 
-void AProjectOrganoidHostBase::ApplyLocomotorNerveReaction()
+void AProjectOrganoidHostBase::DestroyWeakPoint(EProjectOrganoidWeakPointType WeakPoint)
 {
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	USphereComponent* Hitbox = nullptr;
+	bool* DestroyedFlag = nullptr;
+
+	switch (WeakPoint)
 	{
-		MoveComp->MaxWalkSpeed = CachedWalkSpeed * LocomotorSlowMultiplier;
+	case EProjectOrganoidWeakPointType::LocomotorNerves:
+		Hitbox = LocomotorNervesHitbox;
+		DestroyedFlag = &bLocomotorNervesDestroyed;
+		break;
+	case EProjectOrganoidWeakPointType::OpticalNodes:
+		Hitbox = OpticalNodesHitbox;
+		DestroyedFlag = &bOpticalNodesDestroyed;
+		break;
+	case EProjectOrganoidWeakPointType::OrganoidCore:
+		Hitbox = BioCoreHitbox;
+		DestroyedFlag = &bBioCoreDestroyed;
+		break;
+	default:
+		return;
 	}
 
+	if (!DestroyedFlag || *DestroyedFlag)
+	{
+		return;
+	}
+
+	*DestroyedFlag = true;
+	if (Hitbox)
+	{
+		Hitbox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Hitbox->SetHiddenInGame(true);
+	}
+
+	OnHostStateChanged.Broadcast(TEXT("WeakPointDestroyed"));
+	EvaluatePhaseShiftMutation(WeakPoint);
+}
+
+void AProjectOrganoidHostBase::EvaluatePhaseShiftMutation(EProjectOrganoidWeakPointType DestroyedWeakPoint)
+{
+	// Optical destruction → emergency bio-shield
+	if (DestroyedWeakPoint == EProjectOrganoidWeakPointType::OpticalNodes)
+	{
+		ActivateBioShield();
+	}
+
+	// Locomotor / Bio-Core destruction → rage phase-shift
+	if (DestroyedWeakPoint == EProjectOrganoidWeakPointType::LocomotorNerves
+		|| DestroyedWeakPoint == EProjectOrganoidWeakPointType::OrganoidCore)
+	{
+		EnterRageState();
+	}
+
+	// Two+ weak points gone → force both mutations
+	const int32 DestroyedCount =
+		(bLocomotorNervesDestroyed ? 1 : 0)
+		+ (bOpticalNodesDestroyed ? 1 : 0)
+		+ (bBioCoreDestroyed ? 1 : 0);
+
+	if (DestroyedCount >= 2)
+	{
+		EnterRageState();
+		ActivateBioShield();
+	}
+}
+
+void AProjectOrganoidHostBase::EnterRageState()
+{
+	if (bIsEnraged || bIsDead || bIsIncapacitated)
+	{
+		return;
+	}
+
+	bIsEnraged = true;
+	RefreshMovementSpeed();
+	ConfigureAIPerception();
+	OnHostStateChanged.Broadcast(TEXT("Rage"));
+	BP_OnRageStateEntered();
+}
+
+void AProjectOrganoidHostBase::ActivateBioShield()
+{
+	if (bIsDead || bIsIncapacitated)
+	{
+		return;
+	}
+
+	bHasBioShield = true;
+	OnHostStateChanged.Broadcast(TEXT("BioShieldOn"));
+	BP_OnBioShieldChanged(true);
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BioShieldTimer);
+		World->GetTimerManager().SetTimer(
+			BioShieldTimer,
+			this,
+			&AProjectOrganoidHostBase::ExpireBioShield,
+			BioShieldDuration,
+			false);
+	}
+}
+
+bool AProjectOrganoidHostBase::StripBioShield()
+{
+	if (!bHasBioShield)
+	{
+		return false;
+	}
+
+	bHasBioShield = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(BioShieldTimer);
+	}
+
+	OnHostStateChanged.Broadcast(TEXT("BioShieldStripped"));
+	BP_OnBioShieldChanged(false);
 	SetStaggered(true);
+	return true;
+}
+
+void AProjectOrganoidHostBase::ExpireBioShield()
+{
+	if (!bHasBioShield)
+	{
+		return;
+	}
+
+	bHasBioShield = false;
+	OnHostStateChanged.Broadcast(TEXT("BioShieldExpired"));
+	BP_OnBioShieldChanged(false);
+}
+
+void AProjectOrganoidHostBase::ApplyLocomotorNerveReaction()
+{
+	SetStaggered(true);
+	RefreshMovementSpeed();
 
 	if (UWorld* World = GetWorld())
 	{
@@ -305,6 +510,7 @@ void AProjectOrganoidHostBase::SetDismembered(bool bNewDismembered)
 	if (bIsDismembered)
 	{
 		OnHostStateChanged.Broadcast(TEXT("Dismembered"));
+		RefreshMovementSpeed();
 	}
 }
 
@@ -318,6 +524,9 @@ void AProjectOrganoidHostBase::SetIncapacitated(bool bNewIncapacitated)
 	bIsIncapacitated = bNewIncapacitated;
 	if (bIsIncapacitated)
 	{
+		bHasBioShield = false;
+		bIsEnraged = false;
+
 		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 		{
 			MoveComp->StopMovementImmediately();
@@ -334,18 +543,35 @@ void AProjectOrganoidHostBase::SetIncapacitated(bool bNewIncapacitated)
 	}
 }
 
-void AProjectOrganoidHostBase::RestoreLocomotorSpeed()
+void AProjectOrganoidHostBase::RefreshMovementSpeed()
 {
 	if (bIsIncapacitated || bIsDead)
 	{
 		return;
 	}
 
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (!MoveComp)
 	{
-		const float SpeedScale = bIsDismembered ? LocomotorSlowMultiplier : 1.0f;
-		MoveComp->MaxWalkSpeed = CachedWalkSpeed * SpeedScale;
+		return;
 	}
+
+	float Speed = CachedWalkSpeed;
+	if (bIsDismembered || bLocomotorNervesDestroyed)
+	{
+		Speed *= LocomotorSlowMultiplier;
+	}
+	if (bIsEnraged)
+	{
+		Speed *= RageSpeedMultiplier;
+	}
+
+	MoveComp->MaxWalkSpeed = Speed;
+}
+
+void AProjectOrganoidHostBase::RestoreLocomotorSpeed()
+{
+	RefreshMovementSpeed();
 }
 
 void AProjectOrganoidHostBase::RestoreOpticalSight()
@@ -356,7 +582,7 @@ void AProjectOrganoidHostBase::RestoreOpticalSight()
 	}
 
 	SetBlinded(false);
-	if (AIPerception)
+	if (AIPerception && !bOpticalNodesDestroyed)
 	{
 		AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), true);
 	}
@@ -377,17 +603,20 @@ void AProjectOrganoidHostBase::ClearStatusEffects()
 		World->GetTimerManager().ClearTimer(LocomotorSlowTimer);
 		World->GetTimerManager().ClearTimer(OpticalBlindTimer);
 		World->GetTimerManager().ClearTimer(StaggerTimer);
+		World->GetTimerManager().ClearTimer(BioShieldTimer);
+		World->GetTimerManager().ClearTimer(NoiseStimulusTimer);
 	}
 
 	bIsStaggered = false;
 	bIsBlinded = false;
+	bHasRecentNoiseStimulus = false;
 
 	if (!bIsIncapacitated && !bIsDead)
 	{
-		RestoreLocomotorSpeed();
+		RefreshMovementSpeed();
 		if (AIPerception)
 		{
-			AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), true);
+			AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), !bOpticalNodesDestroyed);
 			AIPerception->SetSenseEnabled(UAISense_Hearing::StaticClass(), true);
 		}
 	}
@@ -401,6 +630,8 @@ void AProjectOrganoidHostBase::HandleDeath()
 	}
 
 	bIsDead = true;
+	bHasBioShield = false;
+	bIsEnraged = false;
 	SetIncapacitated(true);
 
 	if (UWorld* World = GetWorld())

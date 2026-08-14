@@ -77,6 +77,13 @@ public:
 		float ToxicityMultiplier,
 		bool bHazardTypeIsAmbient);
 
+	/** Overcharged pulse / scrubber — permanently clears this volume */
+	UFUNCTION(BlueprintCallable, Category = "Hazard")
+	void ClearHazardVolume();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Hazard")
+	void BP_OnHazardCleared();
+
 protected:
 
 	UPROPERTY()

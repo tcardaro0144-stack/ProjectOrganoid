@@ -4,12 +4,16 @@
 #include "ProjectOrganoidProjectile.h"
 #include "ProjectOrganoidDamageable.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidHostBase.h"
+#include "ProjectOrganoidHazardZone.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/DamageType.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "CollisionQueryParams.h"
+#include "Perception/AISense_Hearing.h"
 
 AProjectOrganoidWeapon::AProjectOrganoidWeapon()
 {
@@ -68,7 +72,134 @@ bool AProjectOrganoidWeapon::Fire()
 		? FireProjectile()
 		: FireHitscan();
 
+	if (bFired)
+	{
+		ReportGunfireNoise();
+	}
+
 	return bFired;
+}
+
+bool AProjectOrganoidWeapon::CanFireOverchargedPulse() const
+{
+	if (!GetWorld() || !OwnerCharacter)
+	{
+		return false;
+	}
+
+	if (OwnerCharacter->GetPEEnergy() < OverchargedPulsePECost)
+	{
+		return false;
+	}
+
+	return (GetWorld()->GetTimeSeconds() - LastPulseFireTimeSeconds) >= OverchargedPulseCooldown;
+}
+
+bool AProjectOrganoidWeapon::FireOverchargedPulse()
+{
+	if (!CanFireOverchargedPulse())
+	{
+		return false;
+	}
+
+	LastPulseFireTimeSeconds = GetWorld()->GetTimeSeconds();
+
+	OwnerCharacter->ApplyPEEnergyDelta(-OverchargedPulsePECost);
+	OwnerCharacter->ApplyHeartRateDelta(8.0f);
+
+	FTransform MuzzleTransform;
+	GetMuzzleTransform(MuzzleTransform);
+	const FVector Origin = MuzzleTransform.GetLocation();
+
+	ApplyOverchargedPulseEffects(Origin);
+	ReportGunfireNoise();
+
+	FProjectOrganoidBallisticHit PulseHit;
+	PulseHit.ImpactPoint = Origin;
+	PulseHit.FinalDamage = OverchargedPulseDamage;
+	PulseHit.bTacticalModeHit = IsOwnerInTacticalMode();
+	OnWeaponFired.Broadcast(PulseHit);
+
+	return true;
+}
+
+void AProjectOrganoidWeapon::ReportGunfireNoise() const
+{
+	if (!GetWorld() || !OwnerCharacter)
+	{
+		return;
+	}
+
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		OwnerCharacter->GetActorLocation(),
+		GunfireNoiseLoudness,
+		OwnerCharacter,
+		GunfireNoiseMaxRange,
+		FName(TEXT("Gunfire")));
+}
+
+int32 AProjectOrganoidWeapon::ApplyOverchargedPulseEffects(const FVector& Origin)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0;
+	}
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	if (OwnerCharacter)
+	{
+		ActorsToIgnore.Add(OwnerCharacter);
+	}
+
+	TArray<AActor*> OverlappingActors;
+	UKismetSystemLibrary::SphereOverlapActors(
+		World,
+		Origin,
+		OverchargedPulseRadius,
+		ObjectTypes,
+		nullptr,
+		ActorsToIgnore,
+		OverlappingActors);
+
+	int32 AffectedCount = 0;
+	for (AActor* Actor : OverlappingActors)
+	{
+		if (!Actor)
+		{
+			continue;
+		}
+
+		if (AProjectOrganoidHostBase* Host = Cast<AProjectOrganoidHostBase>(Actor))
+		{
+			Host->StripBioShield();
+
+			FProjectOrganoidBallisticHit PulseHit;
+			PulseHit.HitActor = Host;
+			PulseHit.ImpactPoint = Host->GetActorLocation();
+			PulseHit.FinalDamage = OverchargedPulseDamage;
+			PulseHit.bTacticalModeHit = IsOwnerInTacticalMode();
+			IProjectOrganoidDamageable::Execute_ApplyOrganoidHit(Host, PulseHit, this);
+			++AffectedCount;
+		}
+		else if (AProjectOrganoidHazardZone* Hazard = Cast<AProjectOrganoidHazardZone>(Actor))
+		{
+			if (Hazard->HazardType == EProjectOrganoidHazardType::ToxicGas)
+			{
+				Hazard->ClearHazardVolume();
+				++AffectedCount;
+			}
+		}
+	}
+
+	return AffectedCount;
 }
 
 void AProjectOrganoidWeapon::GetMuzzleTransform(FTransform& OutTransform) const

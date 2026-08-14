@@ -12,4 +12,8 @@ AProjectOrganoidDefaultWeapon::AProjectOrganoidDefaultWeapon()
 	BallisticsMode = EProjectOrganoidBallisticsMode::Hitscan;
 	HitscanRange = 10000.0f;
 	TacticalWeakPointDamageMultiplier = 2.5f;
+	OverchargedPulseRadius = 750.0f;
+	OverchargedPulsePECost = 28.0f;
+	OverchargedPulseCooldown = 3.5f;
+	OverchargedPulseDamage = 18.0f;
 }

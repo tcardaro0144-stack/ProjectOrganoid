@@ -7,20 +7,23 @@
 #include "ProjectOrganoidDamageable.h"
 #include "ProjectOrganoidWeaponTypes.h"
 #include "Engine/TimerHandle.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "ProjectOrganoidHostBase.generated.h"
 
 class USphereComponent;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 class UAISenseConfig_Hearing;
+class AActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHostDamaged, const FProjectOrganoidBallisticHit&, HitInfo, AActor*, DamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidHostStateChanged, FName, StateName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnProjectOrganoidHostDied);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHostNoiseHeard, AActor*, NoiseInstigator, FName, NoiseTag);
 
 /**
- *  Mutated organoid host base — weak-point hitboxes, vitals, status flags,
- *  and AI sight/hearing perception for Epitope facility enemies.
+ *  Mutated organoid host — weak points, phase-shift mutations (rage / bio-shield),
+ *  and AI sight + hearing for footstep / gunfire noise.
  */
 UCLASS(Abstract, Blueprintable)
 class AProjectOrganoidHostBase : public ACharacter, public IProjectOrganoidDamageable
@@ -38,19 +41,15 @@ public:
 	// Components
 	// -------------------------------------------------------------------------
 
-	/** Locomotor nerve cluster (movement / stagger target) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|WeakPoints")
 	TObjectPtr<USphereComponent> LocomotorNervesHitbox;
 
-	/** Optical node cluster (vision / blind target) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|WeakPoints")
 	TObjectPtr<USphereComponent> OpticalNodesHitbox;
 
-	/** Bio-Core / Organoid Core (incapacitation target) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|WeakPoints")
 	TObjectPtr<USphereComponent> BioCoreHitbox;
 
-	/** Sight + hearing perception */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|AI")
 	TObjectPtr<UAIPerceptionComponent> AIPerception;
 
@@ -70,7 +69,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|Vitals")
 	float Toxicity = 0.0f;
 
-	/** Toxicity gained per point of organoid damage received */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Vitals", meta = (ClampMin = "0.0"))
 	float ToxicityGainPerDamage = 0.15f;
 
@@ -93,8 +91,23 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|State")
 	bool bIsDead = false;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|Mutation")
+	bool bIsEnraged = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|Mutation")
+	bool bHasBioShield = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|WeakPoints")
+	bool bLocomotorNervesDestroyed = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|WeakPoints")
+	bool bOpticalNodesDestroyed = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|WeakPoints")
+	bool bBioCoreDestroyed = false;
+
 	// -------------------------------------------------------------------------
-	// Reaction tuning
+	// Reaction / mutation tuning
 	// -------------------------------------------------------------------------
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Reactions", meta = (ClampMin = "0.05", ClampMax = "1.0"))
@@ -112,6 +125,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Reactions", meta = (ClampMin = "0.1"))
 	float DefaultWalkSpeed = 350.0f;
 
+	/** Walk speed multiplier while enraged */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation", meta = (ClampMin = "1.0"))
+	float RageSpeedMultiplier = 1.55f;
+
+	/** Incoming damage multiplier while enraged (hosts glass-cannon) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation", meta = (ClampMin = "0.1"))
+	float RageIncomingDamageMultiplier = 1.25f;
+
+	/** Fraction of damage absorbed while bio-shield is up (0–1) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float BioShieldAbsorption = 0.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation", meta = (ClampMin = "0.1"))
+	float BioShieldDuration = 8.0f;
+
+	/** Weak-point hits that count as "destruction" for phase-shift */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation")
+	bool bDestroyWeakPointOnCriticalHit = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI")
 	float SightRadius = 2500.0f;
 
@@ -123,6 +155,22 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI")
 	float HearingRange = 1800.0f;
+
+	/** Extra hearing range while enraged */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI", meta = (ClampMin = "0.0"))
+	float RageHearingBonus = 600.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
+	FVector LastHeardNoiseLocation = FVector::ZeroVector;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
+	FName LastHeardNoiseTag = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
+	TObjectPtr<AActor> LastHeardNoiseInstigator;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
+	bool bHasRecentNoiseStimulus = false;
 
 	// -------------------------------------------------------------------------
 	// Events
@@ -136,6 +184,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Host|Events")
 	FOnProjectOrganoidHostDied OnHostDied;
+
+	UPROPERTY(BlueprintAssignable, Category = "Host|AI")
+	FOnProjectOrganoidHostNoiseHeard OnNoiseHeard;
 
 	// -------------------------------------------------------------------------
 	// IProjectOrganoidDamageable
@@ -153,6 +204,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Host|State")
 	void ClearStatusEffects();
 
+	UFUNCTION(BlueprintCallable, Category = "Host|Mutation")
+	void EnterRageState();
+
+	UFUNCTION(BlueprintCallable, Category = "Host|Mutation")
+	void ActivateBioShield();
+
+	/** Overcharged pulse / denature — drops bio-shield immediately */
+	UFUNCTION(BlueprintCallable, Category = "Host|Mutation")
+	bool StripBioShield();
+
+	UFUNCTION(BlueprintPure, Category = "Host|Mutation")
+	bool HasBioShield() const { return bHasBioShield; }
+
+	UFUNCTION(BlueprintPure, Category = "Host|Mutation")
+	bool IsEnraged() const { return bIsEnraged; }
+
 protected:
 
 	UPROPERTY()
@@ -166,12 +233,16 @@ protected:
 	FTimerHandle LocomotorSlowTimer;
 	FTimerHandle OpticalBlindTimer;
 	FTimerHandle StaggerTimer;
+	FTimerHandle BioShieldTimer;
+	FTimerHandle NoiseStimulusTimer;
 
 	void ConfigureWeakPointHitbox(USphereComponent* Hitbox, FName Tag, float Radius, FVector RelativeLocation);
 	void ConfigureAIPerception();
 	void ApplyLocomotorNerveReaction();
 	void ApplyOpticalNodeReaction();
 	void ApplyBioCoreReaction(bool bForceIncapacitate);
+	void DestroyWeakPoint(EProjectOrganoidWeakPointType WeakPoint);
+	void EvaluatePhaseShiftMutation(EProjectOrganoidWeakPointType DestroyedWeakPoint);
 	void SetStaggered(bool bNewStaggered);
 	void SetBlinded(bool bNewBlinded);
 	void SetDismembered(bool bNewDismembered);
@@ -179,10 +250,22 @@ protected:
 	void RestoreLocomotorSpeed();
 	void RestoreOpticalSight();
 	void ClearStagger();
+	void ExpireBioShield();
+	void ClearNoiseStimulus();
+	void RefreshMovementSpeed();
 	void HandleDeath();
+
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Host|Reactions")
 	void BP_OnWeakPointReaction(EProjectOrganoidWeakPointType WeakPoint, const FProjectOrganoidBallisticHit& HitInfo);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Host|Mutation")
+	void BP_OnRageStateEntered();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Host|Mutation")
+	void BP_OnBioShieldChanged(bool bActive);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Host|Reactions")
 	void BP_OnHostDied();

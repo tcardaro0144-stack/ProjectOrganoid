@@ -87,12 +87,42 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Weapon|Tactical")
 	FOnProjectOrganoidWeakPointReaction OnWeakPointReaction;
 
+	/** Overcharged pulse radius (uu) — strips bio-shields and clears toxic volumes */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AltFire", meta = (ClampMin = "100.0"))
+	float OverchargedPulseRadius = 750.0f;
+
+	/** PE Energy spent to fire the overcharged pulse */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AltFire", meta = (ClampMin = "0.0"))
+	float OverchargedPulsePECost = 28.0f;
+
+	/** Cooldown between overcharged pulses (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AltFire", meta = (ClampMin = "0.1"))
+	float OverchargedPulseCooldown = 3.5f;
+
+	/** Flat damage applied to hosts hit by the pulse (after shield strip) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AltFire", meta = (ClampMin = "0.0"))
+	float OverchargedPulseDamage = 18.0f;
+
+	/** Noise loudness reported for AI hearing on primary / alt fire */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AI", meta = (ClampMin = "0.0"))
+	float GunfireNoiseLoudness = 2.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AI", meta = (ClampMin = "100.0"))
+	float GunfireNoiseMaxRange = 3500.0f;
+
 	/** Attempt to fire; respects fire-rate cooldown */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool Fire();
 
+	/** Secondary overcharged pulse — strip bio-shields + clear toxic hazard volumes */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|AltFire")
+	bool FireOverchargedPulse();
+
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	bool CanFire() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|AltFire")
+	bool CanFireOverchargedPulse() const;
 
 	/** Build and apply a hit (used by weapon hitscan and projectiles) */
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ballistics")
@@ -110,9 +140,12 @@ protected:
 	TObjectPtr<AProjectOrganoidCharacter> OwnerCharacter;
 
 	float LastFireTimeSeconds = -BIG_NUMBER;
+	float LastPulseFireTimeSeconds = -BIG_NUMBER;
 
 	bool FireHitscan();
 	bool FireProjectile();
+	void ReportGunfireNoise() const;
+	int32 ApplyOverchargedPulseEffects(const FVector& Origin);
 
 	void GetMuzzleTransform(FTransform& OutTransform) const;
 	void GetAimVectors(FVector& OutStart, FVector& OutDirection) const;

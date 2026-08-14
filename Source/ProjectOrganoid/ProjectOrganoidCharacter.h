@@ -205,6 +205,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
 	void ApplyHeartRateDelta(float Delta);
 
+	/** Apply a signed PE Energy change */
+	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
+	void ApplyPEEnergyDelta(float Delta);
+
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void ApplySavedVitals(float InHealth, float InMaxHealth, float InToxicity, float InMaxToxicity, float InHeartRate, float InPEEnergy, float InMaxPEEnergy);
 

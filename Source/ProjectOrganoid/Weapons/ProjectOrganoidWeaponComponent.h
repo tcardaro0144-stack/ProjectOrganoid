@@ -41,6 +41,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool FireEquippedWeapon();
 
+	/** Secondary overcharged pulse (strip bio-shields / clear toxic gas) */
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	bool FireOverchargedPulse();
+
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	AProjectOrganoidWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 
