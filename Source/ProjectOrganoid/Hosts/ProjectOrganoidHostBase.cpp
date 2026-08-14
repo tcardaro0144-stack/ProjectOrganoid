@@ -15,6 +15,7 @@
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidStatsSubsystem.h"
 
 AProjectOrganoidHostBase::AProjectOrganoidHostBase()
 {
@@ -649,6 +650,11 @@ void AProjectOrganoidHostBase::HandleDeath()
 		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
 		{
 			Objectives->TriggerEvent(TEXT("Event_HostNeutralized"));
+		}
+
+		if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+		{
+			Stats->RecordHostKill(1);
 		}
 	}
 }

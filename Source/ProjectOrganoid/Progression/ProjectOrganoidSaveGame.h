@@ -6,6 +6,7 @@
 #include "GameFramework/SaveGame.h"
 #include "ProjectOrganoidUpgradeTypes.h"
 #include "ProjectOrganoidWeaponModTypes.h"
+#include "ProjectOrganoidStatsTypes.h"
 #include "ProjectOrganoidSaveGame.generated.h"
 
 /**
@@ -92,4 +93,11 @@ public:
 	/** Distinct keycard tiers present in inventory at save time */
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Security")
 	TArray<EProjectOrganoidSecurityTier> OwnedKeycardTiers;
+
+	// --- Stats / achievements ---
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Stats")
+	FProjectOrganoidPlayerStats PlayerStats;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Stats")
+	TArray<FName> UnlockedAchievementIds;
 };

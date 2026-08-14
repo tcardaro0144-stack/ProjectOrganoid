@@ -3,6 +3,7 @@
 #include "ProjectOrganoidSecuritySubsystem.h"
 #include "ProjectOrganoidSecurityGate.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidStatsSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
@@ -160,6 +161,17 @@ TArray<AProjectOrganoidSecurityGate*> UProjectOrganoidSecuritySubsystem::GetRegi
 void UProjectOrganoidSecuritySubsystem::NotifyGateOverrideAttempt(AProjectOrganoidSecurityGate* Gate, AProjectOrganoidCharacter* Character, bool bSucceeded)
 {
 	OnSecurityGateOverrideAttempt.Broadcast(Gate, Character, bSucceeded);
+
+	if (bSucceeded)
+	{
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+			{
+				Stats->RecordSecurityGateOverridden(1);
+			}
+		}
+	}
 }
 
 void UProjectOrganoidSecuritySubsystem::NotifyGateStateChanged(

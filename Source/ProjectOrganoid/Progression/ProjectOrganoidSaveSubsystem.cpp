@@ -8,6 +8,7 @@
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidWeaponModComponent.h"
+#include "ProjectOrganoidStatsSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 FString UProjectOrganoidSaveSubsystem::GetSlotNameForIndex(int32 SlotIndex) const
@@ -204,6 +205,14 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 		});
 	}
 
+	if (UGameInstance* GI = Character->GetGameInstance())
+	{
+		if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+		{
+			Stats->CaptureStatsToSaveGame(SaveGame);
+		}
+	}
+
 	return SaveGame;
 }
 
@@ -263,6 +272,14 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 
 			FGuid NewId;
 			Inventory->TryAddItemAt(ItemData, Saved.OriginX, Saved.OriginY, NewId);
+		}
+	}
+
+	if (UGameInstance* GI = Character->GetGameInstance())
+	{
+		if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+		{
+			Stats->ApplyStatsFromSaveGame(SaveGame);
 		}
 	}
 

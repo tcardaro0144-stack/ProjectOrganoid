@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidLogComponent.h"
+#include "ProjectOrganoidStatsSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UProjectOrganoidLogComponent::UProjectOrganoidLogComponent()
 {
@@ -36,6 +38,15 @@ bool UProjectOrganoidLogComponent::CollectLogEntry(const FProjectOrganoidLogEntr
 
 	CollectedEntries.Add(Entry);
 	OnLogEntryCollected.Broadcast(CollectedEntries.Last());
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+		{
+			Stats->RecordDataPadRead(1);
+		}
+	}
+
 	return true;
 }
 

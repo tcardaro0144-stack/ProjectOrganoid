@@ -19,6 +19,7 @@
 #include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidAudioSubsystem.h"
+#include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -172,6 +173,17 @@ void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
 
 void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta)
 {
+	if (Delta < 0.0f)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+			{
+				Stats->RecordDamageTaken(-Delta);
+			}
+		}
+	}
+
 	Health = FMath::Clamp(Health + Delta, 0.0f, MaxHealth);
 }
 
