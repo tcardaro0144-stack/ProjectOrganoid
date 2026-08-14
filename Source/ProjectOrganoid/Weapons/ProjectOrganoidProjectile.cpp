@@ -39,8 +39,8 @@ void AProjectOrganoidProjectile::InitFromWeapon(
 	SourceWeapon = InWeapon;
 	if (InWeapon)
 	{
-		Damage = InWeapon->Damage;
-		Penetration = InWeapon->Penetration;
+		Damage = InWeapon->GetEffectiveDamage();
+		Penetration = InWeapon->GetEffectivePenetration();
 		RemainingPenetrations = InWeapon->MaxPenetrations;
 	}
 

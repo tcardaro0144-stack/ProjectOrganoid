@@ -10,6 +10,7 @@
 class USkeletalMeshComponent;
 class AProjectOrganoidProjectile;
 class AProjectOrganoidCharacter;
+class UProjectOrganoidWeaponModComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeaponFired, const FProjectOrganoidBallisticHit&, PrimaryHit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeakPointReaction, const FProjectOrganoidBallisticHit&, HitInfo);
@@ -32,6 +33,10 @@ public:
 	/** Visual mesh (optional — assign in Blueprint) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USkeletalMeshComponent> WeaponMesh;
+
+	/** Attachment / suppressor manager */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UProjectOrganoidWeaponModComponent> WeaponModComponent;
 
 	/** Base damage per successful hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Ballistics")
@@ -133,6 +138,28 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	AProjectOrganoidCharacter* GetWeaponOwnerCharacter() const { return OwnerCharacter; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	UProjectOrganoidWeaponModComponent* GetWeaponModComponent() const { return WeaponModComponent; }
+
+	/** Base damage × attachment multipliers */
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	float GetEffectiveDamage() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	float GetEffectiveFireRate() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	float GetEffectivePenetration() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	float GetEffectiveGunfireNoiseLoudness() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	float GetEffectiveGunfireNoiseMaxRange() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Mods")
+	bool HasSuppressorInstalled() const;
 
 protected:
 

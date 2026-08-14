@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "ProjectOrganoidUpgradeTypes.h"
+#include "ProjectOrganoidWeaponModTypes.h"
 #include "ProjectOrganoidSaveGame.generated.h"
 
 /**
@@ -73,6 +74,10 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon")
 	float WeaponPenetration = 0.25f;
+
+	/** Installed attachments on the equipped weapon */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Mods")
+	TArray<FProjectOrganoidSavedWeaponMod> EquippedWeaponMods;
 
 	// --- Inventory ---
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Inventory")

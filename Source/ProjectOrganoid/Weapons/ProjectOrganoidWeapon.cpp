@@ -7,6 +7,7 @@
 #include "ProjectOrganoidHostBase.h"
 #include "ProjectOrganoidHazardZone.h"
 #include "ProjectOrganoidAudioSubsystem.h"
+#include "ProjectOrganoidWeaponModComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/DamageType.h"
@@ -23,6 +24,8 @@ AProjectOrganoidWeapon::AProjectOrganoidWeapon()
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	SetRootComponent(WeaponMesh);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	WeaponModComponent = CreateDefaultSubobject<UProjectOrganoidWeaponModComponent>(TEXT("WeaponModComponent"));
 }
 
 void AProjectOrganoidWeapon::BeginPlay()
@@ -56,7 +59,7 @@ bool AProjectOrganoidWeapon::CanFire() const
 		return false;
 	}
 
-	const float MinInterval = 1.0f / FMath::Max(FireRate, 0.1f);
+	const float MinInterval = 1.0f / FMath::Max(GetEffectiveFireRate(), 0.1f);
 	return (GetWorld()->GetTimeSeconds() - LastFireTimeSeconds) >= MinInterval;
 }
 
@@ -132,14 +135,16 @@ void AProjectOrganoidWeapon::ReportGunfireNoise() const
 	}
 
 	const FVector NoiseLocation = OwnerCharacter->GetActorLocation();
+	const float Loudness = GetEffectiveGunfireNoiseLoudness();
+	const float MaxRange = GetEffectiveGunfireNoiseMaxRange();
 
 	if (UProjectOrganoidAudioSubsystem* AudioSubsystem = GetWorld()->GetSubsystem<UProjectOrganoidAudioSubsystem>())
 	{
 		AudioSubsystem->PlayGunfireAtLocation(
 			NoiseLocation,
 			OwnerCharacter,
-			GunfireNoiseLoudness,
-			GunfireNoiseMaxRange);
+			Loudness,
+			MaxRange);
 		return;
 	}
 
@@ -147,10 +152,45 @@ void AProjectOrganoidWeapon::ReportGunfireNoise() const
 	UAISense_Hearing::ReportNoiseEvent(
 		GetWorld(),
 		NoiseLocation,
-		GunfireNoiseLoudness,
+		Loudness,
 		OwnerCharacter,
-		GunfireNoiseMaxRange,
+		MaxRange,
 		FName(TEXT("Gunfire")));
+}
+
+float AProjectOrganoidWeapon::GetEffectiveDamage() const
+{
+	const float Mul = WeaponModComponent ? WeaponModComponent->GetDamageMultiplier() : 1.0f;
+	return Damage * Mul;
+}
+
+float AProjectOrganoidWeapon::GetEffectiveFireRate() const
+{
+	const float Mul = WeaponModComponent ? WeaponModComponent->GetFireRateMultiplier() : 1.0f;
+	return FireRate * Mul;
+}
+
+float AProjectOrganoidWeapon::GetEffectivePenetration() const
+{
+	const float Mul = WeaponModComponent ? WeaponModComponent->GetPenetrationMultiplier() : 1.0f;
+	return FMath::Clamp(Penetration * Mul, 0.0f, 1.0f);
+}
+
+float AProjectOrganoidWeapon::GetEffectiveGunfireNoiseLoudness() const
+{
+	const float Mul = WeaponModComponent ? WeaponModComponent->GetNoiseLoudnessMultiplier() : 1.0f;
+	return GunfireNoiseLoudness * Mul;
+}
+
+float AProjectOrganoidWeapon::GetEffectiveGunfireNoiseMaxRange() const
+{
+	const float Mul = WeaponModComponent ? WeaponModComponent->GetNoiseRangeMultiplier() : 1.0f;
+	return GunfireNoiseMaxRange * Mul;
+}
+
+bool AProjectOrganoidWeapon::HasSuppressorInstalled() const
+{
+	return WeaponModComponent && WeaponModComponent->HasSuppressor();
 }
 
 int32 AProjectOrganoidWeapon::ApplyOverchargedPulseEffects(const FVector& Origin)
@@ -269,13 +309,14 @@ bool AProjectOrganoidWeapon::FireHitscan()
 	}
 	Params.bReturnPhysicalMaterial = true;
 
-	float RemainingDamage = Damage;
+	float RemainingDamage = GetEffectiveDamage();
 	int32 PenetrationsLeft = MaxPenetrations;
 	FVector TraceStart = Start;
 	FProjectOrganoidBallisticHit PrimaryHit;
 	bool bGotPrimary = false;
 
 	const bool bTactical = IsOwnerInTacticalMode();
+	const float EffectivePenetration = GetEffectivePenetration();
 
 	for (int32 ShotIndex = 0; ShotIndex <= MaxPenetrations; ++ShotIndex)
 	{
@@ -294,13 +335,13 @@ bool AProjectOrganoidWeapon::FireHitscan()
 			OnWeaponFired.Broadcast(PrimaryHit);
 		}
 
-		if (PenetrationsLeft <= 0 || Penetration <= KINDA_SMALL_NUMBER)
+		if (PenetrationsLeft <= 0 || EffectivePenetration <= KINDA_SMALL_NUMBER)
 		{
 			break;
 		}
 
 		Params.AddIgnoredActor(Hit.GetActor());
-		RemainingDamage *= Penetration;
+		RemainingDamage *= EffectivePenetration;
 		PenetrationsLeft--;
 		TraceStart = Hit.ImpactPoint + (Direction * 2.0f);
 	}
@@ -347,7 +388,7 @@ bool AProjectOrganoidWeapon::FireProjectile()
 
 	FProjectOrganoidBallisticHit SpawnHit;
 	SpawnHit.bTacticalModeHit = IsOwnerInTacticalMode();
-	SpawnHit.FinalDamage = Damage;
+	SpawnHit.FinalDamage = GetEffectiveDamage();
 	OnWeaponFired.Broadcast(SpawnHit);
 	return true;
 }

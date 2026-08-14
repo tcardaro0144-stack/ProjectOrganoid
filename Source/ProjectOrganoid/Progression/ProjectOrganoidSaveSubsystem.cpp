@@ -7,6 +7,7 @@
 #include "ProjectOrganoidItemData.h"
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeapon.h"
+#include "ProjectOrganoidWeaponModComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 FString UProjectOrganoidSaveSubsystem::GetSlotNameForIndex(int32 SlotIndex) const
@@ -157,6 +158,11 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 			SaveGame->WeaponDamage = Weapon->Damage;
 			SaveGame->WeaponFireRate = Weapon->FireRate;
 			SaveGame->WeaponPenetration = Weapon->Penetration;
+
+			if (UProjectOrganoidWeaponModComponent* ModComp = Weapon->GetWeaponModComponent())
+			{
+				SaveGame->EquippedWeaponMods = ModComp->CaptureModState();
+			}
 		}
 	}
 
@@ -229,6 +235,17 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 		SaveGame->WeaponDamage,
 		SaveGame->WeaponFireRate,
 		SaveGame->WeaponPenetration);
+
+	if (UProjectOrganoidWeaponComponent* WeaponComp = Character->GetWeaponComponent())
+	{
+		if (AProjectOrganoidWeapon* Weapon = WeaponComp->GetEquippedWeapon())
+		{
+			if (UProjectOrganoidWeaponModComponent* ModComp = Weapon->GetWeaponModComponent())
+			{
+				ModComp->ApplyModState(SaveGame->EquippedWeaponMods);
+			}
+		}
+	}
 
 	if (UProjectOrganoidInventoryComponent* Inventory = Character->GetInventoryComponent())
 	{
