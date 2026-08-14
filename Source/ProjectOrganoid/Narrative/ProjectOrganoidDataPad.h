@@ -27,9 +27,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log")
 	FProjectOrganoidLogEntry LogEntry;
 
-	/** Optional objective event fired on first successful read (e.g. Event_DataPad_AdminMemo) */
+	/** Optional pad-specific objective event (e.g. Event_DataPad_AdminMemo) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|Objectives")
 	FName ObjectiveEventId = NAME_None;
+
+	/** If true, also fires Event_DataPadRead on first pickup (advances mission tasks) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|Objectives")
+	bool bBroadcastGenericDataPadEvent = true;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Log")
 	bool bHasBeenRead = false;

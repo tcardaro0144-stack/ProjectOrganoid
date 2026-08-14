@@ -41,13 +41,21 @@ bool AProjectOrganoidDataPad::Interact_Implementation(AProjectOrganoidCharacter*
 	const bool bFirstRead = !bHasBeenRead;
 	bHasBeenRead = true;
 
-	if (bFirstRead && !ObjectiveEventId.IsNone())
+	if (bFirstRead)
 	{
 		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 		{
 			if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
 			{
-				Objectives->TriggerEvent(ObjectiveEventId);
+				if (bBroadcastGenericDataPadEvent)
+				{
+					Objectives->TriggerEvent(TEXT("Event_DataPadRead"));
+				}
+
+				if (!ObjectiveEventId.IsNone())
+				{
+					Objectives->TriggerEvent(ObjectiveEventId);
+				}
 			}
 		}
 	}

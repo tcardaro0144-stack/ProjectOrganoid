@@ -1,11 +1,81 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidObjectiveDataAsset.h"
 
 void UProjectOrganoidObjectiveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	SeedDefaultCampaignObjectives();
+
+	if (!LoadDefaultMission())
+	{
+		SeedDefaultCampaignObjectives();
+	}
+}
+
+bool UProjectOrganoidObjectiveSubsystem::LoadDefaultMission()
+{
+	if (DefaultMissionAsset.IsNull())
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveDataAsset* Mission = DefaultMissionAsset.LoadSynchronous();
+	return LoadMission(Mission, true);
+}
+
+bool UProjectOrganoidObjectiveSubsystem::LoadMission(UProjectOrganoidObjectiveDataAsset* MissionAsset, bool bClearExisting)
+{
+	if (!MissionAsset || MissionAsset->MissionId.IsNone())
+	{
+		return false;
+	}
+
+	if (bClearExisting)
+	{
+		Objectives.Reset();
+		EventTriggers.Reset();
+		ActiveMissionObjectiveIds.Reset();
+	}
+
+	ActiveMissionId = MissionAsset->MissionId;
+	ActiveMissionTitle = MissionAsset->MissionTitle.IsEmpty()
+		? FText::FromName(MissionAsset->MissionId)
+		: MissionAsset->MissionTitle;
+
+	for (const FProjectOrganoidMissionTaskDefinition& Task : MissionAsset->Tasks)
+	{
+		if (Task.Objective.ObjectiveId.IsNone())
+		{
+			continue;
+		}
+
+		FProjectOrganoidObjective ObjectiveCopy = Task.Objective;
+		if (ObjectiveCopy.State == EProjectOrganoidObjectiveState::Inactive)
+		{
+			ObjectiveCopy.CurrentProgress = FMath::Clamp(ObjectiveCopy.CurrentProgress, 0, ObjectiveCopy.TargetProgress);
+		}
+
+		RegisterObjective(ObjectiveCopy);
+		ActiveMissionObjectiveIds.AddUnique(ObjectiveCopy.ObjectiveId);
+
+		for (FProjectOrganoidObjectiveEventTrigger Trigger : Task.EventTriggers)
+		{
+			if (Trigger.ObjectiveId.IsNone())
+			{
+				Trigger.ObjectiveId = ObjectiveCopy.ObjectiveId;
+			}
+			RegisterEventTrigger(Trigger);
+		}
+
+		if (Task.bAutoActivate)
+		{
+			ActivateObjective(ObjectiveCopy.ObjectiveId);
+		}
+	}
+
+	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
+	return true;
 }
 
 void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
@@ -15,14 +85,59 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 		return;
 	}
 
+	ActiveMissionId = TEXT("Mission_EpitopeLockdown");
+	ActiveMissionTitle = FText::FromString(TEXT("Epitope Lockdown"));
+
+	// --- Main: override a sealed security gate ---
+	FProjectOrganoidObjective OverrideGate;
+	OverrideGate.ObjectiveId = TEXT("Main_OverrideSecurityGate");
+	OverrideGate.Title = FText::FromString(TEXT("Override Security Gate"));
+	OverrideGate.Description = FText::FromString(TEXT("Use a keycard or hacking tool to open a sealed facility gate."));
+	OverrideGate.Type = EProjectOrganoidObjectiveType::Main;
+	OverrideGate.TargetProgress = 1;
+	RegisterObjective(OverrideGate);
+	ActiveMissionObjectiveIds.Add(OverrideGate.ObjectiveId);
+
+	FProjectOrganoidObjectiveEventTrigger GateOpened;
+	GateOpened.EventId = TEXT("Event_SecurityGateOpened");
+	GateOpened.ObjectiveId = TEXT("Main_OverrideSecurityGate");
+	GateOpened.Action = EProjectOrganoidObjectiveEventAction::Complete;
+	RegisterEventTrigger(GateOpened);
+
+	// --- Main: recover facility intel from data pads ---
+	FProjectOrganoidObjective ReadPads;
+	ReadPads.ObjectiveId = TEXT("Main_ReadFacilityDataPads");
+	ReadPads.Title = FText::FromString(TEXT("Recover Facility Logs"));
+	ReadPads.Description = FText::FromString(TEXT("Read data pads scattered through the Epitope complex."));
+	ReadPads.Type = EProjectOrganoidObjectiveType::Main;
+	ReadPads.TargetProgress = 2;
+	RegisterObjective(ReadPads);
+	ActiveMissionObjectiveIds.Add(ReadPads.ObjectiveId);
+
+	FProjectOrganoidObjectiveEventTrigger PadRead;
+	PadRead.EventId = TEXT("Event_DataPadRead");
+	PadRead.ObjectiveId = TEXT("Main_ReadFacilityDataPads");
+	PadRead.Action = EProjectOrganoidObjectiveEventAction::Advance;
+	PadRead.ProgressDelta = 1;
+	RegisterEventTrigger(PadRead);
+
+	// --- Side: Sterling terminal ---
 	FProjectOrganoidObjective ReachSterling;
 	ReachSterling.ObjectiveId = TEXT("Main_ReachSterlingTerminal");
 	ReachSterling.Title = FText::FromString(TEXT("Locate Dr. Sterling's Terminal"));
 	ReachSterling.Description = FText::FromString(TEXT("Find an operational Sterling upgrade terminal in Sub-Level 1 Administration."));
-	ReachSterling.Type = EProjectOrganoidObjectiveType::Main;
+	ReachSterling.Type = EProjectOrganoidObjectiveType::Side;
 	ReachSterling.TargetProgress = 1;
 	RegisterObjective(ReachSterling);
+	ActiveMissionObjectiveIds.Add(ReachSterling.ObjectiveId);
 
+	FProjectOrganoidObjectiveEventTrigger UnlockAdmin;
+	UnlockAdmin.EventId = TEXT("Event_SterlingTerminalUsed");
+	UnlockAdmin.ObjectiveId = TEXT("Main_ReachSterlingTerminal");
+	UnlockAdmin.Action = EProjectOrganoidObjectiveEventAction::Complete;
+	RegisterEventTrigger(UnlockAdmin);
+
+	// --- Side: clear hosts ---
 	FProjectOrganoidObjective ClearHosts;
 	ClearHosts.ObjectiveId = TEXT("Side_ClearNeuroHosts");
 	ClearHosts.Title = FText::FromString(TEXT("Neutralize Mutated Hosts"));
@@ -30,12 +145,7 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 	ClearHosts.Type = EProjectOrganoidObjectiveType::Side;
 	ClearHosts.TargetProgress = 2;
 	RegisterObjective(ClearHosts);
-
-	FProjectOrganoidObjectiveEventTrigger UnlockAdmin;
-	UnlockAdmin.EventId = TEXT("Event_SterlingTerminalUsed");
-	UnlockAdmin.ObjectiveId = TEXT("Main_ReachSterlingTerminal");
-	UnlockAdmin.Action = EProjectOrganoidObjectiveEventAction::Complete;
-	RegisterEventTrigger(UnlockAdmin);
+	ActiveMissionObjectiveIds.Add(ClearHosts.ObjectiveId);
 
 	FProjectOrganoidObjectiveEventTrigger HostDown;
 	HostDown.EventId = TEXT("Event_HostNeutralized");
@@ -44,8 +154,12 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 	HostDown.ProgressDelta = 1;
 	RegisterEventTrigger(HostDown);
 
+	ActivateObjective(TEXT("Main_OverrideSecurityGate"));
+	ActivateObjective(TEXT("Main_ReadFacilityDataPads"));
 	ActivateObjective(TEXT("Main_ReachSterlingTerminal"));
 	ActivateObjective(TEXT("Side_ClearNeuroHosts"));
+
+	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
 }
 
 int32 UProjectOrganoidObjectiveSubsystem::FindObjectiveIndex(FName ObjectiveId) const
@@ -149,6 +263,7 @@ bool UProjectOrganoidObjectiveSubsystem::CompleteObjective(FName ObjectiveId)
 	Objective.CurrentProgress = Objective.TargetProgress;
 	OnObjectiveCompleted.Broadcast(Objective);
 	RequestPopup(Objective, TEXT("Completed"));
+	EvaluateActiveMissionCompletion();
 	return true;
 }
 
@@ -231,6 +346,38 @@ int32 UProjectOrganoidObjectiveSubsystem::TriggerEvent(FName EventId)
 	return Handled;
 }
 
+void UProjectOrganoidObjectiveSubsystem::EvaluateActiveMissionCompletion()
+{
+	if (ActiveMissionId.IsNone() || ActiveMissionObjectiveIds.Num() == 0)
+	{
+		return;
+	}
+
+	if (IsMissionComplete(ActiveMissionId))
+	{
+		OnMissionCompleted.Broadcast(ActiveMissionId);
+	}
+}
+
+bool UProjectOrganoidObjectiveSubsystem::IsMissionComplete(FName MissionId) const
+{
+	if (MissionId.IsNone() || MissionId != ActiveMissionId || ActiveMissionObjectiveIds.Num() == 0)
+	{
+		return false;
+	}
+
+	for (const FName& ObjectiveId : ActiveMissionObjectiveIds)
+	{
+		const int32 Index = FindObjectiveIndex(ObjectiveId);
+		if (Index == INDEX_NONE || Objectives[Index].State != EProjectOrganoidObjectiveState::Completed)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool UProjectOrganoidObjectiveSubsystem::GetObjective(FName ObjectiveId, FProjectOrganoidObjective& OutObjective) const
 {
 	const int32 Index = FindObjectiveIndex(ObjectiveId);
@@ -245,10 +392,20 @@ bool UProjectOrganoidObjectiveSubsystem::GetObjective(FName ObjectiveId, FProjec
 
 TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetActiveObjectives() const
 {
+	return GetObjectivesByState(EProjectOrganoidObjectiveState::Active);
+}
+
+TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetCompletedObjectives() const
+{
+	return GetObjectivesByState(EProjectOrganoidObjectiveState::Completed);
+}
+
+TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetObjectivesByState(EProjectOrganoidObjectiveState State) const
+{
 	TArray<FProjectOrganoidObjective> Result;
 	for (const FProjectOrganoidObjective& Objective : Objectives)
 	{
-		if (Objective.State == EProjectOrganoidObjectiveState::Active)
+		if (Objective.State == State)
 		{
 			Result.Add(Objective);
 		}
