@@ -20,9 +20,17 @@ void AProjectOrganoidPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!PauseWidgetClass)
+	if (!PauseWidgetClass || PauseWidgetClass == UProjectOrganoidPauseWidget::StaticClass())
 	{
-		PauseWidgetClass = UProjectOrganoidPauseWidget::StaticClass();
+		if (UClass* WBPClass = LoadClass<UProjectOrganoidPauseWidget>(
+			nullptr, TEXT("/Game/UI/Menus/WBP_PauseMenu.WBP_PauseMenu_C")))
+		{
+			PauseWidgetClass = WBPClass;
+		}
+		else if (!PauseWidgetClass)
+		{
+			PauseWidgetClass = UProjectOrganoidPauseWidget::StaticClass();
+		}
 	}
 
 	// only spawn touch controls on local player controllers
@@ -101,6 +109,11 @@ void AProjectOrganoidPlayerController::OpenPauseMenu()
 	}
 
 	TSubclassOf<UProjectOrganoidPauseWidget> ClassToSpawn = PauseWidgetClass;
+	if (!ClassToSpawn)
+	{
+		ClassToSpawn = LoadClass<UProjectOrganoidPauseWidget>(
+			nullptr, TEXT("/Game/UI/Menus/WBP_PauseMenu.WBP_PauseMenu_C"));
+	}
 	if (!ClassToSpawn)
 	{
 		ClassToSpawn = UProjectOrganoidPauseWidget::StaticClass();

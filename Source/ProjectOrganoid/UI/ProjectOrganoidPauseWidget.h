@@ -4,13 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ComboBoxString.h"
 #include "ProjectOrganoidSettingsTypes.h"
 #include "ProjectOrganoidPauseWidget.generated.h"
 
 class UProjectOrganoidSettingsSubsystem;
+class UButton;
+class USlider;
+class UTextBlock;
 
 /**
  *  In-game pause overlay: resume, settings, return to main menu, quit.
+ *  Optional BindWidget names match WBP_PauseMenu (created by setup_main_menu.py).
  */
 UCLASS()
 class UProjectOrganoidPauseWidget : public UUserWidget
@@ -21,7 +26,7 @@ public:
 
 	/** Main menu map opened by Return To Main Menu. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pause")
-	FName MainMenuLevelName = FName(TEXT("Lvl_MainMenu"));
+	FName MainMenuLevelName = FName(TEXT("/Game/Maps/Lvl_MainMenu"));
 
 	UFUNCTION(BlueprintCallable, Category = "Pause")
 	void ResumeGame();
@@ -72,5 +77,53 @@ protected:
 
 	virtual void NativeConstruct() override;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<UButton> ResumeButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<UButton> ReturnToMainMenuButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<UButton> QuitButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<USlider> MasterVolumeSlider;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<USlider> SFXVolumeSlider;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<USlider> MusicVolumeSlider;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<UComboBoxString> GraphicsQualityCombo;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Pause|Widgets")
+	TObjectPtr<UTextBlock> TitleText;
+
 	UProjectOrganoidSettingsSubsystem* GetSettingsSubsystem() const;
+
+	void BindWidgetCallbacks();
+	void SyncSettingsWidgets();
+
+	UFUNCTION()
+	void HandleResumeClicked();
+
+	UFUNCTION()
+	void HandleReturnToMainMenuClicked();
+
+	UFUNCTION()
+	void HandleQuitClicked();
+
+	UFUNCTION()
+	void HandleMasterVolumeChanged(float Value);
+
+	UFUNCTION()
+	void HandleSFXVolumeChanged(float Value);
+
+	UFUNCTION()
+	void HandleMusicVolumeChanged(float Value);
+
+	UFUNCTION()
+	void HandleGraphicsQualityChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 };

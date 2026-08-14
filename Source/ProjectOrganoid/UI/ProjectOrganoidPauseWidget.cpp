@@ -3,13 +3,132 @@
 #include "ProjectOrganoidPauseWidget.h"
 #include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidSettingsSubsystem.h"
+#include "Components/Button.h"
+#include "Components/ComboBoxString.h"
+#include "Components/Slider.h"
+#include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+
+namespace ProjectOrganoidPauseUI
+{
+	static const TArray<FString> GraphicsQualityLabels = {
+		TEXT("Low"), TEXT("Medium"), TEXT("High"), TEXT("Epic"), TEXT("Cinematic")
+	};
+
+	static EProjectOrganoidGraphicsQuality QualityFromLabel(const FString& Label)
+	{
+		const int32 Index = GraphicsQualityLabels.IndexOfByKey(Label);
+		return static_cast<EProjectOrganoidGraphicsQuality>(FMath::Clamp(Index, 0, 4));
+	}
+}
 
 void UProjectOrganoidPauseWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	BindWidgetCallbacks();
+	SyncSettingsWidgets();
 	OnPauseOpened();
+}
+
+void UProjectOrganoidPauseWidget::BindWidgetCallbacks()
+{
+	if (ResumeButton)
+	{
+		ResumeButton->OnClicked.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleResumeClicked);
+	}
+	if (ReturnToMainMenuButton)
+	{
+		ReturnToMainMenuButton->OnClicked.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleReturnToMainMenuClicked);
+	}
+	if (QuitButton)
+	{
+		QuitButton->OnClicked.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleQuitClicked);
+	}
+	if (MasterVolumeSlider)
+	{
+		MasterVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleMasterVolumeChanged);
+	}
+	if (SFXVolumeSlider)
+	{
+		SFXVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleSFXVolumeChanged);
+	}
+	if (MusicVolumeSlider)
+	{
+		MusicVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleMusicVolumeChanged);
+	}
+	if (GraphicsQualityCombo)
+	{
+		GraphicsQualityCombo->OnSelectionChanged.AddUniqueDynamic(this, &UProjectOrganoidPauseWidget::HandleGraphicsQualityChanged);
+	}
+}
+
+void UProjectOrganoidPauseWidget::SyncSettingsWidgets()
+{
+	if (MasterVolumeSlider)
+	{
+		MasterVolumeSlider->SetValue(GetMasterVolume());
+	}
+	if (SFXVolumeSlider)
+	{
+		SFXVolumeSlider->SetValue(GetSFXVolume());
+	}
+	if (MusicVolumeSlider)
+	{
+		MusicVolumeSlider->SetValue(GetMusicVolume());
+	}
+	if (GraphicsQualityCombo)
+	{
+		GraphicsQualityCombo->ClearOptions();
+		for (const FString& Label : ProjectOrganoidPauseUI::GraphicsQualityLabels)
+		{
+			GraphicsQualityCombo->AddOption(Label);
+		}
+		const int32 QualityIndex = static_cast<int32>(GetGraphicsQuality());
+		if (ProjectOrganoidPauseUI::GraphicsQualityLabels.IsValidIndex(QualityIndex))
+		{
+			GraphicsQualityCombo->SetSelectedOption(ProjectOrganoidPauseUI::GraphicsQualityLabels[QualityIndex]);
+		}
+	}
+}
+
+void UProjectOrganoidPauseWidget::HandleResumeClicked()
+{
+	ResumeGame();
+}
+
+void UProjectOrganoidPauseWidget::HandleReturnToMainMenuClicked()
+{
+	ReturnToMainMenu();
+}
+
+void UProjectOrganoidPauseWidget::HandleQuitClicked()
+{
+	QuitGame();
+}
+
+void UProjectOrganoidPauseWidget::HandleMasterVolumeChanged(float Value)
+{
+	SetMasterVolume(Value);
+}
+
+void UProjectOrganoidPauseWidget::HandleSFXVolumeChanged(float Value)
+{
+	SetSFXVolume(Value);
+}
+
+void UProjectOrganoidPauseWidget::HandleMusicVolumeChanged(float Value)
+{
+	SetMusicVolume(Value);
+}
+
+void UProjectOrganoidPauseWidget::HandleGraphicsQualityChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	if (SelectionType == ESelectInfo::Direct)
+	{
+		return;
+	}
+	SetGraphicsQuality(ProjectOrganoidPauseUI::QualityFromLabel(SelectedItem));
 }
 
 void UProjectOrganoidPauseWidget::ResumeGame()
