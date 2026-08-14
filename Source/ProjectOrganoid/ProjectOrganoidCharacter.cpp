@@ -4,9 +4,11 @@
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
+#include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
@@ -14,6 +16,8 @@
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
@@ -48,6 +52,79 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+}
+
+void AProjectOrganoidCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// Use undilated delta so PE drain stays consistent in wall-clock while time is slowed
+	float UndilatedDelta = DeltaTime;
+	if (UWorld* World = GetWorld())
+	{
+		if (AWorldSettings* WorldSettings = World->GetWorldSettings())
+		{
+			const float Dilation = WorldSettings->TimeDilation;
+			if (Dilation > KINDA_SMALL_NUMBER)
+			{
+				UndilatedDelta = DeltaTime / Dilation;
+			}
+		}
+	}
+
+	if (bIsTacticalModeActive)
+	{
+		PEEnergy = FMath::Max(0.0f, PEEnergy - (PEDrainRate * UndilatedDelta));
+
+		DrawDebugSphere(
+			GetWorld(),
+			GetActorLocation(),
+			TacticalSphereRadius,
+			32,
+			FColor(0, 255, 200),
+			false,
+			0.0f,
+			0,
+			1.5f);
+
+		if (PEEnergy <= 0.0f)
+		{
+			SetTacticalModeActive(false);
+		}
+	}
+	else
+	{
+		PEEnergy = FMath::Min(MaxPEEnergy, PEEnergy + (PERechargeRate * UndilatedDelta));
+	}
+}
+
+void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
+{
+	if (bIsTacticalModeActive == bActive)
+	{
+		return;
+	}
+
+	bIsTacticalModeActive = bActive;
+
+	const float NewDilation = bActive ? TacticalTimeDilation : 1.0f;
+	UGameplayStatics::SetGlobalTimeDilation(this, NewDilation);
+}
+
+void AProjectOrganoidCharacter::ToggleTacticalMode()
+{
+	if (bIsTacticalModeActive)
+	{
+		SetTacticalModeActive(false);
+		return;
+	}
+
+	if (PEEnergy <= 0.0f)
+	{
+		return;
+	}
+
+	SetTacticalModeActive(true);
 }
 
 void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
