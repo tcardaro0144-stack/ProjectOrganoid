@@ -8,6 +8,7 @@
 #include "ProjectOrganoidAudioAmbienceSubsystem.generated.h"
 
 class AProjectOrganoidCharacter;
+class AProjectOrganoidAmbienceZone;
 class UAudioComponent;
 class USoundBase;
 class USoundMix;
@@ -25,9 +26,26 @@ enum class EProjectOrganoidAmbienceState : uint8
 	CriticalHealth UMETA(DisplayName = "Critical Health")
 };
 
+USTRUCT(BlueprintType)
+struct FProjectOrganoidActiveAmbienceZone
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Audio|Zone")
+	TWeakObjectPtr<AProjectOrganoidAmbienceZone> Zone;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Audio|Zone")
+	FName ZoneId = NAME_None;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Audio|Zone")
+	int32 Priority = 0;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidAmbienceStateChanged, EProjectOrganoidAmbienceState, NewState, EProjectOrganoidAmbienceState, PreviousState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidMusicIntensityChanged, float, Intensity);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidAmbienceMixChanged, float, MixPitch, float, MixVolume);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidAmbienceZoneChanged, FName, ZoneId, bool, bEntered);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidOcclusionUpdated, float, OcclusionFactor);
 
 /**
  *  Dynamic music + ambient director:
@@ -58,6 +76,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Audio|Ambience")
 	FOnProjectOrganoidAmbienceMixChanged OnAmbienceMixChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Audio|Ambience|Zone")
+	FOnProjectOrganoidAmbienceZoneChanged OnAmbienceZoneChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Audio|Ambience|Occlusion")
+	FOnProjectOrganoidOcclusionUpdated OnListenerOcclusionUpdated;
 
 	// -------------------------------------------------------------------------
 	// Binding / external stimuli
@@ -158,6 +182,49 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Ambience|Reverb", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ReverbFadeTime = 0.75f;
 
+	/** WorldStatic / WorldDynamic channels block sound when tracing listener → source */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Ambience|Occlusion")
+	TEnumAsByte<ECollisionChannel> OcclusionTraceChannel = ECC_Visibility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Ambience|Occlusion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MaxOcclusionAttenuation = 0.85f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Ambience|Occlusion", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MaxOcclusionLowPass = 0.7f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio|Ambience|Occlusion", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float OcclusionTickInterval = 0.15f;
+
+	// -------------------------------------------------------------------------
+	// Environment zones / occlusion
+	// -------------------------------------------------------------------------
+
+	UFUNCTION(BlueprintCallable, Category = "Audio|Ambience|Zone")
+	void RegisterAmbienceZone(AProjectOrganoidAmbienceZone* Zone);
+
+	UFUNCTION(BlueprintCallable, Category = "Audio|Ambience|Zone")
+	void UnregisterAmbienceZone(AProjectOrganoidAmbienceZone* Zone);
+
+	UFUNCTION(BlueprintPure, Category = "Audio|Ambience|Zone")
+	FName GetActiveEnvironmentZoneId() const { return ActiveEnvironmentZoneId; }
+
+	UFUNCTION(BlueprintPure, Category = "Audio|Ambience|Zone")
+	AProjectOrganoidAmbienceZone* GetActiveEnvironmentZone() const;
+
+	/**
+	 *  Trace listener → source through room geometry.
+	 *  Returns 0 (clear) … 1 (fully occluded).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Audio|Ambience|Occlusion")
+	float EvaluateSoundOcclusion(FVector ListenerLocation, FVector SourceLocation, AActor* IgnoreActor = nullptr) const;
+
+	/** Apply volume / LPF scaling to a spatial audio component from an occlusion factor */
+	UFUNCTION(BlueprintCallable, Category = "Audio|Ambience|Occlusion")
+	void ApplyOcclusionToAudioComponent(UAudioComponent* AudioComponent, float OcclusionFactor, float BaseVolume = 1.0f) const;
+
+	UFUNCTION(BlueprintPure, Category = "Audio|Ambience|Occlusion")
+	float GetListenerOcclusionFactor() const { return ListenerOcclusionFactor; }
+
 	// -------------------------------------------------------------------------
 	// Queries
 	// -------------------------------------------------------------------------
@@ -246,6 +313,17 @@ protected:
 	FName ActiveReverbTag = NAME_None;
 	TWeakObjectPtr<USoundMix> ActivePushedMix;
 
+	UPROPERTY()
+	TArray<FProjectOrganoidActiveAmbienceZone> ActiveZones;
+
+	FName ActiveEnvironmentZoneId = NAME_None;
+	FName ActiveEnvironmentReverbTag = NAME_None;
+	float ListenerOcclusionFactor = 0.0f;
+	float OcclusionTickAccumulator = 0.0f;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> RoomToneAudio;
+
 	AProjectOrganoidCharacter* ResolveLocalCharacter() const;
 	EProjectOrganoidAmbienceState EvaluateDesiredState() const;
 	void ApplyAmbienceState(EProjectOrganoidAmbienceState NewState, bool bForce = false);
@@ -258,5 +336,9 @@ protected:
 	void PopActiveSoundMix();
 	void ApplyStateReverb(EProjectOrganoidAmbienceState State);
 	void ClearActiveReverb();
+	void RefreshEnvironmentReverbFromZones();
+	void ClearEnvironmentReverb();
+	void UpdateRoomToneForActiveZone();
+	void UpdateListenerOcclusion(float DeltaTime);
 	float ComputeMusicIntensity() const;
 };

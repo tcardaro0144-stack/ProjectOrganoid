@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidAudioAmbienceSubsystem.h"
+#include "ProjectOrganoidAmbienceZone.h"
 #include "ProjectOrganoidCharacter.h"
 #include "Components/AudioComponent.h"
 #include "Engine/World.h"
@@ -13,6 +14,7 @@
 namespace ProjectOrganoidAmbience
 {
 	static const FName ReverbTag(TEXT("ProjectOrganoidAmbience"));
+	static const FName EnvironmentReverbTag(TEXT("ProjectOrganoidEnvironment"));
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -26,6 +28,8 @@ void UProjectOrganoidAudioAmbienceSubsystem::Deinitialize()
 	UnbindLocalPlayerCharacter(nullptr);
 	PopActiveSoundMix();
 	ClearActiveReverb();
+	ClearEnvironmentReverb();
+	ActiveZones.Reset();
 
 	auto DestroyLayer = [](TObjectPtr<UAudioComponent>& Comp)
 	{
@@ -41,6 +45,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::Deinitialize()
 	DestroyLayer(TensionLayerAudio);
 	DestroyLayer(CombatLayerAudio);
 	DestroyLayer(CriticalLayerAudio);
+	DestroyLayer(RoomToneAudio);
 
 	Super::Deinitialize();
 }
@@ -89,6 +94,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::Tick(float DeltaTime)
 	EnsureMusicLayers(Character);
 	UpdateLayerVolumes(DeltaTime);
 	UpdateMixParameters(DeltaTime);
+	UpdateListenerOcclusion(DeltaTime);
 
 	const float Intensity = ComputeMusicIntensity();
 	if (!FMath::IsNearlyEqual(Intensity, LastBroadcastIntensity, IntensityBroadcastEpsilon))
@@ -499,6 +505,257 @@ void UProjectOrganoidAudioAmbienceSubsystem::ClearActiveReverb()
 		UGameplayStatics::DeactivateReverbEffect(World, ActiveReverbTag);
 	}
 	ActiveReverbTag = NAME_None;
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::RegisterAmbienceZone(AProjectOrganoidAmbienceZone* Zone)
+{
+	if (!Zone)
+	{
+		return;
+	}
+
+	for (const FProjectOrganoidActiveAmbienceZone& Entry : ActiveZones)
+	{
+		if (Entry.Zone.Get() == Zone)
+		{
+			RefreshEnvironmentReverbFromZones();
+			return;
+		}
+	}
+
+	FProjectOrganoidActiveAmbienceZone Entry;
+	Entry.Zone = Zone;
+	Entry.ZoneId = Zone->ZoneId;
+	Entry.Priority = Zone->Priority;
+	ActiveZones.Add(Entry);
+
+	OnAmbienceZoneChanged.Broadcast(Zone->ZoneId, true);
+	RefreshEnvironmentReverbFromZones();
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::UnregisterAmbienceZone(AProjectOrganoidAmbienceZone* Zone)
+{
+	if (!Zone)
+	{
+		return;
+	}
+
+	const FName LeavingId = Zone->ZoneId;
+	ActiveZones.RemoveAll([Zone](const FProjectOrganoidActiveAmbienceZone& Entry)
+	{
+		return Entry.Zone.Get() == Zone || !Entry.Zone.IsValid();
+	});
+
+	OnAmbienceZoneChanged.Broadcast(LeavingId, false);
+	RefreshEnvironmentReverbFromZones();
+}
+
+AProjectOrganoidAmbienceZone* UProjectOrganoidAudioAmbienceSubsystem::GetActiveEnvironmentZone() const
+{
+	AProjectOrganoidAmbienceZone* Best = nullptr;
+	int32 BestPriority = TNumericLimits<int32>::Lowest();
+	for (const FProjectOrganoidActiveAmbienceZone& Entry : ActiveZones)
+	{
+		if (AProjectOrganoidAmbienceZone* Zone = Entry.Zone.Get())
+		{
+			if (Zone->Priority >= BestPriority)
+			{
+				BestPriority = Zone->Priority;
+				Best = Zone;
+			}
+		}
+	}
+	return Best;
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::RefreshEnvironmentReverbFromZones()
+{
+	UWorld* World = GetWorld();
+	AProjectOrganoidAmbienceZone* Best = GetActiveEnvironmentZone();
+	const FName NewZoneId = Best ? Best->ZoneId : NAME_None;
+
+	if (NewZoneId != ActiveEnvironmentZoneId)
+	{
+		ActiveEnvironmentZoneId = NewZoneId;
+	}
+
+	ClearEnvironmentReverb();
+
+	if (Best && World)
+	{
+		if (UReverbEffect* Reverb = Best->ZoneReverb.LoadSynchronous())
+		{
+			UGameplayStatics::ActivateReverbEffect(
+				World,
+				Reverb,
+				ProjectOrganoidAmbience::EnvironmentReverbTag,
+				Best->ReverbVolume,
+				1.0f,
+				Best->ReverbFadeTime);
+			ActiveEnvironmentReverbTag = ProjectOrganoidAmbience::EnvironmentReverbTag;
+		}
+	}
+
+	UpdateRoomToneForActiveZone();
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::ClearEnvironmentReverb()
+{
+	UWorld* World = GetWorld();
+	if (World && ActiveEnvironmentReverbTag != NAME_None)
+	{
+		UGameplayStatics::DeactivateReverbEffect(World, ActiveEnvironmentReverbTag);
+	}
+	ActiveEnvironmentReverbTag = NAME_None;
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::UpdateRoomToneForActiveZone()
+{
+	AProjectOrganoidCharacter* Character = BoundCharacter.Get();
+	if (!Character)
+	{
+		Character = ResolveLocalCharacter();
+	}
+
+	AProjectOrganoidAmbienceZone* Best = GetActiveEnvironmentZone();
+	if (!Best || !Character)
+	{
+		if (RoomToneAudio)
+		{
+			RoomToneAudio->FadeOut(0.4f, 0.0f);
+		}
+		return;
+	}
+
+	USoundBase* Tone = Best->RoomToneSound.LoadSynchronous();
+	if (!Tone)
+	{
+		if (RoomToneAudio)
+		{
+			RoomToneAudio->FadeOut(0.4f, 0.0f);
+		}
+		return;
+	}
+
+	if (!RoomToneAudio)
+	{
+		RoomToneAudio = NewObject<UAudioComponent>(Character, TEXT("AmbienceRoomTone"));
+		RoomToneAudio->bAutoActivate = false;
+		RoomToneAudio->bAllowSpatialization = false;
+		RoomToneAudio->SetupAttachment(Character->GetRootComponent());
+		RoomToneAudio->RegisterComponent();
+	}
+
+	if (RoomToneAudio->Sound != Tone)
+	{
+		RoomToneAudio->SetSound(Tone);
+	}
+
+	RoomToneAudio->SetVolumeMultiplier(Best->RoomToneVolume);
+	if (!RoomToneAudio->IsPlaying())
+	{
+		RoomToneAudio->FadeIn(0.5f, Best->RoomToneVolume);
+	}
+}
+
+float UProjectOrganoidAudioAmbienceSubsystem::EvaluateSoundOcclusion(
+	FVector ListenerLocation,
+	FVector SourceLocation,
+	AActor* IgnoreActor) const
+{
+	UWorld* World = GetWorld();
+	if (!World || ListenerLocation.Equals(SourceLocation, 1.0f))
+	{
+		return 0.0f;
+	}
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(OrganoidSoundOcclusion), true, IgnoreActor);
+	if (AProjectOrganoidCharacter* Character = BoundCharacter.Get())
+	{
+		Params.AddIgnoredActor(Character);
+	}
+
+	TArray<FHitResult> Hits;
+	const bool bHit = World->LineTraceMultiByChannel(
+		Hits,
+		ListenerLocation,
+		SourceLocation,
+		OcclusionTraceChannel,
+		Params);
+
+	if (!bHit || Hits.Num() == 0)
+	{
+		return 0.0f;
+	}
+
+	int32 Blocking = 0;
+	for (const FHitResult& Hit : Hits)
+	{
+		if (Hit.bBlockingHit)
+		{
+			++Blocking;
+		}
+	}
+
+	// Soft-cap: each blocking surface adds occlusion, saturating toward 1
+	return FMath::Clamp(1.0f - FMath::Pow(0.55f, static_cast<float>(Blocking)), 0.0f, 1.0f);
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::ApplyOcclusionToAudioComponent(
+	UAudioComponent* AudioComponent,
+	float OcclusionFactor,
+	float BaseVolume) const
+{
+	if (!AudioComponent)
+	{
+		return;
+	}
+
+	const float Clamped = FMath::Clamp(OcclusionFactor, 0.0f, 1.0f);
+	const float VolumeScale = 1.0f - (Clamped * MaxOcclusionAttenuation);
+	AudioComponent->SetVolumeMultiplier(BaseVolume * VolumeScale);
+	AudioComponent->SetLowPassFilterEnabled(Clamped > KINDA_SMALL_NUMBER);
+	if (Clamped > KINDA_SMALL_NUMBER)
+	{
+		const float Frequency = FMath::Lerp(20000.0f, 800.0f, Clamped * MaxOcclusionLowPass);
+		AudioComponent->SetLowPassFilterFrequency(Frequency);
+	}
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::UpdateListenerOcclusion(float DeltaTime)
+{
+	OcclusionTickAccumulator += DeltaTime;
+	if (OcclusionTickAccumulator < OcclusionTickInterval)
+	{
+		return;
+	}
+	OcclusionTickAccumulator = 0.0f;
+
+	AProjectOrganoidCharacter* Character = BoundCharacter.Get();
+	if (!Character)
+	{
+		return;
+	}
+
+	const FVector Listener = Character->GetActorLocation() + FVector(0.0f, 0.0f, 64.0f);
+	// Probe forward into geometry so enclosed rooms raise a baseline muffling factor
+	const FVector Probe = Listener + Character->GetActorForwardVector() * 600.0f;
+	float Factor = EvaluateSoundOcclusion(Listener, Probe, Character);
+
+	if (AProjectOrganoidAmbienceZone* Zone = GetActiveEnvironmentZone())
+	{
+		Factor = FMath::Clamp(Factor * Zone->OcclusionStrengthBias, 0.0f, 1.0f);
+	}
+
+	if (!FMath::IsNearlyEqual(Factor, ListenerOcclusionFactor, 0.02f))
+	{
+		ListenerOcclusionFactor = Factor;
+		OnListenerOcclusionUpdated.Broadcast(ListenerOcclusionFactor);
+	}
+	else
+	{
+		ListenerOcclusionFactor = Factor;
+	}
 }
 
 float UProjectOrganoidAudioAmbienceSubsystem::ComputeMusicIntensity() const

@@ -56,6 +56,25 @@ struct FProjectOrganoidObjective
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objective", meta = (ClampMin = "1"))
 	int32 TargetProgress = 1;
 
+	/** Multi-stage quest ordering (0 = first stage). Used by journal grouping. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objective|Journal", meta = (ClampMin = "0"))
+	int32 StageIndex = 0;
+
+	/** Must be Completed before this objective can activate */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objective|Journal")
+	TArray<FName> PrerequisiteObjectiveIds;
+
+	/** Extra journal flavor text shown in the quest log */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objective|Journal")
+	FText JournalNotes;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objective|Journal")
+	bool bShowInJournal = true;
+
+	/** When all prerequisites complete, auto-activate this task */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objective|Journal")
+	bool bAutoUnlockWhenPrerequisitesMet = true;
+
 	bool IsComplete() const
 	{
 		return State == EProjectOrganoidObjectiveState::Completed

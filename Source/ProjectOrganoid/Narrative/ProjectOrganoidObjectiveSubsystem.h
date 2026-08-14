@@ -14,6 +14,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidObjectiveChanged, 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidObjectivePopup, const FProjectOrganoidObjective&, Objective, FName, PopupReason);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidMissionLoaded, FName, MissionId, const FText&, MissionTitle);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidMissionCompleted, FName, MissionId);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnProjectOrganoidJournalUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidJournalStageChanged, int32, NewStageIndex, const TArray<FProjectOrganoidObjective>&, StageObjectives);
 
 /**
  *  Mission / objective tracker — active & completed quest state, DataAsset missions,
@@ -53,6 +55,13 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Objectives|Mission")
 	FOnProjectOrganoidMissionCompleted OnMissionCompleted;
+
+	/** Fired whenever journal-visible objectives change (activate / update / complete / unlock) */
+	UPROPERTY(BlueprintAssignable, Category = "Objectives|Journal")
+	FOnProjectOrganoidJournalUpdated OnJournalUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category = "Objectives|Journal")
+	FOnProjectOrganoidJournalStageChanged OnJournalStageChanged;
 
 	UFUNCTION(BlueprintCallable, Category = "Objectives")
 	bool RegisterObjective(const FProjectOrganoidObjective& Objective);
@@ -107,6 +116,23 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Objectives|Mission")
 	bool IsMissionComplete(FName MissionId) const;
 
+	/** Journal rows: active + completed + unlocked-but-inactive tasks marked ShowInJournal */
+	UFUNCTION(BlueprintPure, Category = "Objectives|Journal")
+	TArray<FProjectOrganoidObjective> GetJournalEntries() const;
+
+	UFUNCTION(BlueprintPure, Category = "Objectives|Journal")
+	TArray<FProjectOrganoidObjective> GetObjectivesForStage(int32 StageIndex) const;
+
+	UFUNCTION(BlueprintPure, Category = "Objectives|Journal")
+	int32 GetCurrentJournalStage() const;
+
+	UFUNCTION(BlueprintPure, Category = "Objectives|Journal")
+	bool ArePrerequisitesMet(FName ObjectiveId) const;
+
+	/** Force-refresh journal HUD hooks without mutating objectives */
+	UFUNCTION(BlueprintCallable, Category = "Objectives|Journal")
+	void NotifyJournalUpdated();
+
 	/** Persist active mission + all objectives / event triggers into a save object */
 	UFUNCTION(BlueprintCallable, Category = "Objectives|Save")
 	void CaptureObjectivesToSaveGame(UProjectOrganoidSaveGame* SaveGame) const;
@@ -134,9 +160,13 @@ protected:
 	TArray<FName> ActiveMissionObjectiveIds;
 
 	bool bActiveMissionCompletionNotified = false;
+	int32 CachedJournalStage = 0;
 
 	int32 FindObjectiveIndex(FName ObjectiveId) const;
 	void RequestPopup(const FProjectOrganoidObjective& Objective, FName Reason);
 	void SeedDefaultCampaignObjectives();
 	void EvaluateActiveMissionCompletion();
+	bool ArePrerequisitesMetForObjective(const FProjectOrganoidObjective& Objective) const;
+	void TryUnlockDependentObjectives(FName CompletedObjectiveId);
+	void BroadcastJournalState();
 };

@@ -18,6 +18,7 @@
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoidLogComponent.h"
+#include "ProjectOrganoidPhotoScanComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidAudioSubsystem.h"
 #include "ProjectOrganoidAudioAmbienceSubsystem.h"
@@ -77,6 +78,9 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 
 	// Facility data-pad lore archive
 	LogComponent = CreateDefaultSubobject<UProjectOrganoidLogComponent>(TEXT("LogComponent"));
+
+	// Photography / scanning (DoF framing + lore extract)
+	PhotoScanComponent = CreateDefaultSubobject<UProjectOrganoidPhotoScanComponent>(TEXT("PhotoScanComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -498,6 +502,40 @@ void AProjectOrganoidCharacter::ToggleTacticalMode()
 	SetTacticalModeActive(true);
 }
 
+void AProjectOrganoidCharacter::TogglePhotoMode()
+{
+	if (PhotoScanComponent)
+	{
+		// Exit tactical when framing photos
+		if (!PhotoScanComponent->IsPhotoModeActive() && bIsTacticalModeActive)
+		{
+			SetTacticalModeActive(false);
+		}
+		PhotoScanComponent->TogglePhotoMode();
+	}
+}
+
+void AProjectOrganoidCharacter::PerformPhotoScan()
+{
+	if (PhotoScanComponent && PhotoScanComponent->IsPhotoModeActive())
+	{
+		PhotoScanComponent->TryScanFocusedTarget();
+	}
+}
+
+void AProjectOrganoidCharacter::CapturePhotoScreenshot()
+{
+	if (PhotoScanComponent && PhotoScanComponent->IsPhotoModeActive())
+	{
+		PhotoScanComponent->CaptureHighResScreenshot();
+	}
+}
+
+bool AProjectOrganoidCharacter::IsPhotoModeActive() const
+{
+	return PhotoScanComponent && PhotoScanComponent->IsPhotoModeActive();
+}
+
 void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
@@ -513,6 +551,19 @@ void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Look);
+
+		if (PhotoModeAction)
+		{
+			EnhancedInputComponent->BindAction(PhotoModeAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::TogglePhotoMode);
+		}
+		if (PhotoScanAction)
+		{
+			EnhancedInputComponent->BindAction(PhotoScanAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::PerformPhotoScan);
+		}
+		if (PhotoCaptureAction)
+		{
+			EnhancedInputComponent->BindAction(PhotoCaptureAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::CapturePhotoScreenshot);
+		}
 	}
 	else
 	{

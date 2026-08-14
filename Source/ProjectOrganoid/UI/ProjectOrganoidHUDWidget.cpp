@@ -3,6 +3,7 @@
 #include "ProjectOrganoidHUDWidget.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidPhotoScanComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 void UProjectOrganoidHUDWidget::NativeConstruct()
@@ -29,6 +30,7 @@ void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCha
 	BoundCharacter->OnTacticalModeChanged.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleTacticalModeChanged);
 	UpdateVitalsFromCharacter();
 	BindToObjectiveSubsystem();
+	BindPhotoScanEvents();
 
 	if (BoundCharacter->IsTacticalModeActive())
 	{
@@ -38,6 +40,8 @@ void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCha
 
 void UProjectOrganoidHUDWidget::UnbindFromCharacter()
 {
+	UnbindPhotoScanEvents();
+
 	if (BoundCharacter)
 	{
 		BoundCharacter->OnTacticalModeChanged.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleTacticalModeChanged);
@@ -57,7 +61,10 @@ void UProjectOrganoidHUDWidget::BindToObjectiveSubsystem()
 	if (BoundObjectiveSubsystem)
 	{
 		BoundObjectiveSubsystem->OnObjectivePopupRequested.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleObjectivePopup);
+		BoundObjectiveSubsystem->OnJournalUpdated.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleJournalUpdated);
+		BoundObjectiveSubsystem->OnJournalStageChanged.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleJournalStageChanged);
 		RefreshActiveObjectiveList();
+		HandleJournalUpdated();
 	}
 }
 
@@ -66,7 +73,42 @@ void UProjectOrganoidHUDWidget::UnbindFromObjectiveSubsystem()
 	if (BoundObjectiveSubsystem)
 	{
 		BoundObjectiveSubsystem->OnObjectivePopupRequested.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleObjectivePopup);
+		BoundObjectiveSubsystem->OnJournalUpdated.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleJournalUpdated);
+		BoundObjectiveSubsystem->OnJournalStageChanged.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleJournalStageChanged);
 		BoundObjectiveSubsystem = nullptr;
+	}
+}
+
+void UProjectOrganoidHUDWidget::BindPhotoScanEvents()
+{
+	UnbindPhotoScanEvents();
+	if (!BoundCharacter)
+	{
+		return;
+	}
+
+	if (UProjectOrganoidPhotoScanComponent* Photo = BoundCharacter->GetPhotoScanComponent())
+	{
+		Photo->OnPhotoModeChanged.AddDynamic(this, &UProjectOrganoidHUDWidget::HandlePhotoModeChanged);
+		Photo->OnScanFocusChanged.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleScanFocusChanged);
+		Photo->OnScanCompleted.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleScanCompleted);
+		Photo->OnPhotoCaptured.AddDynamic(this, &UProjectOrganoidHUDWidget::HandlePhotoCaptured);
+	}
+}
+
+void UProjectOrganoidHUDWidget::UnbindPhotoScanEvents()
+{
+	if (!BoundCharacter)
+	{
+		return;
+	}
+
+	if (UProjectOrganoidPhotoScanComponent* Photo = BoundCharacter->GetPhotoScanComponent())
+	{
+		Photo->OnPhotoModeChanged.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandlePhotoModeChanged);
+		Photo->OnScanFocusChanged.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleScanFocusChanged);
+		Photo->OnScanCompleted.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandleScanCompleted);
+		Photo->OnPhotoCaptured.RemoveDynamic(this, &UProjectOrganoidHUDWidget::HandlePhotoCaptured);
 	}
 }
 
@@ -116,6 +158,39 @@ void UProjectOrganoidHUDWidget::HandleObjectivePopup(const FProjectOrganoidObjec
 {
 	ShowObjectivePopup(Objective, PopupReason);
 	RefreshActiveObjectiveList();
+}
+
+void UProjectOrganoidHUDWidget::HandleJournalUpdated()
+{
+	if (BoundObjectiveSubsystem)
+	{
+		RefreshJournal(BoundObjectiveSubsystem->GetJournalEntries());
+	}
+}
+
+void UProjectOrganoidHUDWidget::HandleJournalStageChanged(int32 StageIndex, const TArray<FProjectOrganoidObjective>& StageObjectives)
+{
+	ShowJournalStage(StageIndex, StageObjectives);
+}
+
+void UProjectOrganoidHUDWidget::HandlePhotoModeChanged(bool bActive)
+{
+	OnPhotoModeChanged(bActive);
+}
+
+void UProjectOrganoidHUDWidget::HandleScanFocusChanged(AActor* FocusedActor, FText DisplayName)
+{
+	OnScanFocusChanged(FocusedActor, DisplayName);
+}
+
+void UProjectOrganoidHUDWidget::HandleScanCompleted(AActor* /*ScannedActor*/, const FProjectOrganoidLogEntry& LoreEntry, bool bNewLore)
+{
+	OnScanLoreExtracted(LoreEntry, bNewLore);
+}
+
+void UProjectOrganoidHUDWidget::HandlePhotoCaptured(const FString& ScreenshotPath)
+{
+	OnPhotoCaptured(ScreenshotPath);
 }
 
 void UProjectOrganoidHUDWidget::RefreshActiveObjectiveList()

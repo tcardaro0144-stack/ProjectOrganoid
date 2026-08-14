@@ -77,6 +77,7 @@ bool UProjectOrganoidObjectiveSubsystem::LoadMission(UProjectOrganoidObjectiveDa
 	}
 
 	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
+	BroadcastJournalState();
 	return true;
 }
 
@@ -97,6 +98,8 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 	OverrideGate.Description = FText::FromString(TEXT("Use a keycard or hacking tool to open a sealed facility gate."));
 	OverrideGate.Type = EProjectOrganoidObjectiveType::Main;
 	OverrideGate.TargetProgress = 1;
+	OverrideGate.StageIndex = 0;
+	OverrideGate.JournalNotes = FText::FromString(TEXT("Admin decon — HEPA seals still engaged."));
 	RegisterObjective(OverrideGate);
 	ActiveMissionObjectiveIds.Add(OverrideGate.ObjectiveId);
 
@@ -113,6 +116,8 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 	ReadPads.Description = FText::FromString(TEXT("Read data pads scattered through the Epitope complex."));
 	ReadPads.Type = EProjectOrganoidObjectiveType::Main;
 	ReadPads.TargetProgress = 2;
+	ReadPads.StageIndex = 0;
+	ReadPads.JournalNotes = FText::FromString(TEXT("Scan or collect pads — photography mode extracts lore."));
 	RegisterObjective(ReadPads);
 	ActiveMissionObjectiveIds.Add(ReadPads.ObjectiveId);
 
@@ -123,13 +128,17 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 	PadRead.ProgressDelta = 1;
 	RegisterEventTrigger(PadRead);
 
-	// --- Side: Sterling terminal ---
+	// --- Stage 1: Sterling terminal (gated behind security override) ---
 	FProjectOrganoidObjective ReachSterling;
 	ReachSterling.ObjectiveId = TEXT("Main_ReachSterlingTerminal");
 	ReachSterling.Title = FText::FromString(TEXT("Locate Dr. Sterling's Terminal"));
 	ReachSterling.Description = FText::FromString(TEXT("Find an operational Sterling upgrade terminal in Sub-Level 1 Administration."));
-	ReachSterling.Type = EProjectOrganoidObjectiveType::Side;
+	ReachSterling.Type = EProjectOrganoidObjectiveType::Main;
 	ReachSterling.TargetProgress = 1;
+	ReachSterling.StageIndex = 1;
+	ReachSterling.PrerequisiteObjectiveIds.Add(TEXT("Main_OverrideSecurityGate"));
+	ReachSterling.bAutoUnlockWhenPrerequisitesMet = true;
+	ReachSterling.JournalNotes = FText::FromString(TEXT("Unlocks once the Admin gate is overridden."));
 	RegisterObjective(ReachSterling);
 	ActiveMissionObjectiveIds.Add(ReachSterling.ObjectiveId);
 
@@ -146,6 +155,7 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 	ClearHosts.Description = FText::FromString(TEXT("Eliminate organoid hosts in the Neuro-Genetics wing."));
 	ClearHosts.Type = EProjectOrganoidObjectiveType::Side;
 	ClearHosts.TargetProgress = 2;
+	ClearHosts.StageIndex = 0;
 	RegisterObjective(ClearHosts);
 	ActiveMissionObjectiveIds.Add(ClearHosts.ObjectiveId);
 
@@ -158,10 +168,11 @@ void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 
 	ActivateObjective(TEXT("Main_OverrideSecurityGate"));
 	ActivateObjective(TEXT("Main_ReadFacilityDataPads"));
-	ActivateObjective(TEXT("Main_ReachSterlingTerminal"));
 	ActivateObjective(TEXT("Side_ClearNeuroHosts"));
+	// Sterling waits for gate prereq — TryUnlockDependentObjectives handles it later
 
 	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
+	BroadcastJournalState();
 }
 
 int32 UProjectOrganoidObjectiveSubsystem::FindObjectiveIndex(FName ObjectiveId) const
@@ -214,10 +225,16 @@ bool UProjectOrganoidObjectiveSubsystem::ActivateObjective(FName ObjectiveId)
 		return false;
 	}
 
+	if (!ArePrerequisitesMetForObjective(Objective))
+	{
+		return false;
+	}
+
 	Objective.State = EProjectOrganoidObjectiveState::Active;
 	Objective.CurrentProgress = FMath::Clamp(Objective.CurrentProgress, 0, Objective.TargetProgress);
 	OnObjectiveActivated.Broadcast(Objective);
 	RequestPopup(Objective, TEXT("Activated"));
+	BroadcastJournalState();
 	return true;
 }
 
@@ -238,6 +255,7 @@ bool UProjectOrganoidObjectiveSubsystem::AdvanceObjective(FName ObjectiveId, int
 	Objective.CurrentProgress = FMath::Clamp(Objective.CurrentProgress + ProgressDelta, 0, Objective.TargetProgress);
 	OnObjectiveUpdated.Broadcast(Objective);
 	RequestPopup(Objective, TEXT("Updated"));
+	BroadcastJournalState();
 
 	if (Objective.CurrentProgress >= Objective.TargetProgress)
 	{
@@ -265,6 +283,8 @@ bool UProjectOrganoidObjectiveSubsystem::CompleteObjective(FName ObjectiveId)
 	Objective.CurrentProgress = Objective.TargetProgress;
 	OnObjectiveCompleted.Broadcast(Objective);
 	RequestPopup(Objective, TEXT("Completed"));
+	TryUnlockDependentObjectives(ObjectiveId);
+	BroadcastJournalState();
 	EvaluateActiveMissionCompletion();
 	return true;
 }
@@ -287,6 +307,7 @@ bool UProjectOrganoidObjectiveSubsystem::FailObjective(FName ObjectiveId)
 	Objective.State = EProjectOrganoidObjectiveState::Failed;
 	OnObjectiveFailed.Broadcast(Objective);
 	RequestPopup(Objective, TEXT("Failed"));
+	BroadcastJournalState();
 	return true;
 }
 
@@ -479,4 +500,150 @@ void UProjectOrganoidObjectiveSubsystem::ApplyObjectivesFromSaveGame(const UProj
 			Objectives.Add(Stub);
 		}
 	}
+
+	BroadcastJournalState();
+}
+
+bool UProjectOrganoidObjectiveSubsystem::ArePrerequisitesMetForObjective(const FProjectOrganoidObjective& Objective) const
+{
+	for (const FName& PrereqId : Objective.PrerequisiteObjectiveIds)
+	{
+		if (PrereqId.IsNone())
+		{
+			continue;
+		}
+
+		FProjectOrganoidObjective Prereq;
+		if (!GetObjective(PrereqId, Prereq) || Prereq.State != EProjectOrganoidObjectiveState::Completed)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool UProjectOrganoidObjectiveSubsystem::ArePrerequisitesMet(FName ObjectiveId) const
+{
+	FProjectOrganoidObjective Objective;
+	if (!GetObjective(ObjectiveId, Objective))
+	{
+		return false;
+	}
+	return ArePrerequisitesMetForObjective(Objective);
+}
+
+void UProjectOrganoidObjectiveSubsystem::TryUnlockDependentObjectives(FName CompletedObjectiveId)
+{
+	if (CompletedObjectiveId.IsNone())
+	{
+		return;
+	}
+
+	for (const FProjectOrganoidObjective& Objective : Objectives)
+	{
+		if (Objective.State != EProjectOrganoidObjectiveState::Inactive
+			|| !Objective.bAutoUnlockWhenPrerequisitesMet
+			|| !Objective.PrerequisiteObjectiveIds.Contains(CompletedObjectiveId))
+		{
+			continue;
+		}
+
+		if (ArePrerequisitesMetForObjective(Objective))
+		{
+			ActivateObjective(Objective.ObjectiveId);
+		}
+	}
+}
+
+TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetJournalEntries() const
+{
+	TArray<FProjectOrganoidObjective> Entries;
+	for (const FProjectOrganoidObjective& Objective : Objectives)
+	{
+		if (!Objective.bShowInJournal)
+		{
+			continue;
+		}
+
+		if (Objective.State == EProjectOrganoidObjectiveState::Active
+			|| Objective.State == EProjectOrganoidObjectiveState::Completed
+			|| Objective.State == EProjectOrganoidObjectiveState::Failed)
+		{
+			Entries.Add(Objective);
+			continue;
+		}
+
+		if (Objective.State == EProjectOrganoidObjectiveState::Inactive
+			&& ArePrerequisitesMetForObjective(Objective))
+		{
+			Entries.Add(Objective);
+		}
+	}
+
+	Entries.Sort([](const FProjectOrganoidObjective& A, const FProjectOrganoidObjective& B)
+	{
+		if (A.StageIndex != B.StageIndex)
+		{
+			return A.StageIndex < B.StageIndex;
+		}
+		return A.ObjectiveId.LexicalLess(B.ObjectiveId);
+	});
+
+	return Entries;
+}
+
+TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetObjectivesForStage(int32 StageIndex) const
+{
+	TArray<FProjectOrganoidObjective> StageEntries;
+	for (const FProjectOrganoidObjective& Entry : GetJournalEntries())
+	{
+		if (Entry.StageIndex == StageIndex)
+		{
+			StageEntries.Add(Entry);
+		}
+	}
+	return StageEntries;
+}
+
+int32 UProjectOrganoidObjectiveSubsystem::GetCurrentJournalStage() const
+{
+	int32 LowestActive = TNumericLimits<int32>::Max();
+	bool bFoundActive = false;
+	for (const FProjectOrganoidObjective& Objective : Objectives)
+	{
+		if (Objective.State == EProjectOrganoidObjectiveState::Active)
+		{
+			LowestActive = FMath::Min(LowestActive, Objective.StageIndex);
+			bFoundActive = true;
+		}
+	}
+
+	if (bFoundActive)
+	{
+		return LowestActive;
+	}
+
+	int32 HighestCompleted = 0;
+	for (const FProjectOrganoidObjective& Objective : Objectives)
+	{
+		if (Objective.State == EProjectOrganoidObjectiveState::Completed)
+		{
+			HighestCompleted = FMath::Max(HighestCompleted, Objective.StageIndex);
+		}
+	}
+	return HighestCompleted;
+}
+
+void UProjectOrganoidObjectiveSubsystem::NotifyJournalUpdated()
+{
+	BroadcastJournalState();
+}
+
+void UProjectOrganoidObjectiveSubsystem::BroadcastJournalState()
+{
+	OnJournalUpdated.Broadcast();
+
+	const int32 Stage = GetCurrentJournalStage();
+	CachedJournalStage = Stage;
+	OnJournalStageChanged.Broadcast(Stage, GetObjectivesForStage(Stage));
 }

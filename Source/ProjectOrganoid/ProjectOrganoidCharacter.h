@@ -18,6 +18,7 @@ class UProjectOrganoidWeaponComponent;
 class UProjectOrganoidInteractionComponent;
 class UProjectOrganoidFeedbackComponent;
 class UProjectOrganoidLogComponent;
+class UProjectOrganoidPhotoScanComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -61,6 +62,10 @@ class AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHaza
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidLogComponent* LogComponent;
 
+	/** Photography / scanning mode (DoF + lore extract + hi-res capture) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidPhotoScanComponent* PhotoScanComponent;
+
 	/** Maximum suit health */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
 	float MaxHealth = 100.0f;
@@ -86,6 +91,18 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
+
+	/** Toggle photography / scanning mode */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PhotoModeAction;
+
+	/** Extract lore from focused scan target (photo mode) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PhotoScanAction;
+
+	/** Capture high-res screenshot (photo mode) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* PhotoCaptureAction;
 
 	/** Current suit integrity / health */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
@@ -180,6 +197,19 @@ public:
 	/** Toggle PE Tactical Mode (time dilation + targeting sphere) */
 	UFUNCTION(BlueprintCallable, Category = "Tactical")
 	void ToggleTacticalMode();
+
+	/** Toggle photography / scanning mode */
+	UFUNCTION(BlueprintCallable, Category = "Photo")
+	void TogglePhotoMode();
+
+	UFUNCTION(BlueprintCallable, Category = "Photo")
+	void PerformPhotoScan();
+
+	UFUNCTION(BlueprintCallable, Category = "Photo")
+	void CapturePhotoScreenshot();
+
+	UFUNCTION(BlueprintPure, Category = "Photo")
+	bool IsPhotoModeActive() const;
 
 	/** Broadcast when Tactical Mode engages or disengages */
 	UPROPERTY(BlueprintAssignable, Category = "Tactical")
@@ -301,4 +331,7 @@ public:
 
 	/** Returns lore log component **/
 	FORCEINLINE UProjectOrganoidLogComponent* GetLogComponent() const { return LogComponent; }
+
+	/** Returns photography / scanning component **/
+	FORCEINLINE UProjectOrganoidPhotoScanComponent* GetPhotoScanComponent() const { return PhotoScanComponent; }
 };

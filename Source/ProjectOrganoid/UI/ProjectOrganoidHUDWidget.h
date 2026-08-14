@@ -73,6 +73,26 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Objectives")
 	void RefreshObjectiveList(const TArray<FProjectOrganoidObjective>& ActiveObjectives);
 
+	/** Full quest journal refresh (multi-stage board) */
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Journal")
+	void RefreshJournal(const TArray<FProjectOrganoidObjective>& JournalEntries);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Journal")
+	void ShowJournalStage(int32 StageIndex, const TArray<FProjectOrganoidObjective>& StageObjectives);
+
+	/** Photo / scan mode overlay hooks */
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Photo")
+	void OnPhotoModeChanged(bool bActive);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Photo")
+	void OnScanFocusChanged(AActor* FocusedActor, const FText& DisplayName);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Photo")
+	void OnScanLoreExtracted(const FProjectOrganoidLogEntry& LoreEntry, bool bNewLore);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Photo")
+	void OnPhotoCaptured(const FString& ScreenshotPath);
+
 protected:
 
 	virtual void NativeConstruct() override;
@@ -91,5 +111,25 @@ protected:
 	UFUNCTION()
 	void HandleObjectivePopup(const FProjectOrganoidObjective& Objective, FName PopupReason);
 
+	UFUNCTION()
+	void HandleJournalUpdated();
+
+	UFUNCTION()
+	void HandleJournalStageChanged(int32 StageIndex, const TArray<FProjectOrganoidObjective>& StageObjectives);
+
+	UFUNCTION()
+	void HandlePhotoModeChanged(bool bActive);
+
+	UFUNCTION()
+	void HandleScanFocusChanged(AActor* FocusedActor, FText DisplayName);
+
+	UFUNCTION()
+	void HandleScanCompleted(AActor* ScannedActor, const FProjectOrganoidLogEntry& LoreEntry, bool bNewLore);
+
+	UFUNCTION()
+	void HandlePhotoCaptured(const FString& ScreenshotPath);
+
 	void RefreshActiveObjectiveList();
+	void BindPhotoScanEvents();
+	void UnbindPhotoScanEvents();
 };

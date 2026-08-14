@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidAudioSubsystem.h"
+#include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidPerceptionComponent.h"
 #include "Components/AudioComponent.h"
@@ -217,7 +218,19 @@ bool UProjectOrganoidAudioSubsystem::PlayFootstepAtLocation(
 
 	if (FootstepSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(World, FootstepSound, Location, 1.0f, 1.0f, 0.0f);
+		float Volume = 1.0f;
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			if (AProjectOrganoidCharacter* Listener = BoundCharacter.Get())
+			{
+				const float Occlusion = Ambience->EvaluateSoundOcclusion(
+					Listener->GetActorLocation() + FVector(0.0f, 0.0f, 64.0f),
+					Location,
+					Instigator);
+				Volume = 1.0f - (Occlusion * Ambience->MaxOcclusionAttenuation);
+			}
+		}
+		UGameplayStatics::PlaySoundAtLocation(World, FootstepSound, Location, Volume, 1.0f, 0.0f);
 	}
 
 	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, ResolvedTag);
@@ -242,7 +255,19 @@ void UProjectOrganoidAudioSubsystem::PlayGunfireAtLocation(
 
 	if (GunfireSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(World, GunfireSound, Location, 1.0f, 1.0f, 0.0f);
+		float Volume = 1.0f;
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			if (AProjectOrganoidCharacter* Listener = BoundCharacter.Get())
+			{
+				const float Occlusion = Ambience->EvaluateSoundOcclusion(
+					Listener->GetActorLocation() + FVector(0.0f, 0.0f, 64.0f),
+					Location,
+					Instigator);
+				Volume = 1.0f - (Occlusion * Ambience->MaxOcclusionAttenuation);
+			}
+		}
+		UGameplayStatics::PlaySoundAtLocation(World, GunfireSound, Location, Volume, 1.0f, 0.0f);
 	}
 
 	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, ProjectOrganoidNoiseTags::Gunfire);
