@@ -353,6 +353,7 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 			Saved.InstanceId = Placed.InstanceId;
 			Saved.OriginX = Placed.OriginX;
 			Saved.OriginY = Placed.OriginY;
+			Saved.StackCount = Placed.StackCount;
 			Saved.SecurityTier = Placed.ItemData->SecurityTier;
 			SaveGame->InventoryItems.Add(Saved);
 
@@ -442,7 +443,13 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 			}
 
 			FGuid NewId;
-			Inventory->TryAddItemAt(ItemData, Saved.OriginX, Saved.OriginY, NewId, Saved.InstanceId);
+			Inventory->TryAddItemAt(
+				ItemData,
+				Saved.OriginX,
+				Saved.OriginY,
+				NewId,
+				Saved.InstanceId,
+				FMath::Max(1, Saved.StackCount));
 		}
 	}
 

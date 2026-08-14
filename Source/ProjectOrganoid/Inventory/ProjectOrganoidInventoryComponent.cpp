@@ -89,6 +89,125 @@ int32 UProjectOrganoidInventoryComponent::FindPlacedItemIndex(FGuid InstanceId) 
 void UProjectOrganoidInventoryComponent::NotifyInventoryChanged()
 {
 	OnInventoryChanged.Broadcast();
+	NotifyWeightChanged();
+}
+
+void UProjectOrganoidInventoryComponent::NotifyWeightChanged()
+{
+	OnInventoryWeightChanged.Broadcast(GetCurrentCarryWeight(), MaxCarryWeight);
+}
+
+void UProjectOrganoidInventoryComponent::BroadcastItemPickedUp(UProjectOrganoidItemData* ItemData, int32 Quantity)
+{
+	if (ItemData && Quantity > 0)
+	{
+		OnItemPickedUp.Broadcast(ItemData, Quantity);
+	}
+}
+
+int32 UProjectOrganoidInventoryComponent::GetMaxStackForItem(const UProjectOrganoidItemData* ItemData) const
+{
+	if (!ItemData)
+	{
+		return 1;
+	}
+
+	if (!ItemData->bCanStack)
+	{
+		return 1;
+	}
+
+	return FMath::Max(1, ItemData->MaxStackCount);
+}
+
+float UProjectOrganoidInventoryComponent::GetCurrentCarryWeight() const
+{
+	float Total = 0.0f;
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		Total += Placed.GetTotalWeight();
+	}
+	return Total;
+}
+
+float UProjectOrganoidInventoryComponent::GetRemainingCarryWeight() const
+{
+	if (MaxCarryWeight <= KINDA_SMALL_NUMBER)
+	{
+		return TNumericLimits<float>::Max();
+	}
+	return FMath::Max(0.0f, MaxCarryWeight - GetCurrentCarryWeight());
+}
+
+bool UProjectOrganoidInventoryComponent::CanCarryAdditionalWeight(float AdditionalWeight) const
+{
+	if (AdditionalWeight <= KINDA_SMALL_NUMBER)
+	{
+		return true;
+	}
+	if (MaxCarryWeight <= KINDA_SMALL_NUMBER)
+	{
+		return true;
+	}
+	return GetCurrentCarryWeight() + AdditionalWeight <= MaxCarryWeight + KINDA_SMALL_NUMBER;
+}
+
+bool UProjectOrganoidInventoryComponent::HasUniqueSlotCapacity(int32 AdditionalSlots) const
+{
+	if (MaxUniqueItemSlots <= 0)
+	{
+		return true;
+	}
+	return PlacedItems.Num() + AdditionalSlots <= MaxUniqueItemSlots;
+}
+
+int32 UProjectOrganoidInventoryComponent::TryFillExistingStacks(UProjectOrganoidItemData* ItemData, int32 Quantity)
+{
+	if (!ItemData || Quantity <= 0 || !ItemData->bCanStack)
+	{
+		return Quantity;
+	}
+
+	const int32 MaxStack = GetMaxStackForItem(ItemData);
+	int32 Remaining = Quantity;
+
+	for (FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (!Placed.IsValid() || Placed.ItemData != ItemData)
+		{
+			continue;
+		}
+
+		const int32 FreeSpace = MaxStack - Placed.StackCount;
+		if (FreeSpace <= 0)
+		{
+			continue;
+		}
+
+		const int32 ToAdd = FMath::Min(FreeSpace, Remaining);
+		const float AddedWeight = ItemData->ItemWeight * static_cast<float>(ToAdd);
+		if (!CanCarryAdditionalWeight(AddedWeight))
+		{
+			const int32 WeightLimited = FMath::FloorToInt(GetRemainingCarryWeight() / FMath::Max(ItemData->ItemWeight, KINDA_SMALL_NUMBER));
+			const int32 Clamped = FMath::Clamp(WeightLimited, 0, ToAdd);
+			if (Clamped <= 0)
+			{
+				break;
+			}
+			Placed.StackCount += Clamped;
+			Remaining -= Clamped;
+			break;
+		}
+
+		Placed.StackCount += ToAdd;
+		Remaining -= ToAdd;
+		if (Remaining <= 0)
+		{
+			break;
+		}
+	}
+
+	return Remaining;
 }
 
 bool UProjectOrganoidInventoryComponent::IsValidSlot(int32 SlotX, int32 SlotY) const
@@ -174,18 +293,59 @@ bool UProjectOrganoidInventoryComponent::FindFirstFit(
 	return false;
 }
 
-bool UProjectOrganoidInventoryComponent::TryAddItem(UProjectOrganoidItemData* ItemData, FGuid& OutInstanceId)
+bool UProjectOrganoidInventoryComponent::TryAddItem(UProjectOrganoidItemData* ItemData, FGuid& OutInstanceId, int32 Quantity)
 {
 	OutInstanceId.Invalidate();
+	Quantity = FMath::Max(1, Quantity);
 
-	int32 OriginX = 0;
-	int32 OriginY = 0;
-	if (!FindFirstFit(ItemData, OriginX, OriginY))
+	if (!ItemData)
 	{
 		return false;
 	}
 
-	return TryAddItemAt(ItemData, OriginX, OriginY, OutInstanceId);
+	const float TotalWeight = ItemData->ItemWeight * static_cast<float>(Quantity);
+	if (!CanCarryAdditionalWeight(TotalWeight))
+	{
+		return false;
+	}
+
+	int32 Remaining = TryFillExistingStacks(ItemData, Quantity);
+
+	while (Remaining > 0)
+	{
+		if (!HasUniqueSlotCapacity(1))
+		{
+			break;
+		}
+
+		int32 OriginX = 0;
+		int32 OriginY = 0;
+		if (!FindFirstFit(ItemData, OriginX, OriginY))
+		{
+			break;
+		}
+
+		const int32 MaxStack = GetMaxStackForItem(ItemData);
+		const int32 PlaceQty = FMath::Min(Remaining, MaxStack);
+		FGuid NewId;
+		if (!TryAddItemAt(ItemData, OriginX, OriginY, NewId, FGuid(), PlaceQty))
+		{
+			break;
+		}
+
+		OutInstanceId = NewId;
+		Remaining -= PlaceQty;
+	}
+
+	const int32 Accepted = Quantity - Remaining;
+	if (Accepted <= 0)
+	{
+		return false;
+	}
+
+	BroadcastItemPickedUp(ItemData, Accepted);
+	NotifyInventoryChanged();
+	return Remaining <= 0;
 }
 
 bool UProjectOrganoidInventoryComponent::TryAddItemAt(
@@ -193,9 +353,30 @@ bool UProjectOrganoidInventoryComponent::TryAddItemAt(
 	int32 OriginX,
 	int32 OriginY,
 	FGuid& OutInstanceId,
-	FGuid PreferredInstanceId)
+	FGuid PreferredInstanceId,
+	int32 Quantity)
 {
 	OutInstanceId.Invalidate();
+	Quantity = FMath::Max(1, Quantity);
+
+	if (!ItemData)
+	{
+		return false;
+	}
+
+	const int32 MaxStack = GetMaxStackForItem(ItemData);
+	Quantity = FMath::Min(Quantity, MaxStack);
+
+	const float AddedWeight = ItemData->ItemWeight * static_cast<float>(Quantity);
+	if (!CanCarryAdditionalWeight(AddedWeight))
+	{
+		return false;
+	}
+
+	if (!HasUniqueSlotCapacity(1))
+	{
+		return false;
+	}
 
 	if (!CanPlaceItem(ItemData, OriginX, OriginY, FGuid()))
 	{
@@ -207,11 +388,38 @@ bool UProjectOrganoidInventoryComponent::TryAddItemAt(
 	NewItem.ItemData = ItemData;
 	NewItem.OriginX = OriginX;
 	NewItem.OriginY = OriginY;
+	NewItem.StackCount = Quantity;
 
 	PlacedItems.Add(NewItem);
 	RebuildOccupancy();
 
 	OutInstanceId = NewItem.InstanceId;
+	NotifyInventoryChanged();
+	return true;
+}
+
+bool UProjectOrganoidInventoryComponent::ConsumeStack(FGuid InstanceId, int32 Quantity)
+{
+	Quantity = FMath::Max(1, Quantity);
+	const int32 ItemIndex = FindPlacedItemIndex(InstanceId);
+	if (ItemIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	FProjectOrganoidPlacedItem& Placed = PlacedItems[ItemIndex];
+	if (Placed.StackCount < Quantity)
+	{
+		return false;
+	}
+
+	Placed.StackCount -= Quantity;
+	if (Placed.StackCount <= 0)
+	{
+		PlacedItems.RemoveAt(ItemIndex);
+		RebuildOccupancy();
+	}
+
 	NotifyInventoryChanged();
 	return true;
 }
@@ -415,7 +623,7 @@ int32 UProjectOrganoidInventoryComponent::CountItemsOfType(EProjectOrganoidItemT
 	{
 		if (Placed.IsValid() && Placed.ItemData->ItemType == ItemType)
 		{
-			++Count;
+			Count += Placed.StackCount;
 		}
 	}
 	return Count;
@@ -433,25 +641,27 @@ bool UProjectOrganoidInventoryComponent::ConsumeItemsOfType(EProjectOrganoidItem
 		return false;
 	}
 
-	TArray<FGuid> ToRemove;
-	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	int32 Remaining = Count;
+	for (int32 Index = PlacedItems.Num() - 1; Index >= 0 && Remaining > 0; --Index)
 	{
-		if (Placed.IsValid() && Placed.ItemData->ItemType == ItemType)
+		FProjectOrganoidPlacedItem& Placed = PlacedItems[Index];
+		if (!Placed.IsValid() || Placed.ItemData->ItemType != ItemType)
 		{
-			ToRemove.Add(Placed.InstanceId);
-			if (ToRemove.Num() >= Count)
-			{
-				break;
-			}
+			continue;
+		}
+
+		const int32 Take = FMath::Min(Placed.StackCount, Remaining);
+		Placed.StackCount -= Take;
+		Remaining -= Take;
+		if (Placed.StackCount <= 0)
+		{
+			PlacedItems.RemoveAt(Index);
 		}
 	}
 
-	for (const FGuid& Id : ToRemove)
-	{
-		RemoveItem(Id);
-	}
-
-	return true;
+	RebuildOccupancy();
+	NotifyInventoryChanged();
+	return Remaining <= 0;
 }
 
 void UProjectOrganoidInventoryComponent::ClearAllItems()

@@ -13,6 +13,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UProjectOrganoidInventoryComponent;
+class UProjectOrganoidItemData;
 class UProjectOrganoidWeaponComponent;
 class UProjectOrganoidInteractionComponent;
 class UProjectOrganoidFeedbackComponent;
@@ -162,6 +163,9 @@ protected:
 
 	/** Apply or clear Tactical Mode time dilation and state */
 	void SetTacticalModeActive(bool bActive);
+
+	UFUNCTION()
+	void HandleInventoryItemPickedUp(UProjectOrganoidItemData* ItemData, int32 Quantity);
 
 protected:
 

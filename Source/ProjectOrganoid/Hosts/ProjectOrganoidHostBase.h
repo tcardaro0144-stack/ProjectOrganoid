@@ -12,6 +12,7 @@
 
 class USphereComponent;
 class UProjectOrganoidPerceptionComponent;
+class UProjectOrganoidHitReactionComponent;
 class AActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHostDamaged, const FProjectOrganoidBallisticHit&, HitInfo, AActor*, DamageCauser);
@@ -50,6 +51,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|AI")
 	TObjectPtr<UProjectOrganoidPerceptionComponent> HostPerception;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Combat")
+	TObjectPtr<UProjectOrganoidHitReactionComponent> HitReaction;
 
 	// -------------------------------------------------------------------------
 	// Vitals

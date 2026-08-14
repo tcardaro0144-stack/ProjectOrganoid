@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AIController.h"
 #include "ProjectOrganoidPerceptionComponent.h"
+#include "ProjectOrganoidHitReactionComponent.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
@@ -43,6 +44,7 @@ AProjectOrganoidHostBase::AProjectOrganoidHostBase()
 	BioCoreHitbox->ComponentTags.AddUnique(TEXT("BioCore"));
 
 	HostPerception = CreateDefaultSubobject<UProjectOrganoidPerceptionComponent>(TEXT("HostPerception"));
+	HitReaction = CreateDefaultSubobject<UProjectOrganoidHitReactionComponent>(TEXT("HitReaction"));
 }
 
 void AProjectOrganoidHostBase::ConfigureWeakPointHitbox(USphereComponent* Hitbox, FName Tag, float Radius, FVector RelativeLocation)
@@ -210,6 +212,11 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 	if (bIsDead || bIsIncapacitated)
 	{
 		return;
+	}
+
+	if (HitReaction)
+	{
+		HitReaction->ProcessBallisticHit(HitInfo, DamageCauser);
 	}
 
 	float AppliedDamage = FMath::Max(0.0f, HitInfo.FinalDamage);

@@ -65,6 +65,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	void RecordDamageTaken(float Amount);
 
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	void RecordTerminalHack(int32 Count = 1);
+
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	void RecordItemPickup(int32 Count = 1);
+
 	/** Hazard-volume helper — records damage taken when Target is Avery */
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	void RecordHazardDamageTaken(AActor* Target, EProjectOrganoidHazardType HazardType, float Amount);

@@ -11,10 +11,12 @@
 class UProjectOrganoidItemData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnProjectOrganoidInventoryChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidItemPickedUp, UProjectOrganoidItemData*, ItemData, int32, Quantity);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidInventoryWeightChanged, float, CurrentWeight, float, MaxWeight);
 
 /**
- *  Grid inventory for Avery Vance — Resident Evil-style slot packing.
- *  Handles can-place checks, add, move, and remove within Width x Height.
+ *  Grid inventory for Avery Vance — RE-style slot packing with weight limits,
+ *  unique-slot caps, and stackable ammo / SOT / consumables.
  */
 UCLASS(ClassGroup = (ProjectOrganoid), meta = (BlueprintSpawnableComponent))
 class UProjectOrganoidInventoryComponent : public UActorComponent
@@ -35,9 +37,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory|Grid", meta = (ClampMin = "1"))
 	int32 GridHeight = 6;
 
+	/** Hard cap on distinct placed stacks (0 = unlimited beyond grid) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory|Limits", meta = (ClampMin = "0"))
+	int32 MaxUniqueItemSlots = 0;
+
+	/** Max carry weight; 0 = unlimited */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory|Weight", meta = (ClampMin = "0.0"))
+	float MaxCarryWeight = 40.0f;
+
 	/** Fired after any successful add / move / remove (UMG refresh) */
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnProjectOrganoidInventoryChanged OnInventoryChanged;
+
+	/** Fired when items are newly acquired (stats / achievements / UI toasts) */
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnProjectOrganoidItemPickedUp OnItemPickedUp;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory|Weight")
+	FOnProjectOrganoidInventoryWeightChanged OnInventoryWeightChanged;
 
 	/** True if ItemData footprint fits at (OriginX, OriginY) without overlap */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -47,13 +64,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool FindFirstFit(const UProjectOrganoidItemData* ItemData, int32& OutOriginX, int32& OutOriginY) const;
 
-	/** Place ItemData at the first available fit. Returns false if full. */
+	/**
+	 *  Add Quantity units — stacks into existing cells when possible, then places new cells.
+	 *  Returns false if weight / slots / grid cannot accept the full quantity.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool TryAddItem(UProjectOrganoidItemData* ItemData, FGuid& OutInstanceId);
+	bool TryAddItem(UProjectOrganoidItemData* ItemData, FGuid& OutInstanceId, int32 Quantity = 1);
 
 	/** Place ItemData at an explicit origin. Returns false if blocked. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool TryAddItemAt(UProjectOrganoidItemData* ItemData, int32 OriginX, int32 OriginY, FGuid& OutInstanceId, FGuid PreferredInstanceId = FGuid());
+	bool TryAddItemAt(UProjectOrganoidItemData* ItemData, int32 OriginX, int32 OriginY, FGuid& OutInstanceId, FGuid PreferredInstanceId = FGuid(), int32 Quantity = 1);
 
 	/** Move an existing instance to a new origin */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -66,6 +86,10 @@ public:
 	/** Remove whatever occupies slot (X, Y) */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool RemoveItemAt(int32 SlotX, int32 SlotY);
+
+	/** Reduce a stack; removes the cell when StackCount hits 0 */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Stack")
+	bool ConsumeStack(FGuid InstanceId, int32 Quantity = 1);
 
 	/** Placed item covering slot (X, Y), if any */
 	UFUNCTION(BlueprintPure, Category = "Inventory")
@@ -95,6 +119,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	TArray<int32> GetOccupancyMap() const { return Occupancy; }
 
+	UFUNCTION(BlueprintPure, Category = "Inventory|Weight")
+	float GetCurrentCarryWeight() const;
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Weight")
+	float GetMaxCarryWeight() const { return MaxCarryWeight; }
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Weight")
+	float GetRemainingCarryWeight() const;
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Weight")
+	bool CanCarryAdditionalWeight(float AdditionalWeight) const;
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Limits")
+	int32 GetUsedUniqueItemSlots() const { return PlacedItems.Num(); }
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Limits")
+	bool HasUniqueSlotCapacity(int32 AdditionalSlots = 1) const;
+
 	/** True if inventory holds a KeyItem whose SecurityTier >= RequiredTier */
 	UFUNCTION(BlueprintPure, Category = "Inventory|Security")
 	bool HasKeycardOfTier(EProjectOrganoidSecurityTier RequiredTier) const;
@@ -111,11 +153,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory|Security")
 	bool ConsumeSecurityOverrideTool(EProjectOrganoidSecurityTier RequiredTier);
 
-	/** Count stacked items of a given type (e.g. SOT tissue units) */
+	/** Count stacked items of a given type (sums StackCount) */
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	int32 CountItemsOfType(EProjectOrganoidItemType ItemType) const;
 
-	/** Remove up to Count items of the given type. Returns false if not enough. */
+	/** Remove up to Count stacked units of the given type. Returns false if not enough. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool ConsumeItemsOfType(EProjectOrganoidItemType ItemType, int32 Count);
 
@@ -142,4 +184,8 @@ protected:
 	int32 SlotIndex(int32 SlotX, int32 SlotY) const;
 	int32 FindPlacedItemIndex(FGuid InstanceId) const;
 	void NotifyInventoryChanged();
+	void NotifyWeightChanged();
+	void BroadcastItemPickedUp(UProjectOrganoidItemData* ItemData, int32 Quantity);
+	int32 GetMaxStackForItem(const UProjectOrganoidItemData* ItemData) const;
+	int32 TryFillExistingStacks(UProjectOrganoidItemData* ItemData, int32 Quantity);
 };

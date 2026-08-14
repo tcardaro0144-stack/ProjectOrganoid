@@ -8,7 +8,7 @@
 
 /**
  *  A placed item occupying one or more cells in the inventory grid.
- *  Origin is the top-left slot (column X, row Y).
+ *  Origin is the top-left slot (column X, row Y). StackCount supports ammo / SOT stacks.
  */
 USTRUCT(BlueprintType)
 struct FProjectOrganoidPlacedItem
@@ -31,8 +31,17 @@ struct FProjectOrganoidPlacedItem
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 OriginY = 0;
 
+	/** Units in this cell (ammo / consumables). Always >= 1 when valid. */
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory|Stack")
+	int32 StackCount = 1;
+
 	bool IsValid() const
 	{
-		return InstanceId.IsValid() && ItemData != nullptr;
+		return InstanceId.IsValid() && ItemData != nullptr && StackCount > 0;
+	}
+
+	float GetTotalWeight() const
+	{
+		return IsValid() ? ItemData->ItemWeight * static_cast<float>(StackCount) : 0.0f;
 	}
 };

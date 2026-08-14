@@ -10,6 +10,7 @@
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidPowerSubsystem.h"
+#include "ProjectOrganoidStatsSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Blueprint/UserWidget.h"
@@ -162,6 +163,17 @@ void AProjectOrganoidTerminal::ApplyHackRewards(AProjectOrganoidCharacter* Chara
 
 	bHasBeenHacked = true;
 	UnlockLinkedSecurity();
+
+	if (Character)
+	{
+		if (UGameInstance* GI = Character->GetGameInstance())
+		{
+			if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+			{
+				Stats->RecordTerminalHack(1);
+			}
+		}
+	}
 
 	if (bGrantRewardLogOnSuccess)
 	{

@@ -87,6 +87,28 @@ void UProjectOrganoidStatsSubsystem::RecordDamageTaken(float Amount)
 	NotifyStatChanged(EProjectOrganoidStatMetric::DamageTaken);
 }
 
+void UProjectOrganoidStatsSubsystem::RecordTerminalHack(int32 Count)
+{
+	if (Count <= 0)
+	{
+		return;
+	}
+
+	PlayerStats.TerminalHacks += Count;
+	NotifyStatChanged(EProjectOrganoidStatMetric::TerminalHacks);
+}
+
+void UProjectOrganoidStatsSubsystem::RecordItemPickup(int32 Count)
+{
+	if (Count <= 0)
+	{
+		return;
+	}
+
+	PlayerStats.ItemPickups += Count;
+	NotifyStatChanged(EProjectOrganoidStatMetric::ItemPickups);
+}
+
 void UProjectOrganoidStatsSubsystem::RecordHazardDamageTaken(AActor* Target, EProjectOrganoidHazardType /*HazardType*/, float Amount)
 {
 	if (!Cast<AProjectOrganoidCharacter>(Target))

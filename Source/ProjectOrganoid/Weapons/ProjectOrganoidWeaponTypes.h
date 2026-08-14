@@ -66,6 +66,13 @@ struct FProjectOrganoidBallisticHit
 	UPROPERTY(BlueprintReadOnly, Category = "Ballistics")
 	float FinalDamage = 0.0f;
 
+	/** Shot / impulse direction used for hit reactions (usually toward impact) */
+	UPROPERTY(BlueprintReadOnly, Category = "Ballistics")
+	FVector ImpactDirection = FVector::ForwardVector;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Ballistics")
+	float ImpulseStrength = 0.0f;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Ballistics")
 	bool bTriggeredDismemberment = false;
 

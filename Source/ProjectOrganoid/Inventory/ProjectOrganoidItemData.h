@@ -71,6 +71,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security", meta = (EditCondition = "bIsSecurityOverrideTool"))
 	EProjectOrganoidSecurityTier OverrideClearsUpTo = EProjectOrganoidSecurityTier::Level2_Lab;
 
+	/** Carry weight contribution per unit (stack counts multiply this) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Weight", meta = (ClampMin = "0.0"))
+	float ItemWeight = 1.0f;
+
+	/** Whether identical ItemData instances merge into one grid cell */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Stack")
+	bool bCanStack = false;
+
+	/** Max units in a single stacked placement (1 = no stacking) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Stack", meta = (ClampMin = "1", EditCondition = "bCanStack"))
+	int32 MaxStackCount = 1;
+
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
 		return FPrimaryAssetId(TEXT("ProjectOrganoidItem"), GetFName());

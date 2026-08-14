@@ -13,7 +13,9 @@ enum class EProjectOrganoidStatMetric : uint8
 	HostKills UMETA(DisplayName = "Host Kills"),
 	DataPadsRead UMETA(DisplayName = "Data Pads Read"),
 	SecurityGatesOverridden UMETA(DisplayName = "Security Gates Overridden"),
-	DamageTaken UMETA(DisplayName = "Damage Taken")
+	DamageTaken UMETA(DisplayName = "Damage Taken"),
+	TerminalHacks UMETA(DisplayName = "Terminal Hacks"),
+	ItemPickups UMETA(DisplayName = "Item Pickups")
 };
 
 /** Runtime + serialized player statistics */
@@ -34,6 +36,12 @@ struct FProjectOrganoidPlayerStats
 	UPROPERTY(BlueprintReadWrite, Category = "Stats")
 	float DamageTaken = 0.0f;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Stats")
+	int32 TerminalHacks = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Stats")
+	int32 ItemPickups = 0;
+
 	int32 GetMetricInt(EProjectOrganoidStatMetric Metric) const
 	{
 		switch (Metric)
@@ -42,6 +50,8 @@ struct FProjectOrganoidPlayerStats
 		case EProjectOrganoidStatMetric::DataPadsRead: return DataPadsRead;
 		case EProjectOrganoidStatMetric::SecurityGatesOverridden: return SecurityGatesOverridden;
 		case EProjectOrganoidStatMetric::DamageTaken: return FMath::FloorToInt(DamageTaken);
+		case EProjectOrganoidStatMetric::TerminalHacks: return TerminalHacks;
+		case EProjectOrganoidStatMetric::ItemPickups: return ItemPickups;
 		default: return 0;
 		}
 	}

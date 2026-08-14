@@ -36,6 +36,9 @@ struct FProjectOrganoidSavedInventoryItem
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	int32 OriginY = 0;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	int32 StackCount = 1;
+
 	/** Denormalized keycard tier for quick restore / UI */
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	EProjectOrganoidSecurityTier SecurityTier = EProjectOrganoidSecurityTier::None;

@@ -18,6 +18,7 @@
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoidLogComponent.h"
+#include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidAudioSubsystem.h"
 #include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
@@ -85,6 +86,11 @@ void AProjectOrganoidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (InventoryComponent)
+	{
+		InventoryComponent->OnItemPickedUp.AddDynamic(this, &AProjectOrganoidCharacter::HandleInventoryItemPickedUp);
+	}
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
@@ -101,6 +107,11 @@ void AProjectOrganoidCharacter::BeginPlay()
 
 void AProjectOrganoidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (InventoryComponent)
+	{
+		InventoryComponent->OnItemPickedUp.RemoveDynamic(this, &AProjectOrganoidCharacter::HandleInventoryItemPickedUp);
+	}
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UProjectOrganoidAudioSubsystem* AudioSubsystem = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
@@ -115,6 +126,22 @@ void AProjectOrganoidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void AProjectOrganoidCharacter::HandleInventoryItemPickedUp(UProjectOrganoidItemData* /*ItemData*/, int32 Quantity)
+{
+	if (Quantity <= 0)
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
+		{
+			Stats->RecordItemPickup(Quantity);
+		}
+	}
 }
 
 void AProjectOrganoidCharacter::Tick(float DeltaTime)

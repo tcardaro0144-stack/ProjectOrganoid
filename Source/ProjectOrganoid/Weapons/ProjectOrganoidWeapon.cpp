@@ -246,6 +246,11 @@ int32 AProjectOrganoidWeapon::ApplyOverchargedPulseEffects(const FVector& Origin
 			PulseHit.ImpactPoint = Host->GetActorLocation();
 			PulseHit.FinalDamage = OverchargedPulseDamage;
 			PulseHit.bTacticalModeHit = IsOwnerInTacticalMode();
+			PulseHit.ImpactDirection = (Host->GetActorLocation() - Origin).GetSafeNormal();
+			if (PulseHit.ImpactDirection.IsNearlyZero())
+			{
+				PulseHit.ImpactDirection = GetActorForwardVector();
+			}
 			IProjectOrganoidDamageable::Execute_ApplyOrganoidHit(Host, PulseHit, this);
 			++AffectedCount;
 		}
@@ -410,6 +415,12 @@ FProjectOrganoidBallisticHit AProjectOrganoidWeapon::ProcessBallisticHit(const F
 	Result.bTacticalModeHit = bIsTacticalMode;
 	Result.FinalDamage = InDamage;
 	Result.WeakPoint = EProjectOrganoidWeakPointType::None;
+	Result.ImpactDirection = -Hit.ImpactNormal;
+	if (Result.ImpactDirection.IsNearlyZero())
+	{
+		Result.ImpactDirection = (Hit.ImpactPoint - Hit.TraceStart).GetSafeNormal();
+	}
+	Result.ImpulseStrength = 0.0f;
 
 	AActor* HitActor = Hit.GetActor();
 	if (HitActor && HitActor->GetClass()->ImplementsInterface(UProjectOrganoidDamageable::StaticClass()))
