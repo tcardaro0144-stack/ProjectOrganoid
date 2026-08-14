@@ -53,7 +53,7 @@ public:
 
 	/** Place ItemData at an explicit origin. Returns false if blocked. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool TryAddItemAt(UProjectOrganoidItemData* ItemData, int32 OriginX, int32 OriginY, FGuid& OutInstanceId);
+	bool TryAddItemAt(UProjectOrganoidItemData* ItemData, int32 OriginX, int32 OriginY, FGuid& OutInstanceId, FGuid PreferredInstanceId = FGuid());
 
 	/** Move an existing instance to a new origin */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")

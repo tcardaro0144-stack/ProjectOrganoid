@@ -7,10 +7,23 @@
 #include "ProjectOrganoidUpgradeTypes.h"
 #include "ProjectOrganoidWeaponModTypes.h"
 #include "ProjectOrganoidStatsTypes.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidSaveGame.generated.h"
 
+/** Why a save blob was written (checkpoint, objective autosave, manual, etc.) */
+UENUM(BlueprintType)
+enum class EProjectOrganoidSaveReason : uint8
+{
+	Manual UMETA(DisplayName = "Manual"),
+	Checkpoint UMETA(DisplayName = "Checkpoint"),
+	ObjectiveAutosave UMETA(DisplayName = "Objective Autosave"),
+	Terminal UMETA(DisplayName = "Sterling Terminal"),
+	MissionComplete UMETA(DisplayName = "Mission Complete")
+};
+
 /**
- *  Disk-serialized Avery progress: vitals, upgrades, inventory grid, keycards.
+ *  Disk-serialized Avery progress:
+ *  vitals, upgrades, inventory grid, weapon mods, objectives, stats, checkpoint.
  */
 UCLASS(BlueprintType)
 class UProjectOrganoidSaveGame : public USaveGame
@@ -24,6 +37,27 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	int32 UserIndex = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	EProjectOrganoidSaveReason SaveReason = EProjectOrganoidSaveReason::Manual;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	FDateTime SaveTimestamp;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	FString LevelName;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	FName LastCheckpointId = NAME_None;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	FText LastCheckpointDisplayName;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	FTransform PlayerTransform = FTransform::Identity;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Meta")
+	bool bHasPlayerTransform = false;
 
 	// --- Suit vitals ---
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Vitals")
@@ -93,6 +127,27 @@ public:
 	/** Distinct keycard tiers present in inventory at save time */
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Security")
 	TArray<EProjectOrganoidSecurityTier> OwnedKeycardTiers;
+
+	// --- Objectives / mission ---
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Objectives")
+	FName ActiveMissionId = NAME_None;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Objectives")
+	FText ActiveMissionTitle;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Objectives")
+	TArray<FName> ActiveMissionObjectiveIds;
+
+	/** Full objective board (active, completed, failed, inactive) */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Objectives")
+	TArray<FProjectOrganoidObjective> Objectives;
+
+	/** Convenience mirror of completed objective ids */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Objectives")
+	TArray<FName> CompletedObjectiveIds;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Objectives")
+	TArray<FProjectOrganoidObjectiveEventTrigger> ObjectiveEventTriggers;
 
 	// --- Stats / achievements ---
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Stats")

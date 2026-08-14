@@ -8,6 +8,7 @@
 #include "ProjectOrganoidObjectiveSubsystem.generated.h"
 
 class UProjectOrganoidObjectiveDataAsset;
+class UProjectOrganoidSaveGame;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidObjectiveChanged, const FProjectOrganoidObjective&, Objective);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidObjectivePopup, const FProjectOrganoidObjective&, Objective, FName, PopupReason);
@@ -106,6 +107,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Objectives|Mission")
 	bool IsMissionComplete(FName MissionId) const;
 
+	/** Persist active mission + all objectives / event triggers into a save object */
+	UFUNCTION(BlueprintCallable, Category = "Objectives|Save")
+	void CaptureObjectivesToSaveGame(UProjectOrganoidSaveGame* SaveGame) const;
+
+	/** Restore mission board from a save object (replaces live objective state) */
+	UFUNCTION(BlueprintCallable, Category = "Objectives|Save")
+	void ApplyObjectivesFromSaveGame(const UProjectOrganoidSaveGame* SaveGame);
+
 protected:
 
 	UPROPERTY()
@@ -123,6 +132,8 @@ protected:
 	/** Objective ids that belong to the active mission (for mission-complete checks) */
 	UPROPERTY()
 	TArray<FName> ActiveMissionObjectiveIds;
+
+	bool bActiveMissionCompletionNotified = false;
 
 	int32 FindObjectiveIndex(FName ObjectiveId) const;
 	void RequestPopup(const FProjectOrganoidObjective& Objective, FName Reason);

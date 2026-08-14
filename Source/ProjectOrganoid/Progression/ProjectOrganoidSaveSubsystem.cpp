@@ -2,6 +2,7 @@
 
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidSaveGame.h"
+#include "ProjectOrganoidCheckpoint.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidInventoryComponent.h"
 #include "ProjectOrganoidItemData.h"
@@ -9,7 +10,101 @@
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidWeaponModComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
+#include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
+
+void UProjectOrganoidSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	Collection.InitializeDependency(UProjectOrganoidObjectiveSubsystem::StaticClass());
+
+	// Key lockdown mission tasks always qualify for autosave even if Main-type filter is off.
+	AutosaveObjectiveIds.AddUnique(TEXT("Main_OverrideSecurityGate"));
+	AutosaveObjectiveIds.AddUnique(TEXT("Main_ReadFacilityDataPads"));
+	AutosaveObjectiveIds.AddUnique(TEXT("Main_ReachSterlingTerminal"));
+
+	BindObjectiveAutosave();
+}
+
+void UProjectOrganoidSaveSubsystem::Deinitialize()
+{
+	UnbindObjectiveAutosave();
+	Super::Deinitialize();
+}
+
+void UProjectOrganoidSaveSubsystem::BindObjectiveAutosave()
+{
+	if (bBoundToObjectives)
+	{
+		return;
+	}
+
+	if (UProjectOrganoidObjectiveSubsystem* Objectives = GetGameInstance()->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+	{
+		Objectives->OnObjectiveCompleted.AddDynamic(this, &UProjectOrganoidSaveSubsystem::HandleObjectiveCompleted);
+		Objectives->OnMissionCompleted.AddDynamic(this, &UProjectOrganoidSaveSubsystem::HandleMissionCompleted);
+		bBoundToObjectives = true;
+	}
+}
+
+void UProjectOrganoidSaveSubsystem::UnbindObjectiveAutosave()
+{
+	if (!bBoundToObjectives || !GetGameInstance())
+	{
+		return;
+	}
+
+	if (UProjectOrganoidObjectiveSubsystem* Objectives = GetGameInstance()->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+	{
+		Objectives->OnObjectiveCompleted.RemoveDynamic(this, &UProjectOrganoidSaveSubsystem::HandleObjectiveCompleted);
+		Objectives->OnMissionCompleted.RemoveDynamic(this, &UProjectOrganoidSaveSubsystem::HandleMissionCompleted);
+	}
+
+	bBoundToObjectives = false;
+}
+
+void UProjectOrganoidSaveSubsystem::HandleObjectiveCompleted(const FProjectOrganoidObjective& Objective)
+{
+	const bool bKeyId = AutosaveObjectiveIds.Contains(Objective.ObjectiveId);
+	const bool bMain = bAutosaveOnMainObjectiveComplete
+		&& Objective.Type == EProjectOrganoidObjectiveType::Main;
+
+	if (!bKeyId && !bMain)
+	{
+		return;
+	}
+
+	if (AProjectOrganoidCharacter* Character = ResolveLocalCharacter())
+	{
+		Autosave(Character, EProjectOrganoidSaveReason::ObjectiveAutosave);
+	}
+}
+
+void UProjectOrganoidSaveSubsystem::HandleMissionCompleted(FName MissionId)
+{
+	if (!bAutosaveOnMissionComplete || MissionId.IsNone())
+	{
+		return;
+	}
+
+	if (AProjectOrganoidCharacter* Character = ResolveLocalCharacter())
+	{
+		Autosave(Character, EProjectOrganoidSaveReason::MissionComplete);
+	}
+}
+
+AProjectOrganoidCharacter* UProjectOrganoidSaveSubsystem::ResolveLocalCharacter() const
+{
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	return Cast<AProjectOrganoidCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+}
 
 FString UProjectOrganoidSaveSubsystem::GetSlotNameForIndex(int32 SlotIndex) const
 {
@@ -82,15 +177,81 @@ bool UProjectOrganoidSaveSubsystem::TryApplyPendingLoad(AProjectOrganoidCharacte
 
 bool UProjectOrganoidSaveSubsystem::SavePlayerProgress(AProjectOrganoidCharacter* Character, const FString& SlotName)
 {
+	return SerializeGameState(Character, SlotName, EProjectOrganoidSaveReason::Manual, nullptr);
+}
+
+bool UProjectOrganoidSaveSubsystem::SaveAtCheckpoint(
+	AProjectOrganoidCharacter* Character,
+	AProjectOrganoidCheckpoint* Checkpoint,
+	const FString& SlotName)
+{
+	const FString Slot = SlotName.IsEmpty() ? AutosaveSlotName : SlotName;
+	return SerializeGameState(Character, Slot, EProjectOrganoidSaveReason::Checkpoint, Checkpoint);
+}
+
+bool UProjectOrganoidSaveSubsystem::Autosave(AProjectOrganoidCharacter* Character, EProjectOrganoidSaveReason Reason)
+{
+	return SerializeGameState(Character, AutosaveSlotName, Reason, nullptr);
+}
+
+bool UProjectOrganoidSaveSubsystem::SerializeGameState(
+	AProjectOrganoidCharacter* Character,
+	const FString& SlotName,
+	EProjectOrganoidSaveReason Reason,
+	AProjectOrganoidCheckpoint* Checkpoint)
+{
 	UProjectOrganoidSaveGame* SaveGame = CaptureSaveFromCharacter(Character);
 	if (!SaveGame)
 	{
+		OnGameSaved.Broadcast(SlotName, Reason, false);
 		return false;
 	}
 
-	const FString Slot = SlotName.IsEmpty() ? DefaultSaveSlot : SlotName;
+	const FString Slot = SlotName.IsEmpty()
+		? (Reason == EProjectOrganoidSaveReason::Manual ? DefaultSaveSlot : AutosaveSlotName)
+		: SlotName;
+
+	FillSaveMeta(SaveGame, Character, Reason, Checkpoint);
 	SaveGame->SaveSlotName = Slot;
-	return UGameplayStatics::SaveGameToSlot(SaveGame, Slot, SaveGame->UserIndex);
+
+	const bool bSucceeded = UGameplayStatics::SaveGameToSlot(SaveGame, Slot, SaveGame->UserIndex);
+	OnGameSaved.Broadcast(Slot, Reason, bSucceeded);
+	return bSucceeded;
+}
+
+void UProjectOrganoidSaveSubsystem::FillSaveMeta(
+	UProjectOrganoidSaveGame* SaveGame,
+	AProjectOrganoidCharacter* Character,
+	EProjectOrganoidSaveReason Reason,
+	AProjectOrganoidCheckpoint* Checkpoint) const
+{
+	if (!SaveGame)
+	{
+		return;
+	}
+
+	SaveGame->SaveReason = Reason;
+	SaveGame->SaveTimestamp = FDateTime::UtcNow();
+
+	if (Character)
+	{
+		SaveGame->PlayerTransform = Character->GetActorTransform();
+		SaveGame->bHasPlayerTransform = true;
+
+		if (UWorld* World = Character->GetWorld())
+		{
+			SaveGame->LevelName = World->GetMapName();
+			SaveGame->LevelName.RemoveFromStart(World->StreamingLevelsPrefix);
+		}
+	}
+
+	if (Checkpoint)
+	{
+		SaveGame->LastCheckpointId = Checkpoint->CheckpointId;
+		SaveGame->LastCheckpointDisplayName = Checkpoint->CheckpointDisplayName;
+		SaveGame->PlayerTransform = Checkpoint->GetActorTransform();
+		SaveGame->bHasPlayerTransform = true;
+	}
 }
 
 bool UProjectOrganoidSaveSubsystem::LoadPlayerProgress(AProjectOrganoidCharacter* Character, const FString& SlotName)
@@ -98,6 +259,7 @@ bool UProjectOrganoidSaveSubsystem::LoadPlayerProgress(AProjectOrganoidCharacter
 	const FString Slot = SlotName.IsEmpty() ? DefaultSaveSlot : SlotName;
 	if (!DoesSaveExist(Slot))
 	{
+		OnGameLoaded.Broadcast(Slot, false);
 		return false;
 	}
 
@@ -105,10 +267,13 @@ bool UProjectOrganoidSaveSubsystem::LoadPlayerProgress(AProjectOrganoidCharacter
 	UProjectOrganoidSaveGame* SaveGame = Cast<UProjectOrganoidSaveGame>(Loaded);
 	if (!SaveGame)
 	{
+		OnGameLoaded.Broadcast(Slot, false);
 		return false;
 	}
 
-	return ApplySaveToCharacter(SaveGame, Character);
+	const bool bSucceeded = ApplySaveToCharacter(SaveGame, Character);
+	OnGameLoaded.Broadcast(Slot, bSucceeded);
+	return bSucceeded;
 }
 
 bool UProjectOrganoidSaveSubsystem::DoesSaveExist(const FString& SlotName) const
@@ -211,8 +376,14 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 		{
 			Stats->CaptureStatsToSaveGame(SaveGame);
 		}
+
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->CaptureObjectivesToSaveGame(SaveGame);
+		}
 	}
 
+	FillSaveMeta(SaveGame, Character, EProjectOrganoidSaveReason::Manual, nullptr);
 	return SaveGame;
 }
 
@@ -271,7 +442,7 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 			}
 
 			FGuid NewId;
-			Inventory->TryAddItemAt(ItemData, Saved.OriginX, Saved.OriginY, NewId);
+			Inventory->TryAddItemAt(ItemData, Saved.OriginX, Saved.OriginY, NewId, Saved.InstanceId);
 		}
 	}
 
@@ -281,6 +452,16 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 		{
 			Stats->ApplyStatsFromSaveGame(SaveGame);
 		}
+
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->ApplyObjectivesFromSaveGame(SaveGame);
+		}
+	}
+
+	if (bRestorePlayerTransformOnLoad && SaveGame->bHasPlayerTransform)
+	{
+		Character->SetActorTransform(SaveGame->PlayerTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	}
 
 	return true;

@@ -192,7 +192,8 @@ bool UProjectOrganoidInventoryComponent::TryAddItemAt(
 	UProjectOrganoidItemData* ItemData,
 	int32 OriginX,
 	int32 OriginY,
-	FGuid& OutInstanceId)
+	FGuid& OutInstanceId,
+	FGuid PreferredInstanceId)
 {
 	OutInstanceId.Invalidate();
 
@@ -202,7 +203,7 @@ bool UProjectOrganoidInventoryComponent::TryAddItemAt(
 	}
 
 	FProjectOrganoidPlacedItem NewItem;
-	NewItem.InstanceId = FGuid::NewGuid();
+	NewItem.InstanceId = PreferredInstanceId.IsValid() ? PreferredInstanceId : FGuid::NewGuid();
 	NewItem.ItemData = ItemData;
 	NewItem.OriginX = OriginX;
 	NewItem.OriginY = OriginY;

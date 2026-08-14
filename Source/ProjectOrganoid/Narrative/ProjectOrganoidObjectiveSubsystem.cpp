@@ -2,6 +2,7 @@
 
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidObjectiveDataAsset.h"
+#include "ProjectOrganoidSaveGame.h"
 
 void UProjectOrganoidObjectiveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -36,6 +37,7 @@ bool UProjectOrganoidObjectiveSubsystem::LoadMission(UProjectOrganoidObjectiveDa
 		Objectives.Reset();
 		EventTriggers.Reset();
 		ActiveMissionObjectiveIds.Reset();
+		bActiveMissionCompletionNotified = false;
 	}
 
 	ActiveMissionId = MissionAsset->MissionId;
@@ -348,13 +350,14 @@ int32 UProjectOrganoidObjectiveSubsystem::TriggerEvent(FName EventId)
 
 void UProjectOrganoidObjectiveSubsystem::EvaluateActiveMissionCompletion()
 {
-	if (ActiveMissionId.IsNone() || ActiveMissionObjectiveIds.Num() == 0)
+	if (ActiveMissionId.IsNone() || ActiveMissionObjectiveIds.Num() == 0 || bActiveMissionCompletionNotified)
 	{
 		return;
 	}
 
 	if (IsMissionComplete(ActiveMissionId))
 	{
+		bActiveMissionCompletionNotified = true;
 		OnMissionCompleted.Broadcast(ActiveMissionId);
 	}
 }
@@ -424,4 +427,56 @@ TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetObjecti
 		}
 	}
 	return Result;
+}
+
+void UProjectOrganoidObjectiveSubsystem::CaptureObjectivesToSaveGame(UProjectOrganoidSaveGame* SaveGame) const
+{
+	if (!SaveGame)
+	{
+		return;
+	}
+
+	SaveGame->ActiveMissionId = ActiveMissionId;
+	SaveGame->ActiveMissionTitle = ActiveMissionTitle;
+	SaveGame->ActiveMissionObjectiveIds = ActiveMissionObjectiveIds;
+	SaveGame->Objectives = Objectives;
+	SaveGame->ObjectiveEventTriggers = EventTriggers;
+
+	SaveGame->CompletedObjectiveIds.Reset();
+	for (const FProjectOrganoidObjective& Objective : Objectives)
+	{
+		if (Objective.State == EProjectOrganoidObjectiveState::Completed)
+		{
+			SaveGame->CompletedObjectiveIds.Add(Objective.ObjectiveId);
+		}
+	}
+}
+
+void UProjectOrganoidObjectiveSubsystem::ApplyObjectivesFromSaveGame(const UProjectOrganoidSaveGame* SaveGame)
+{
+	if (!SaveGame)
+	{
+		return;
+	}
+
+	ActiveMissionId = SaveGame->ActiveMissionId;
+	ActiveMissionTitle = SaveGame->ActiveMissionTitle;
+	ActiveMissionObjectiveIds = SaveGame->ActiveMissionObjectiveIds;
+	Objectives = SaveGame->Objectives;
+	EventTriggers = SaveGame->ObjectiveEventTriggers;
+	bActiveMissionCompletionNotified = IsMissionComplete(ActiveMissionId);
+
+	// Older saves may only have CompletedObjectiveIds — merge into board if needed.
+	if (Objectives.Num() == 0 && SaveGame->CompletedObjectiveIds.Num() > 0)
+	{
+		for (const FName& CompletedId : SaveGame->CompletedObjectiveIds)
+		{
+			FProjectOrganoidObjective Stub;
+			Stub.ObjectiveId = CompletedId;
+			Stub.State = EProjectOrganoidObjectiveState::Completed;
+			Stub.CurrentProgress = 1;
+			Stub.TargetProgress = 1;
+			Objectives.Add(Stub);
+		}
+	}
 }
