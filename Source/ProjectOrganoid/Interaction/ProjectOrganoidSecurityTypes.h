@@ -13,6 +13,7 @@ enum class EProjectOrganoidSecurityOverrideMethod : uint8
 	None UMETA(DisplayName = "None"),
 	Keycard UMETA(DisplayName = "Keycard"),
 	HackingTool UMETA(DisplayName = "Terminal Hacking Tool"),
+	TerminalHack UMETA(DisplayName = "Facility Terminal Hack"),
 	SubsystemOverride UMETA(DisplayName = "Facility Override"),
 	Manual UMETA(DisplayName = "Manual / Scripted")
 };
