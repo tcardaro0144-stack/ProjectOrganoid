@@ -13,6 +13,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "ProjectOrganoidInventoryComponent.h"
+#include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -53,6 +54,10 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 
 	// Grid inventory (default 8x6 — tune on Blueprint defaults)
 	InventoryComponent = CreateDefaultSubobject<UProjectOrganoidInventoryComponent>(TEXT("InventoryComponent"));
+
+	// Default firearm component (spawns AProjectOrganoidDefaultWeapon on BeginPlay)
+	WeaponComponent = CreateDefaultSubobject<UProjectOrganoidWeaponComponent>(TEXT("WeaponComponent"));
+	WeaponComponent->SetupAttachment(RootComponent);
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)

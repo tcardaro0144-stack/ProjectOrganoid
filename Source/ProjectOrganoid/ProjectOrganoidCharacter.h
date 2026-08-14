@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UProjectOrganoidInventoryComponent;
+class UProjectOrganoidWeaponComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -37,6 +38,10 @@ class AProjectOrganoidCharacter : public ACharacter
 	/** Grid inventory for weapons, ammo, and survival items */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidInventoryComponent* InventoryComponent;
+
+	/** Equipped firearm manager (default P226-style sidearm) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidWeaponComponent* WeaponComponent;
 	
 protected:
 
@@ -173,4 +178,7 @@ public:
 
 	/** Returns grid inventory component **/
 	FORCEINLINE UProjectOrganoidInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	/** Returns weapon component **/
+	FORCEINLINE UProjectOrganoidWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
 };
