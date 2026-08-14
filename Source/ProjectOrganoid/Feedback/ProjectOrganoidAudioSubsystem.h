@@ -114,11 +114,18 @@ public:
 	float DefaultGunfireNoiseMaxRange = 3500.0f;
 
 	/**
-	 *  Play a 3D footstep at Location and report AI hearing (tag: Footstep).
+	 *  Play a 3D footstep at Location and report AI hearing.
+	 *  NoiseTag defaults to Footstep; pass Footstep_Walk / Footstep_Run / Footstep_Crouch for hosts.
 	 *  Returns false if throttled by FootstepIntervalSeconds.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Audio|Spatial")
-	bool PlayFootstepAtLocation(const FVector& Location, AActor* Instigator, float LoudnessOverride = -1.0f, bool bIgnoreInterval = false);
+	bool PlayFootstepAtLocation(
+		const FVector& Location,
+		AActor* Instigator,
+		float LoudnessOverride = -1.0f,
+		bool bIgnoreInterval = false,
+		FName NoiseTag = NAME_None,
+		float MaxRangeOverride = -1.0f);
 
 	/** Play 3D gunfire and report AI hearing (tag: Gunfire). */
 	UFUNCTION(BlueprintCallable, Category = "Audio|Spatial")

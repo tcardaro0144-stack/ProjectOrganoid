@@ -7,13 +7,11 @@
 #include "ProjectOrganoidDamageable.h"
 #include "ProjectOrganoidWeaponTypes.h"
 #include "Engine/TimerHandle.h"
-#include "Perception/AIPerceptionTypes.h"
+#include "ProjectOrganoidPerceptionTypes.h"
 #include "ProjectOrganoidHostBase.generated.h"
 
 class USphereComponent;
-class UAIPerceptionComponent;
-class UAISenseConfig_Sight;
-class UAISenseConfig_Hearing;
+class UProjectOrganoidPerceptionComponent;
 class AActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHostDamaged, const FProjectOrganoidBallisticHit&, HitInfo, AActor*, DamageCauser);
@@ -51,7 +49,7 @@ public:
 	TObjectPtr<USphereComponent> BioCoreHitbox;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|AI")
-	TObjectPtr<UAIPerceptionComponent> AIPerception;
+	TObjectPtr<UProjectOrganoidPerceptionComponent> HostPerception;
 
 	// -------------------------------------------------------------------------
 	// Vitals
@@ -144,33 +142,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation")
 	bool bDestroyWeakPointOnCriticalHit = true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI")
-	float SightRadius = 2500.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI")
-	float LoseSightRadius = 3000.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI")
-	float PeripheralVisionAngleDegrees = 70.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI")
-	float HearingRange = 1800.0f;
-
-	/** Extra hearing range while enraged */
+	/** Extra hearing range while enraged (applied to HostPerception) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI", meta = (ClampMin = "0.0"))
 	float RageHearingBonus = 600.0f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
-	FVector LastHeardNoiseLocation = FVector::ZeroVector;
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	FVector GetLastHeardNoiseLocation() const;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
-	FName LastHeardNoiseTag = NAME_None;
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	FName GetLastHeardNoiseTag() const;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
-	TObjectPtr<AActor> LastHeardNoiseInstigator;
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	AActor* GetLastHeardNoiseInstigator() const;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AI")
-	bool bHasRecentNoiseStimulus = false;
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	bool HasRecentNoiseStimulus() const;
+
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	bool HasSightOnPlayer() const;
 
 	// -------------------------------------------------------------------------
 	// Events
@@ -222,22 +211,15 @@ public:
 
 protected:
 
-	UPROPERTY()
-	TObjectPtr<UAISenseConfig_Sight> SightConfig;
-
-	UPROPERTY()
-	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
-
 	float CachedWalkSpeed = 350.0f;
 
 	FTimerHandle LocomotorSlowTimer;
 	FTimerHandle OpticalBlindTimer;
 	FTimerHandle StaggerTimer;
 	FTimerHandle BioShieldTimer;
-	FTimerHandle NoiseStimulusTimer;
 
 	void ConfigureWeakPointHitbox(USphereComponent* Hitbox, FName Tag, float Radius, FVector RelativeLocation);
-	void ConfigureAIPerception();
+	void SyncHostPerception();
 	void ApplyLocomotorNerveReaction();
 	void ApplyOpticalNodeReaction();
 	void ApplyBioCoreReaction(bool bForceIncapacitate);
@@ -251,12 +233,14 @@ protected:
 	void RestoreOpticalSight();
 	void ClearStagger();
 	void ExpireBioShield();
-	void ClearNoiseStimulus();
 	void RefreshMovementSpeed();
 	void HandleDeath();
 
 	UFUNCTION()
-	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	void HandleHearingStimulus(AActor* Instigator, FName NoiseTag, EProjectOrganoidHearingStimulusKind Kind, FVector StimulusLocation, float Strength);
+
+	UFUNCTION()
+	void HandleSightStimulus(AActor* Target, bool bSensed, FVector StimulusLocation);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Host|Reactions")
 	void BP_OnWeakPointReaction(EProjectOrganoidWeakPointType WeakPoint, const FProjectOrganoidBallisticHit& HitInfo);

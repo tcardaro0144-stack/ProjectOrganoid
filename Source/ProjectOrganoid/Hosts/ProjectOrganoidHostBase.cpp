@@ -6,12 +6,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AIController.h"
-#include "Perception/AIPerceptionComponent.h"
-#include "Perception/AISenseConfig_Sight.h"
-#include "Perception/AISenseConfig_Hearing.h"
-#include "Perception/AISense_Sight.h"
-#include "Perception/AISense_Hearing.h"
-#include "Perception/AISense.h"
+#include "ProjectOrganoidPerceptionComponent.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
@@ -47,10 +42,7 @@ AProjectOrganoidHostBase::AProjectOrganoidHostBase()
 	ConfigureWeakPointHitbox(BioCoreHitbox, TEXT("OrganoidCore"), 20.0f, FVector(0.0f, 0.0f, 50.0f));
 	BioCoreHitbox->ComponentTags.AddUnique(TEXT("BioCore"));
 
-	AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
-
-	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
+	HostPerception = CreateDefaultSubobject<UProjectOrganoidPerceptionComponent>(TEXT("HostPerception"));
 }
 
 void AProjectOrganoidHostBase::ConfigureWeakPointHitbox(USphereComponent* Hitbox, FName Tag, float Radius, FVector RelativeLocation)
@@ -80,19 +72,21 @@ void AProjectOrganoidHostBase::BeginPlay()
 	CachedWalkSpeed = DefaultWalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 
-	ConfigureAIPerception();
+	SyncHostPerception();
 
-	if (AIPerception)
+	if (HostPerception)
 	{
-		AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AProjectOrganoidHostBase::OnTargetPerceptionUpdated);
+		HostPerception->OnHearingStimulus.AddDynamic(this, &AProjectOrganoidHostBase::HandleHearingStimulus);
+		HostPerception->OnSightStimulus.AddDynamic(this, &AProjectOrganoidHostBase::HandleSightStimulus);
 	}
 }
 
 void AProjectOrganoidHostBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (AIPerception)
+	if (HostPerception)
 	{
-		AIPerception->OnTargetPerceptionUpdated.RemoveDynamic(this, &AProjectOrganoidHostBase::OnTargetPerceptionUpdated);
+		HostPerception->OnHearingStimulus.RemoveDynamic(this, &AProjectOrganoidHostBase::HandleHearingStimulus);
+		HostPerception->OnSightStimulus.RemoveDynamic(this, &AProjectOrganoidHostBase::HandleSightStimulus);
 	}
 
 	if (UWorld* World = GetWorld())
@@ -103,69 +97,77 @@ void AProjectOrganoidHostBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AProjectOrganoidHostBase::ConfigureAIPerception()
+void AProjectOrganoidHostBase::SyncHostPerception()
 {
-	if (!AIPerception || !SightConfig || !HearingConfig)
+	if (!HostPerception)
 	{
 		return;
 	}
 
-	SightConfig->SightRadius = SightRadius;
-	SightConfig->LoseSightRadius = LoseSightRadius;
-	SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngleDegrees;
-	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
-	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
-	SightConfig->SetMaxAge(3.0f);
-
-	const float EffectiveHearing = HearingRange + (bIsEnraged ? RageHearingBonus : 0.0f);
-	HearingConfig->HearingRange = EffectiveHearing;
-	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
-	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
-	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
-	HearingConfig->SetMaxAge(2.5f);
-
-	AIPerception->ConfigureSense(*SightConfig);
-	AIPerception->ConfigureSense(*HearingConfig);
-	AIPerception->SetDominantSense(UAISense_Sight::StaticClass());
+	HostPerception->SetHearingRangeBonus(bIsEnraged ? RageHearingBonus : 0.0f);
+	HostPerception->ConfigureHostSenses();
 }
 
-void AProjectOrganoidHostBase::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+FVector AProjectOrganoidHostBase::GetLastHeardNoiseLocation() const
 {
-	if (!Stimulus.WasSuccessfullySensed() || !Actor)
-	{
-		return;
-	}
-
-	// Footstep / gunfire arrive through hearing sense
-	const FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
-	if (Stimulus.Type == HearingID)
-	{
-		LastHeardNoiseLocation = Stimulus.StimulusLocation;
-		LastHeardNoiseInstigator = Actor;
-		LastHeardNoiseTag = Stimulus.Tag;
-		bHasRecentNoiseStimulus = true;
-
-		OnNoiseHeard.Broadcast(Actor, Stimulus.Tag);
-		OnHostStateChanged.Broadcast(
-			Stimulus.Tag == FName(TEXT("Gunfire")) ? TEXT("HeardGunfire") : TEXT("HeardFootstep"));
-
-		if (UWorld* World = GetWorld())
-		{
-			World->GetTimerManager().ClearTimer(NoiseStimulusTimer);
-			World->GetTimerManager().SetTimer(
-				NoiseStimulusTimer,
-				this,
-				&AProjectOrganoidHostBase::ClearNoiseStimulus,
-				3.0f,
-				false);
-		}
-	}
+	return HostPerception ? HostPerception->GetLastHeardNoiseLocation() : FVector::ZeroVector;
 }
 
-void AProjectOrganoidHostBase::ClearNoiseStimulus()
+FName AProjectOrganoidHostBase::GetLastHeardNoiseTag() const
 {
-	bHasRecentNoiseStimulus = false;
+	return HostPerception ? HostPerception->GetLastHeardNoiseTag() : NAME_None;
+}
+
+AActor* AProjectOrganoidHostBase::GetLastHeardNoiseInstigator() const
+{
+	return HostPerception ? HostPerception->GetLastHeardNoiseInstigator() : nullptr;
+}
+
+bool AProjectOrganoidHostBase::HasRecentNoiseStimulus() const
+{
+	return HostPerception && HostPerception->HasRecentNoiseStimulus();
+}
+
+bool AProjectOrganoidHostBase::HasSightOnPlayer() const
+{
+	return HostPerception && HostPerception->HasSightOnTarget();
+}
+
+void AProjectOrganoidHostBase::HandleHearingStimulus(
+	AActor* Instigator,
+	FName NoiseTag,
+	EProjectOrganoidHearingStimulusKind Kind,
+	FVector StimulusLocation,
+	float Strength)
+{
+	OnNoiseHeard.Broadcast(Instigator, NoiseTag);
+
+	FName StateName = TEXT("HeardNoise");
+	switch (Kind)
+	{
+	case EProjectOrganoidHearingStimulusKind::Gunfire:
+		StateName = TEXT("HeardGunfire");
+		break;
+	case EProjectOrganoidHearingStimulusKind::FootstepCrouch:
+		StateName = TEXT("HeardCrouch");
+		break;
+	case EProjectOrganoidHearingStimulusKind::FootstepWalk:
+		StateName = TEXT("HeardWalk");
+		break;
+	case EProjectOrganoidHearingStimulusKind::FootstepRun:
+		StateName = TEXT("HeardRun");
+		break;
+	default:
+		StateName = TEXT("HeardFootstep");
+		break;
+	}
+
+	OnHostStateChanged.Broadcast(StateName);
+}
+
+void AProjectOrganoidHostBase::HandleSightStimulus(AActor* Target, bool bSensed, FVector StimulusLocation)
+{
+	OnHostStateChanged.Broadcast(bSensed ? TEXT("SightAcquired") : TEXT("SightLost"));
 }
 
 EProjectOrganoidWeakPointType AProjectOrganoidHostBase::ResolveWeakPoint_Implementation(const FHitResult& Hit) const
@@ -351,7 +353,7 @@ void AProjectOrganoidHostBase::EnterRageState()
 
 	bIsEnraged = true;
 	RefreshMovementSpeed();
-	ConfigureAIPerception();
+	SyncHostPerception();
 	OnHostStateChanged.Broadcast(TEXT("Rage"));
 	BP_OnRageStateEntered();
 }
@@ -434,9 +436,9 @@ void AProjectOrganoidHostBase::ApplyOpticalNodeReaction()
 	SetBlinded(true);
 	SetStaggered(true);
 
-	if (AIPerception)
+	if (HostPerception)
 	{
-		AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
+		HostPerception->SetSightEnabled(false);
 	}
 
 	if (UWorld* World = GetWorld())
@@ -536,10 +538,9 @@ void AProjectOrganoidHostBase::SetIncapacitated(bool bNewIncapacitated)
 			MoveComp->DisableMovement();
 		}
 
-		if (AIPerception)
+		if (HostPerception)
 		{
-			AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
-			AIPerception->SetSenseEnabled(UAISense_Hearing::StaticClass(), false);
+			HostPerception->SetAllSensesEnabled(false);
 		}
 
 		OnHostStateChanged.Broadcast(TEXT("Incapacitated"));
@@ -585,9 +586,9 @@ void AProjectOrganoidHostBase::RestoreOpticalSight()
 	}
 
 	SetBlinded(false);
-	if (AIPerception && !bOpticalNodesDestroyed)
+	if (HostPerception && !bOpticalNodesDestroyed)
 	{
-		AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), true);
+		HostPerception->SetSightEnabled(true);
 	}
 }
 
@@ -607,20 +608,18 @@ void AProjectOrganoidHostBase::ClearStatusEffects()
 		World->GetTimerManager().ClearTimer(OpticalBlindTimer);
 		World->GetTimerManager().ClearTimer(StaggerTimer);
 		World->GetTimerManager().ClearTimer(BioShieldTimer);
-		World->GetTimerManager().ClearTimer(NoiseStimulusTimer);
 	}
 
 	bIsStaggered = false;
 	bIsBlinded = false;
-	bHasRecentNoiseStimulus = false;
 
 	if (!bIsIncapacitated && !bIsDead)
 	{
 		RefreshMovementSpeed();
-		if (AIPerception)
+		if (HostPerception)
 		{
-			AIPerception->SetSenseEnabled(UAISense_Sight::StaticClass(), !bOpticalNodesDestroyed);
-			AIPerception->SetSenseEnabled(UAISense_Hearing::StaticClass(), true);
+			HostPerception->SetSightEnabled(!bOpticalNodesDestroyed);
+			HostPerception->SetHearingEnabled(true);
 		}
 	}
 }

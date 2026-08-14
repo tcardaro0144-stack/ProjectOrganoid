@@ -2,6 +2,7 @@
 
 #include "ProjectOrganoidAudioSubsystem.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidPerceptionComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -191,7 +192,9 @@ bool UProjectOrganoidAudioSubsystem::PlayFootstepAtLocation(
 	const FVector& Location,
 	AActor* Instigator,
 	float LoudnessOverride,
-	bool bIgnoreInterval)
+	bool bIgnoreInterval,
+	FName NoiseTag,
+	float MaxRangeOverride)
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -209,14 +212,16 @@ bool UProjectOrganoidAudioSubsystem::PlayFootstepAtLocation(
 	}
 
 	const float Loudness = LoudnessOverride >= 0.0f ? LoudnessOverride : FootstepNoiseLoudness;
+	const float MaxRange = MaxRangeOverride >= 0.0f ? MaxRangeOverride : FootstepNoiseMaxRange;
+	const FName ResolvedTag = NoiseTag.IsNone() ? ProjectOrganoidNoiseTags::Footstep : NoiseTag;
 
 	if (FootstepSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(World, FootstepSound, Location, 1.0f, 1.0f, 0.0f);
 	}
 
-	ReportSpatialNoise(Location, Instigator, Loudness, FootstepNoiseMaxRange, FName(TEXT("Footstep")));
-	OnSpatialAudioTriggered.Broadcast(Location, FName(TEXT("Footstep")), Instigator);
+	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, ResolvedTag);
+	OnSpatialAudioTriggered.Broadcast(Location, ResolvedTag, Instigator);
 	return true;
 }
 
@@ -240,8 +245,8 @@ void UProjectOrganoidAudioSubsystem::PlayGunfireAtLocation(
 		UGameplayStatics::PlaySoundAtLocation(World, GunfireSound, Location, 1.0f, 1.0f, 0.0f);
 	}
 
-	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, FName(TEXT("Gunfire")));
-	OnSpatialAudioTriggered.Broadcast(Location, FName(TEXT("Gunfire")), Instigator);
+	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, ProjectOrganoidNoiseTags::Gunfire);
+	OnSpatialAudioTriggered.Broadcast(Location, ProjectOrganoidNoiseTags::Gunfire, Instigator);
 }
 
 void UProjectOrganoidAudioSubsystem::UpdatePlayerFootsteps(AProjectOrganoidCharacter* Character, float DeltaTime)
@@ -259,13 +264,20 @@ void UProjectOrganoidAudioSubsystem::UpdatePlayerFootsteps(AProjectOrganoidChara
 		return;
 	}
 
-	const float Speed = Character->GetVelocity().Size2D();
-	if (Speed < FootstepMinSpeed)
+	const EProjectOrganoidPlayerMovementNoiseState MovementState =
+		UProjectOrganoidPerceptionComponent::ResolvePlayerMovementNoiseState(Character);
+
+	if (MovementState == EProjectOrganoidPlayerMovementNoiseState::Idle)
 	{
 		return;
 	}
 
-	// Slightly faster cadence when sprinting / stressed
+	const float Speed = Character->GetVelocity().Size2D();
+	if (Speed < FootstepMinSpeed && MovementState != EProjectOrganoidPlayerMovementNoiseState::Crouch)
+	{
+		return;
+	}
+
 	const float SpeedAlpha = FMath::Clamp(Speed / 600.0f, 0.0f, 1.0f);
 	const float Stress = FMath::Clamp((CurrentManagedBPM - RestingBPM) / FMath::Max(MaxStressBPM - RestingBPM, 1.0f), 0.0f, 1.0f);
 	const float IntervalScale = FMath::Lerp(1.0f, 0.65f, SpeedAlpha * 0.7f + Stress * 0.3f);
@@ -273,8 +285,13 @@ void UProjectOrganoidAudioSubsystem::UpdatePlayerFootsteps(AProjectOrganoidChara
 
 	if (FootstepCooldownRemaining <= 0.0f)
 	{
-		const float Loudness = FootstepNoiseLoudness * (0.75f + SpeedAlpha * 0.5f);
-		if (PlayFootstepAtLocation(Character->GetActorLocation(), Character, Loudness, true))
+		const float LoudnessScale = UProjectOrganoidPerceptionComponent::GetMovementNoiseLoudnessScale(MovementState);
+		const float RangeScale = UProjectOrganoidPerceptionComponent::GetMovementNoiseRangeScale(MovementState);
+		const float Loudness = FootstepNoiseLoudness * LoudnessScale * (0.85f + SpeedAlpha * 0.35f);
+		const float MaxRange = FootstepNoiseMaxRange * RangeScale;
+		const FName NoiseTag = UProjectOrganoidPerceptionComponent::NoiseTagFromMovementState(MovementState);
+
+		if (PlayFootstepAtLocation(Character->GetActorLocation(), Character, Loudness, true, NoiseTag, MaxRange))
 		{
 			FootstepCooldownRemaining = EffectiveInterval;
 		}
