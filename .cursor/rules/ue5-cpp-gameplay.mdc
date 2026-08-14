@@ -1,0 +1,37 @@
+---
+description: UE5 C++ conventions for ProjectOrganoid gameplay headers/sources
+globs: Source/ProjectOrganoid/**/*.{h,cpp}
+alwaysApply: false
+---
+
+# UE5 C++ Gameplay Conventions
+
+## Headers & Includes
+- `#pragma once`, then `CoreMinimal.h`, engine types, then `TypeName.generated.h` last.
+- Match module naming: `ProjectOrganoid*.h` / `AProjectOrganoid*` / `UProjectOrganoid*`.
+- Forward-declare in headers; include in `.cpp` when possible.
+
+## Blueprint / UMG Exposure
+Expose gameplay-facing data with `UPROPERTY` / `UFUNCTION`:
+
+```cpp
+// ✅ Tunables & vitals for designers / UMG
+UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vitals")
+float PEEnergy = 100.f;
+
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vitals")
+float HeartRateBPM = 72.f;
+
+// ✅ Input / actions
+UPROPERTY(EditAnywhere, Category = "Input")
+TObjectPtr<UInputAction> TacticalModeAction;
+```
+
+- Use `Category` names that match systems: `Vitals`, `Tactical`, `Inventory`, `Weapons`, `PE`.
+- Prefer `TObjectPtr<>` for UObject pointers.
+- BlueprintCallable for player-facing verbs (`DoMove`-style); keep internals protected.
+
+## Tactical Mode Constants (defaults)
+- Time dilation: `0.2f` while active
+- Target sphere radius: `800.0f`
+- PE Energy max: `100.0f`

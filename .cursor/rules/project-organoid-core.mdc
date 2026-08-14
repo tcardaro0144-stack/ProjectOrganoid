@@ -1,0 +1,32 @@
+---
+description: ProjectOrganoid core vision, lore, architecture, and naming
+alwaysApply: true
+---
+
+# ProjectOrganoid — Core Directive
+
+## Pitch
+Survival Horror / Tactical Action RPG (Resident Evil × Parasite Eve). Protagonist: **Avery Vance** (ex-JSOC combat medic / bio-hazard auditor). Setting: **Epitope Subterranean Complex** (Upstate NY) — OSHA/BSL-4 facility under lockdown.
+
+## Engine & Naming
+- UE5 C++ base + Blueprint extensions. Enhanced Input Local Player Subsystem.
+- Classes: `AProjectOrganoidCharacter`, `AProjectOrganoidGameMode`, `UProjectOrganoidAnimInstance`.
+- Workspace: `ProjectOrganoid/` (`.uproject`, `Source/`, rules). Target C++: `Source/ProjectOrganoid/`.
+
+## Facility Levels
+1. Admin & Decontamination — HEPA, UV-C, flooded marble
+2. BSL-4 Neuro-Genetics — cleanrooms, organoid matrices on silicon
+3. Cryogenic Storage — LN2 frost, -80°C freezers, fog hazards
+4. Bio-Neural Compute Vaults — racks with synthetic muscle/nerves
+5. Core Reactor & Primary Incubator — cooling basins, bioluminescent decay
+
+## Pillar Systems (implement toward these)
+- **Vitals HUD:** BPM, Toxicity %, Health, PE Energy (max 100)
+- **Tactical Mode:** RMB/trigger → 0.2 time dilation + 800uu wireframe target sphere; weak points: Locomotor Nerves, Optical Nodes, Organoid Core
+- **PE skills:** Cellular Denature, Bio-Stabilize (drain PE)
+- **Grid inventory:** volume slots (e.g. Shotgun 2×4, Ammo 1×1)
+- **Weapons:** P226, M4 Breaching Shotgun, Cryo Lancer, Denaturing Launcher — ballistics, organoid pen, attachments
+- **Progression:** harvest SOT → upgrade suit at Dr. Sterling terminals
+
+## Workflow
+Prefer extending existing `AProjectOrganoid*` classes over new parallel frameworks. Keep template `Variant_*` code unless replacing it for Organoid systems.

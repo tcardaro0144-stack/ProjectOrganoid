@@ -1,0 +1,15 @@
+# ProjectOrganoid
+
+Survival Horror / Tactical Action RPG (Resident Evil × Parasite Eve). Avery Vance in the Epitope Subterranean Complex (BSL-4 lockdown). UE5 C++ + Blueprints; Enhanced Input.
+
+## Naming
+`AProjectOrganoidCharacter`, `AProjectOrganoidGameMode`, `UProjectOrganoidAnimInstance`. C++ lives in `Source/ProjectOrganoid/`.
+
+## When editing .h / .cpp
+- Follow UE5 include order; `*.generated.h` last.
+- Expose designer/UMG gameplay props via `UPROPERTY` / `UFUNCTION` with clear Categories (`Vitals`, `Tactical`, `Inventory`, `Weapons`, `PE`).
+
+## Systems to build toward
+Diegetic vitals (BPM, Toxicity, Health, PE). Tactical Mode (0.2 dilation, 800uu sphere, weak-point targeting). Grid inventory. Ballistics weapons (P226, M4 Shotgun, Cryo Lancer, Denaturing Launcher). SOT progression at Sterling terminals. Five subterranean facility levels (Admin → Reactor).
+
+Full detail: `.cursor/rules/project-organoid-core.mdc` and `ue5-cpp-gameplay.mdc`.
