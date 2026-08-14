@@ -7,7 +7,7 @@ EProjectOrganoidWeakPointType IProjectOrganoidDamageable::ResolveWeakPoint_Imple
 	// Component tags / bone names can be remapped in Blueprint overrides.
 	if (Hit.Component.IsValid())
 	{
-		if (Hit.Component->ComponentHasTag(TEXT("OrganoidCore")))
+		if (Hit.Component->ComponentHasTag(TEXT("OrganoidCore")) || Hit.Component->ComponentHasTag(TEXT("BioCore")))
 		{
 			return EProjectOrganoidWeakPointType::OrganoidCore;
 		}

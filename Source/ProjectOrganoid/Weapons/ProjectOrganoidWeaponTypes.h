@@ -33,7 +33,7 @@ enum class EProjectOrganoidWeakPointType : uint8
 	None UMETA(DisplayName = "None"),
 	LocomotorNerves UMETA(DisplayName = "Locomotor Nerves"),
 	OpticalNodes UMETA(DisplayName = "Optical Nodes"),
-	OrganoidCore UMETA(DisplayName = "Organoid Core")
+	OrganoidCore UMETA(DisplayName = "Bio-Core / Organoid Core")
 };
 
 /** Resolved ballistic hit payload for damage / UMG / VFX */

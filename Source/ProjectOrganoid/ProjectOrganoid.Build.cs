@@ -28,6 +28,7 @@ public class ProjectOrganoid : ModuleRules
 			"ProjectOrganoid/UI",
 			"ProjectOrganoid/Inventory",
 			"ProjectOrganoid/Weapons",
+			"ProjectOrganoid/Hosts",
 			"ProjectOrganoid/Variant_Platforming",
 			"ProjectOrganoid/Variant_Platforming/Animation",
 			"ProjectOrganoid/Variant_Combat",
