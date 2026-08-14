@@ -4,6 +4,8 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidHUDWidget.h"
+#include "ProjectOrganoidSaveSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
 AProjectOrganoidGameMode::AProjectOrganoidGameMode()
@@ -88,5 +90,18 @@ void AProjectOrganoidGameMode::TryBindHUDToPawn(APlayerController* PlayerControl
 	if (HUDWidget && Avery)
 	{
 		HUDWidget->BindToCharacter(Avery);
+
+		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UProjectOrganoidSaveSubsystem* SaveSubsystem = GI->GetSubsystem<UProjectOrganoidSaveSubsystem>())
+			{
+				SaveSubsystem->TryApplyPendingLoad(Avery);
+			}
+		}
+	}
+
+	if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(PlayerController))
+	{
+		OrganoidPC->SetPauseMenuAllowed(true);
 	}
 }

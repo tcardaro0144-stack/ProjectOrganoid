@@ -9,6 +9,75 @@
 #include "ProjectOrganoidWeapon.h"
 #include "Kismet/GameplayStatics.h"
 
+FString UProjectOrganoidSaveSubsystem::GetSlotNameForIndex(int32 SlotIndex) const
+{
+	return FString::Printf(TEXT("%s%d"), *SlotNamePrefix, FMath::Max(0, SlotIndex));
+}
+
+TArray<FProjectOrganoidSaveSlotInfo> UProjectOrganoidSaveSubsystem::GetSaveSlotInfos(int32 NumSlots) const
+{
+	TArray<FProjectOrganoidSaveSlotInfo> Results;
+	const int32 Count = FMath::Clamp(NumSlots, 1, 10);
+	Results.Reserve(Count);
+
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		FProjectOrganoidSaveSlotInfo Info;
+		Info.SlotIndex = Index;
+		Info.SlotName = GetSlotNameForIndex(Index);
+		Info.bExists = DoesSaveExist(Info.SlotName);
+
+		if (Info.bExists)
+		{
+			if (UProjectOrganoidSaveGame* SaveGame = LoadSaveGameObject(Info.SlotName))
+			{
+				Info.Health = SaveGame->Health;
+				Info.PEEnergy = SaveGame->PEEnergy;
+				Info.SuitHealthUpgradeLevel = SaveGame->SuitHealthUpgradeLevel;
+			}
+		}
+
+		Results.Add(Info);
+	}
+
+	return Results;
+}
+
+UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::LoadSaveGameObject(const FString& SlotName) const
+{
+	const FString Slot = SlotName.IsEmpty() ? DefaultSaveSlot : SlotName;
+	if (!DoesSaveExist(Slot))
+	{
+		return nullptr;
+	}
+
+	return Cast<UProjectOrganoidSaveGame>(UGameplayStatics::LoadGameFromSlot(Slot, 0));
+}
+
+void UProjectOrganoidSaveSubsystem::RequestLoadOnNextTravel(const FString& SlotName)
+{
+	PendingLoadSlotName = SlotName.IsEmpty() ? DefaultSaveSlot : SlotName;
+	bHasPendingLoad = true;
+}
+
+void UProjectOrganoidSaveSubsystem::ClearPendingLoad()
+{
+	PendingLoadSlotName.Reset();
+	bHasPendingLoad = false;
+}
+
+bool UProjectOrganoidSaveSubsystem::TryApplyPendingLoad(AProjectOrganoidCharacter* Character)
+{
+	if (!bHasPendingLoad || !Character)
+	{
+		return false;
+	}
+
+	const FString Slot = PendingLoadSlotName;
+	ClearPendingLoad();
+	return LoadPlayerProgress(Character, Slot);
+}
+
 bool UProjectOrganoidSaveSubsystem::SavePlayerProgress(AProjectOrganoidCharacter* Character, const FString& SlotName)
 {
 	UProjectOrganoidSaveGame* SaveGame = CaptureSaveFromCharacter(Character);
