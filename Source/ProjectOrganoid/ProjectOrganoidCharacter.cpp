@@ -109,6 +109,8 @@ void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
 
 	const float NewDilation = bActive ? TacticalTimeDilation : 1.0f;
 	UGameplayStatics::SetGlobalTimeDilation(this, NewDilation);
+
+	OnTacticalModeChanged.Broadcast(bIsTacticalModeActive);
 }
 
 void AProjectOrganoidCharacter::ToggleTacticalMode()

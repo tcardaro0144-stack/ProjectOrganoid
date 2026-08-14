@@ -14,6 +14,8 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidTacticalModeChanged, bool, bIsTacticalModeActive);
+
 /**
  *  Avery Vance — ProjectOrganoid player character.
  *  Suit vitals, PE Energy, and Parasite Eve-style Tactical Sphere targeting.
@@ -117,6 +119,28 @@ public:
 	/** Toggle PE Tactical Mode (time dilation + targeting sphere) */
 	UFUNCTION(BlueprintCallable, Category = "Tactical")
 	void ToggleTacticalMode();
+
+	/** Broadcast when Tactical Mode engages or disengages */
+	UPROPERTY(BlueprintAssignable, Category = "Tactical")
+	FOnProjectOrganoidTacticalModeChanged OnTacticalModeChanged;
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetHealth() const { return Health; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetToxicity() const { return Toxicity; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetHeartRate() const { return HeartRate; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetPEEnergy() const { return PEEnergy; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetMaxPEEnergy() const { return MaxPEEnergy; }
+
+	UFUNCTION(BlueprintPure, Category = "Tactical")
+	bool IsTacticalModeActive() const { return bIsTacticalModeActive; }
 
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
