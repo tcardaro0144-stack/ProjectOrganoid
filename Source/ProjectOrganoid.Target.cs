@@ -11,5 +11,12 @@ public class ProjectOrganoidTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
 		ExtraModuleNames.Add("ProjectOrganoid");
+
+		// Shipping packaging defaults used by Tools/Package-Shipping.ps1
+		if (Configuration == UnrealTargetConfiguration.Shipping)
+		{
+			bUseLoggingInShipping = true;
+			bUseChecksInShipping = false;
+		}
 	}
 }
