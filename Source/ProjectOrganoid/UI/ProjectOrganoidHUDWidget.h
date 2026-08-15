@@ -5,10 +5,15 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "ProjectOrganoidObjectiveTypes.h"
+#include "ProjectOrganoidInventoryTypes.h"
+#include "ProjectOrganoidCraftingTypes.h"
+#include "ProjectOrganoidUpgradeTypes.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidHUDWidget.generated.h"
 
 class AProjectOrganoidCharacter;
 class UProjectOrganoidObjectiveSubsystem;
+class UProjectOrganoidItemData;
 
 /**
  *  Diegetic vitals overlay + objective pop-up notifications for Avery Vance.
@@ -93,6 +98,37 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Photo")
 	void OnPhotoCaptured(const FString& ScreenshotPath);
 
+	/** Called by UProjectOrganoidGameplayHUDController */
+	UFUNCTION(BlueprintCallable, Category = "HUD|Loop")
+	void BindGameplayLoopController(UProjectOrganoidGameplayHUDController* Controller);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Loop")
+	void OnGameplayPanelChanged(EProjectOrganoidHUDPanel ActivePanel);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Inventory")
+	void RefreshInventoryGrid(const TArray<FProjectOrganoidPlacedItem>& Items, float CurrentWeight, float MaxWeight);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Inventory")
+	void OnInventoryWeightUpdated(float CurrentWeight, float MaxWeight);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Inventory")
+	void OnInventoryItemAcquired(UProjectOrganoidItemData* ItemData, int32 Quantity);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Craft")
+	void RefreshCraftingRecipes(const TArray<FProjectOrganoidCraftRecipe>& Recipes);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Craft")
+	void OnCraftResult(FName RecipeId, bool bSucceeded, FName FailureReason);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Upgrade")
+	void RefreshUpgradeSummary(int32 SuitHealthLevel, int32 SuitToxicityLevel, int32 SuitPELevel, int32 WeaponDamageLevel);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Upgrade")
+	void OnUpgradeApplied(EProjectOrganoidUpgradeType UpgradeType, int32 NewLevel);
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Loop")
+	UProjectOrganoidGameplayHUDController* GetGameplayLoopController() const { return GameplayLoopController; }
+
 protected:
 
 	virtual void NativeConstruct() override;
@@ -104,6 +140,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UProjectOrganoidObjectiveSubsystem> BoundObjectiveSubsystem;
+
+	UPROPERTY()
+	TObjectPtr<UProjectOrganoidGameplayHUDController> GameplayLoopController;
 
 	UFUNCTION()
 	void HandleTacticalModeChanged(bool bIsActive);

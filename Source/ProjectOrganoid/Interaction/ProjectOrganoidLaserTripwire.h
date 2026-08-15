@@ -7,6 +7,7 @@
 #include "ProjectOrganoidLaserTripwire.generated.h"
 
 class UBoxComponent;
+class UProjectOrganoidPowerAwareComponent;
 
 /**
  *  Corridor laser tripwire — overlapping the beam triggers UV-C / heat damage.
@@ -22,6 +23,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UBoxComponent> BeamVolume;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Power")
+	TObjectPtr<UProjectOrganoidPowerAwareComponent> PowerAware;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Laser", meta = (ClampMin = "10.0"))
 	float BeamLength = 400.0f;

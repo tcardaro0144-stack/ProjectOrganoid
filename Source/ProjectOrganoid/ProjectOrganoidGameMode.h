@@ -7,6 +7,7 @@
 #include "ProjectOrganoidGameMode.generated.h"
 
 class UProjectOrganoidHUDWidget;
+class UProjectOrganoidGameplayHUDController;
 class APlayerController;
 
 /**
@@ -28,11 +29,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UProjectOrganoidHUDWidget> HUDWidgetClass;
 
+	UFUNCTION(BlueprintPure, Category = "UI")
+	UProjectOrganoidGameplayHUDController* GetHUDControllerForPlayer(APlayerController* PlayerController) const;
+
 protected:
 
 	/** Active HUD widgets keyed by player controller */
 	UPROPERTY()
 	TMap<TObjectPtr<APlayerController>, TObjectPtr<UProjectOrganoidHUDWidget>> PlayerHUDWidgets;
+
+	UPROPERTY()
+	TMap<TObjectPtr<APlayerController>, TObjectPtr<UProjectOrganoidGameplayHUDController>> PlayerHUDControllers;
 
 	void SpawnHUDForPlayer(APlayerController* PlayerController);
 	void TryBindHUDToPawn(APlayerController* PlayerController);

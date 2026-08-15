@@ -3,6 +3,7 @@
 #include "ProjectOrganoidMainMenuWidget.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidSettingsSubsystem.h"
+#include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "Components/Button.h"
 #include "Components/ComboBoxString.h"
 #include "Components/Slider.h"
@@ -160,6 +161,16 @@ void UProjectOrganoidMainMenuWidget::StartNewGame()
 		SaveSubsystem->ClearPendingLoad();
 	}
 
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidFlowManagerSubsystem* Flow = GI->GetSubsystem<UProjectOrganoidFlowManagerSubsystem>())
+		{
+			Flow->GameplayLevelName = GameplayLevelName;
+			Flow->StartNewGame(GameplayLevelName);
+			return;
+		}
+	}
+
 	UGameplayStatics::OpenLevel(this, GameplayLevelName);
 }
 
@@ -178,6 +189,16 @@ bool UProjectOrganoidMainMenuWidget::LoadGameFromSlotName(const FString& SlotNam
 	if (!SaveSubsystem || !SaveSubsystem->DoesSaveExist(SlotName))
 	{
 		return false;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidFlowManagerSubsystem* Flow = GI->GetSubsystem<UProjectOrganoidFlowManagerSubsystem>())
+		{
+			Flow->GameplayLevelName = GameplayLevelName;
+			Flow->LoadGameAndTravel(SlotName, GameplayLevelName);
+			return true;
+		}
 	}
 
 	SaveSubsystem->RequestLoadOnNextTravel(SlotName);

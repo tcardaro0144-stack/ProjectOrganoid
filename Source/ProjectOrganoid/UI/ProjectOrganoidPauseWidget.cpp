@@ -3,6 +3,7 @@
 #include "ProjectOrganoidPauseWidget.h"
 #include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidSettingsSubsystem.h"
+#include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "Components/Button.h"
 #include "Components/ComboBoxString.h"
 #include "Components/Slider.h"
@@ -202,6 +203,16 @@ void UProjectOrganoidPauseWidget::ReturnToMainMenu()
 	else if (APlayerController* FallbackPC = GetOwningPlayer())
 	{
 		FallbackPC->SetPause(false);
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidFlowManagerSubsystem* Flow = GI->GetSubsystem<UProjectOrganoidFlowManagerSubsystem>())
+		{
+			Flow->TitleLevelName = MainMenuLevelName;
+			Flow->ReturnToTitle();
+			return;
+		}
 	}
 
 	UGameplayStatics::OpenLevel(this, MainMenuLevelName);

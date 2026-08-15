@@ -4,7 +4,9 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidHUDWidget.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidSaveSubsystem.h"
+#include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
@@ -18,6 +20,14 @@ AProjectOrganoidGameMode::AProjectOrganoidGameMode()
 void AProjectOrganoidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidFlowManagerSubsystem* Flow = GI->GetSubsystem<UProjectOrganoidFlowManagerSubsystem>())
+		{
+			Flow->NotifyGameplayMapReady(this);
+		}
+	}
 
 	if (UWorld* World = GetWorld())
 	{
@@ -61,9 +71,12 @@ void AProjectOrganoidGameMode::SpawnHUDForPlayer(APlayerController* PlayerContro
 
 	HUDWidget->AddToViewport();
 	PlayerHUDWidgets.Add(PlayerController, HUDWidget);
+
+	UProjectOrganoidGameplayHUDController* Controller = NewObject<UProjectOrganoidGameplayHUDController>(this);
+	PlayerHUDControllers.Add(PlayerController, Controller);
+
 	TryBindHUDToPawn(PlayerController);
 
-	// Pawn may not be possessed yet — retry next tick
 	if (UWorld* World = GetWorld())
 	{
 		TWeakObjectPtr<AProjectOrganoidGameMode> WeakThis(this);
@@ -91,6 +104,14 @@ void AProjectOrganoidGameMode::TryBindHUDToPawn(APlayerController* PlayerControl
 	{
 		HUDWidget->BindToCharacter(Avery);
 
+		if (UProjectOrganoidGameplayHUDController** Found = PlayerHUDControllers.Find(PlayerController))
+		{
+			if (UProjectOrganoidGameplayHUDController* Controller = *Found)
+			{
+				Controller->Initialize(Avery, HUDWidget);
+			}
+		}
+
 		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 		{
 			if (UProjectOrganoidSaveSubsystem* SaveSubsystem = GI->GetSubsystem<UProjectOrganoidSaveSubsystem>())
@@ -104,4 +125,13 @@ void AProjectOrganoidGameMode::TryBindHUDToPawn(APlayerController* PlayerControl
 	{
 		OrganoidPC->SetPauseMenuAllowed(true);
 	}
+}
+
+UProjectOrganoidGameplayHUDController* AProjectOrganoidGameMode::GetHUDControllerForPlayer(APlayerController* PlayerController) const
+{
+	if (const TObjectPtr<UProjectOrganoidGameplayHUDController>* Found = PlayerHUDControllers.Find(PlayerController))
+	{
+		return Found->Get();
+	}
+	return nullptr;
 }

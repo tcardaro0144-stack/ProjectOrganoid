@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidLaserTripwire.h"
+#include "ProjectOrganoidPowerAwareComponent.h"
 #include "Components/BoxComponent.h"
 
 AProjectOrganoidLaserTripwire::AProjectOrganoidLaserTripwire()
@@ -17,6 +18,10 @@ AProjectOrganoidLaserTripwire::AProjectOrganoidLaserTripwire()
 	BeamVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	BeamVolume->SetGenerateOverlapEvents(true);
 	BeamVolume->ComponentTags.AddUnique(TEXT("Laser"));
+
+	PowerAware = CreateDefaultSubobject<UProjectOrganoidPowerAwareComponent>(TEXT("PowerAware"));
+	PowerAware->bIsLaserGrid = true;
+
 	RefreshBeamExtent();
 }
 

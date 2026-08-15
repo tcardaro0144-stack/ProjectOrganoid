@@ -3,6 +3,7 @@
 #include "ProjectOrganoidMainMenuGameMode.h"
 #include "ProjectOrganoidMainMenuWidget.h"
 #include "ProjectOrganoidPlayerController.h"
+#include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "GameFramework/SpectatorPawn.h"
 
 AProjectOrganoidMainMenuGameMode::AProjectOrganoidMainMenuGameMode()
@@ -36,6 +37,14 @@ namespace ProjectOrganoidMainMenuGM
 void AProjectOrganoidMainMenuGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidFlowManagerSubsystem* Flow = GI->GetSubsystem<UProjectOrganoidFlowManagerSubsystem>())
+		{
+			Flow->EnterTitleState();
+		}
+	}
 
 	if (UWorld* World = GetWorld())
 	{

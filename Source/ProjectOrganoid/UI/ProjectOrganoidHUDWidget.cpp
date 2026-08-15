@@ -4,6 +4,7 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidPhotoScanComponent.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "Kismet/GameplayStatics.h"
 
 void UProjectOrganoidHUDWidget::NativeConstruct()
@@ -199,4 +200,9 @@ void UProjectOrganoidHUDWidget::RefreshActiveObjectiveList()
 	{
 		RefreshObjectiveList(BoundObjectiveSubsystem->GetActiveObjectives());
 	}
+}
+
+void UProjectOrganoidHUDWidget::BindGameplayLoopController(UProjectOrganoidGameplayHUDController* Controller)
+{
+	GameplayLoopController = Controller;
 }
