@@ -20,6 +20,8 @@
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidPhotoScanComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
+#include "ProjectOrganoidDialogueSubsystem.h"
+#include "ProjectOrganoidTelemetrySubsystem.h"
 #include "ProjectOrganoidAudioSubsystem.h"
 #include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
@@ -105,6 +107,14 @@ void AProjectOrganoidCharacter::BeginPlay()
 		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
 		{
 			Ambience->BindLocalPlayerCharacter(this);
+		}
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidTelemetrySubsystem* Telemetry = GI->GetSubsystem<UProjectOrganoidTelemetrySubsystem>())
+		{
+			Telemetry->ReportGameplayEvent(TEXT("PlayerSpawn"), GetName());
 		}
 	}
 }
@@ -534,6 +544,41 @@ void AProjectOrganoidCharacter::CapturePhotoScreenshot()
 bool AProjectOrganoidCharacter::IsPhotoModeActive() const
 {
 	return PhotoScanComponent && PhotoScanComponent->IsPhotoModeActive();
+}
+
+bool AProjectOrganoidCharacter::SelectDialogueChoice(int32 ChoiceIndex)
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidDialogueSubsystem* Dialogue = GI->GetSubsystem<UProjectOrganoidDialogueSubsystem>())
+		{
+			return Dialogue->SelectChoice(ChoiceIndex);
+		}
+	}
+	return false;
+}
+
+void AProjectOrganoidCharacter::EndActiveDialogue()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidDialogueSubsystem* Dialogue = GI->GetSubsystem<UProjectOrganoidDialogueSubsystem>())
+		{
+			Dialogue->EndDialogue();
+		}
+	}
+}
+
+bool AProjectOrganoidCharacter::IsInDialogue() const
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidDialogueSubsystem* Dialogue = GI->GetSubsystem<UProjectOrganoidDialogueSubsystem>())
+		{
+			return Dialogue->IsDialogueActive();
+		}
+	}
+	return false;
 }
 
 void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

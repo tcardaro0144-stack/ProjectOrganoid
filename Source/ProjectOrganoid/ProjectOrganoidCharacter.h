@@ -211,6 +211,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Photo")
 	bool IsPhotoModeActive() const;
 
+	/** Dialogue helpers (route through UProjectOrganoidDialogueSubsystem) */
+	UFUNCTION(BlueprintCallable, Category = "Dialogue")
+	bool SelectDialogueChoice(int32 ChoiceIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Dialogue")
+	void EndActiveDialogue();
+
+	UFUNCTION(BlueprintPure, Category = "Dialogue")
+	bool IsInDialogue() const;
+
 	/** Broadcast when Tactical Mode engages or disengages */
 	UPROPERTY(BlueprintAssignable, Category = "Tactical")
 	FOnProjectOrganoidTacticalModeChanged OnTacticalModeChanged;
