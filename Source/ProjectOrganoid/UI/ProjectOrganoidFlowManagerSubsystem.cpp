@@ -179,18 +179,14 @@ bool UProjectOrganoidFlowManagerSubsystem::RequestSectorTransition(EProjectOrgan
 	}
 
 	AProjectOrganoidCharacter* Avery = Cast<AProjectOrganoidCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
-	TArray<FName> Unload;
 	SetFlowState(EProjectOrganoidFlowState::SectorTransition);
 	OnSectorTravelRequested.Broadcast(TargetTag);
 	ShowLoadingScreen(FText::FromString(TEXT("Traversing sector airlocks...")));
 	SetLoadingProgress(0.4f, FText::FromName(Def.StreamingLevelName));
 
-	const bool bOk = Levels->RequestSubLevelTransition(
+	const bool bOk = Levels->RequestDebugWarpToRegion(
 		Avery,
 		TargetTag,
-		Def.StreamingLevelName,
-		Unload,
-		true,
 		bTeleportToDestination,
 		FTransform::Identity);
 

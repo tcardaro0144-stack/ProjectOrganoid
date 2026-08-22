@@ -78,7 +78,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Flow")
 	void NotifyGameplayMapReady(AProjectOrganoidGameMode* GameMode);
 
-	UFUNCTION(BlueprintCallable, Category = "Flow|Sector")
+	/**
+	 *  Debug jump between Epitope regions, with a loading screen. Epitope is one continuous
+	 *  facility — normal play reaches every region on foot and must never call this.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Flow|Debug")
 	bool RequestSectorTransition(EProjectOrganoidSubLevelTag TargetTag, bool bTeleportToDestination = true);
 
 	UFUNCTION(BlueprintCallable, Category = "Flow|UI")

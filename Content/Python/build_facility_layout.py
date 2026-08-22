@@ -5,7 +5,7 @@
 #   or: py "Content/Python/build_facility_layout.py" in the Output Log Python console
 #
 # Requires the ProjectOrganoid C++ module compiled (UpgradeTerminal, DoorLock,
-# HazardZone, LevelTransitionZone, HostBase / BP child).
+# HazardZone, StreamingVolume, HostBase / BP child).
 
 import unreal
 
@@ -13,7 +13,8 @@ import unreal
 def build_facility_layout():
     """
     Generate a multi-room facility scaffold for ProjectOrganoid:
-    Admin (Sub-Level 1) → transition corridor → Biolab / Neuro-Genetics (Sub-Level 2).
+    Admin (Region 1) → connecting corridor → Biolab / Neuro-Genetics (Region 2),
+    as one continuous space. Streaming volumes only warm partitions ahead of the player.
     """
     editor_actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 
@@ -206,38 +207,55 @@ def build_facility_layout():
         name="Corridor_Wall_North",
     )
 
-    transition_zone = spawn_custom_actor(
-        "/Script/ProjectOrganoid.ProjectOrganoidLevelTransitionZone",
-        unreal.Vector(1500.0, 0.0, 100.0),
-        name="TransitionZone_AdminToBiolab",
-    )
-    if transition_zone:
-        # EProjectOrganoidSubLevelTag::SubLevel2_NeuroGenetics
-        set_enum_property(
-            transition_zone,
-            "TargetSubLevelTag",
-            "ProjectOrganoidSubLevelTag",
-            [
-                "SUB_LEVEL2_NEURO_GENETICS",
-                "SubLevel2_NeuroGenetics",
-                "SUBLEVEL2_NEUROGENETICS",
-            ],
+    def spawn_streaming_volume(location, name, partitions, region_enum_names=None, extent=None):
+        """Streaming volumes are invisible plumbing — they keep partitions resident and,
+        when a region tag is given, tell the level manager where Avery is standing."""
+        volume = spawn_custom_actor(
+            "/Script/ProjectOrganoid.ProjectOrganoidStreamingVolume",
+            location,
+            name=name,
         )
-        try:
-            transition_zone.set_editor_property("TargetStreamingLevelName", "SL_Epitope_NeuroGenetics")
-        except Exception:
-            try:
-                transition_zone.set_editor_property("target_streaming_level_name", "SL_Epitope_NeuroGenetics")
-            except Exception as exc:
-                unreal.log_warning(f"Could not set TargetStreamingLevelName: {exc}")
+        if not volume:
+            return None
 
         try:
-            transition_zone.set_editor_property(
-                "StreamingLevelsToUnload",
-                ["SL_Epitope_Admin"],
-            )
-        except Exception:
-            pass
+            volume.set_editor_property("RequestedStreamingLevels", partitions)
+        except Exception as exc:
+            unreal.log_warning(f"Could not set RequestedStreamingLevels on {name}: {exc}")
+
+        if region_enum_names:
+            set_enum_property(volume, "RegionContextTag", "ProjectOrganoidSubLevelTag", region_enum_names)
+
+        if extent:
+            try:
+                volume.trigger_volume.set_editor_property("box_extent", extent)
+            except Exception:
+                pass
+
+        return volume
+
+    # Admin's own region volume: holds the partition resident and owns hazard context while
+    # the player is anywhere in the region.
+    spawn_streaming_volume(
+        unreal.Vector(0.0, 0.0, 200.0),
+        "StreamVolume_Region_Admin",
+        ["SL_Epitope_Admin"],
+        region_enum_names=[
+            "SUB_LEVEL1_ADMIN",
+            "SubLevel1_Admin",
+            "SUBLEVEL1_ADMIN",
+        ],
+        extent=unreal.Vector(1400.0, 1400.0, 500.0),
+    )
+
+    # Seam band, roughly a room ahead of the Admin/Neuro boundary. No region tag — crossing it
+    # only warms the neighbour, it does not move the player anywhere.
+    spawn_streaming_volume(
+        unreal.Vector(1500.0, 0.0, 100.0),
+        "StreamBand_AdminToNeuro",
+        ["SL_Epitope_NeuroGenetics"],
+        extent=unreal.Vector(400.0, 300.0, 300.0),
+    )
 
     # ------------------------------------------------------------------
     # Sub-Level 2: Biolab / Neuro-Genetics

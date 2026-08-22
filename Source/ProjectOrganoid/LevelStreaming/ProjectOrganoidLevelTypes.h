@@ -18,6 +18,20 @@ enum class EProjectOrganoidSubLevelTag : uint8
 	SubLevel5_Reactor UMETA(DisplayName = "Sub-Level 5 — Core Reactor & Incubator")
 };
 
+/**
+ *  Live residency of a streaming partition. Purely a performance concern — the player
+ *  must never be able to observe a region in any state other than Loaded.
+ */
+UENUM(BlueprintType)
+enum class EProjectOrganoidRegionStreamState : uint8
+{
+	Unloaded UMETA(DisplayName = "Unloaded"),
+	Loading UMETA(DisplayName = "Loading"),
+	Loaded UMETA(DisplayName = "Loaded"),
+	Unloading UMETA(DisplayName = "Unloading"),
+	Missing UMETA(DisplayName = "Missing — not registered on the persistent level")
+};
+
 /** Designer-authored streaming target + ambient hazard profile */
 USTRUCT(BlueprintType)
 struct FProjectOrganoidSubLevelDefinition
