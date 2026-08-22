@@ -65,9 +65,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Level|Streaming", meta = (ClampMin = "0.05"))
 	float ReconcileIntervalSeconds = 0.25f;
 
-	/** Soft budget. Exceeding it is legal but logged — it means seams are placed too close together. */
+	/**
+	 *  Soft budget. Exceeding it is legal but logged. Three is the floor for this topology:
+	 *  a stairwell landing belongs to the flight above and the flight below, so it can
+	 *  legitimately want the previous, current, and next region at once.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Level|Streaming", meta = (ClampMin = "1"))
-	int32 MaxResidentRegions = 2;
+	int32 MaxResidentRegions = 3;
 
 	/**
 	 *  Seconds spent easing hazard multipliers when the player crosses into a new region.

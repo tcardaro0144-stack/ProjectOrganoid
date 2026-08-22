@@ -41,8 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow|Maps")
 	FName TitleLevelName = FName(TEXT("/Game/Maps/Lvl_MainMenu"));
 
+	/** Persistent Epitope spine. Every region streams in around the player from here. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow|Maps")
-	FName GameplayLevelName = FName(TEXT("/Game/ThirdPerson/Lvl_ThirdPerson"));
+	FName GameplayLevelName = FName(TEXT("/Game/Maps/Lvl_Epitope"));
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flow|UI")
 	TSubclassOf<UProjectOrganoidLoadingScreenWidget> LoadingScreenClass;
