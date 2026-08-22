@@ -397,7 +397,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
 		Component = NewObject<UAudioComponent>(Character, ComponentName);
 		Component->SetupAttachment(Character->GetRootComponent());
 		Component->bAutoActivate = false;
-		Component->bUISound = true;
+		Component->SetUISound(true);
 		Component->bAllowSpatialization = false;
 		Component->RegisterComponent();
 	}

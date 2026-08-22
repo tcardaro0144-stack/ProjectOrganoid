@@ -65,6 +65,8 @@ class AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHaza
 	/** Photography / scanning mode (DoF + lore extract + hi-res capture) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidPhotoScanComponent* PhotoScanComponent;
+	
+protected:
 
 	/** Maximum suit health */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
@@ -73,8 +75,6 @@ class AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHaza
 	/** Maximum toxicity before critical contamination */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
 	float MaxToxicity = 100.0f;
-	
-protected:
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")

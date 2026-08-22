@@ -104,9 +104,9 @@ void AProjectOrganoidGameMode::TryBindHUDToPawn(APlayerController* PlayerControl
 	{
 		HUDWidget->BindToCharacter(Avery);
 
-		if (UProjectOrganoidGameplayHUDController** Found = PlayerHUDControllers.Find(PlayerController))
+		if (TObjectPtr<UProjectOrganoidGameplayHUDController>* Found = PlayerHUDControllers.Find(PlayerController))
 		{
-			if (UProjectOrganoidGameplayHUDController* Controller = *Found)
+			if (UProjectOrganoidGameplayHUDController* Controller = Found->Get())
 			{
 				Controller->Initialize(Avery, HUDWidget);
 			}

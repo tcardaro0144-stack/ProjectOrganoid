@@ -85,6 +85,44 @@ def _add_labeled_slider(widget_tree, parent_box, slider_name: str, label: str):
     return slider
 
 
+def _add_fixed_menu_button(widget_tree, parent_box, name: str, label: str, width: float = 300.0, height: float = 80.0):
+    """Button wrapped in a SizeBox so it keeps a fixed size inside a VerticalBox."""
+    size_box = widget_tree.construct_widget(unreal.SizeBox, f"{name}_SizeBox")
+    try:
+        size_box.set_width_override(width)
+        size_box.set_height_override(height)
+    except Exception:
+        try:
+            size_box.set_editor_property("width_override", width)
+            size_box.set_editor_property("height_override", height)
+        except Exception as exc:
+            unreal.log_warning(f"Could not set SizeBox overrides for {name}: {exc}")
+
+    button = widget_tree.construct_widget(unreal.Button, name)
+    _set_button_label(button, label)
+    try:
+        size_box.set_content(button)
+    except Exception:
+        try:
+            size_box.add_child(button)
+        except Exception as exc:
+            unreal.log_warning(f"Could not parent {name} under SizeBox: {exc}")
+            parent_box.add_child_to_vertical_box(button)
+            return button
+
+    vslot = parent_box.add_child_to_vertical_box(size_box)
+    try:
+        vslot.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
+        vslot.set_size(unreal.SlateChildSize(unreal.SlateSizeRule.AUTOMATIC))
+        vslot.set_padding(unreal.Margin(0.0, 6.0, 0.0, 6.0))
+    except Exception:
+        try:
+            vslot.set_editor_property("horizontal_alignment", unreal.HorizontalAlignment.H_ALIGN_CENTER)
+        except Exception:
+            pass
+    return button
+
+
 def build_main_menu_layout(widget_bp) -> bool:
     """Build a centered vertical menu with BindWidget-compatible names."""
     if not widget_bp:
@@ -102,6 +140,7 @@ def build_main_menu_layout(widget_bp) -> bool:
 
         menu_box = widget_tree.construct_widget(unreal.VerticalBox, "MenuBox")
         slot = root.add_child_to_canvas(menu_box)
+        # Point anchors (not stretch 0-1) so the menu doesn't fill the viewport.
         slot.set_anchors(unreal.Anchors(0.5, 0.5, 0.5, 0.5))
         slot.set_alignment(unreal.Vector2D(0.5, 0.5))
         slot.set_auto_size(True)
@@ -127,9 +166,7 @@ def build_main_menu_layout(widget_bp) -> bool:
             ("QuitButton", "QUIT"),
         ]
         for name, label in buttons:
-            button = widget_tree.construct_widget(unreal.Button, name)
-            _set_button_label(button, label)
-            menu_box.add_child_to_vertical_box(button)
+            _add_fixed_menu_button(widget_tree, menu_box, name, label, width=300.0, height=80.0)
 
         settings_header = widget_tree.construct_widget(unreal.TextBlock, "SettingsHeader")
         settings_header.set_text(unreal.Text("SETTINGS"))
@@ -147,7 +184,7 @@ def build_main_menu_layout(widget_bp) -> bool:
         graphics_row.add_child_to_horizontal_box(graphics_label)
         graphics_row.add_child_to_horizontal_box(graphics_combo)
 
-        unreal.log("Built WBP_MainMenu layout")
+        unreal.log("Built WBP_MainMenu layout (fixed 300x80 buttons, centered Canvas anchors)")
         return True
     except Exception as exc:
         unreal.log_warning(f"Could not fully build WBP_MainMenu layout (open in UMG to polish): {exc}")

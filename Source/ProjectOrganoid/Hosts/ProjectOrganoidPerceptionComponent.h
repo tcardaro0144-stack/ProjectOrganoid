@@ -14,8 +14,8 @@ class UAISenseConfig_Hearing;
 class ACharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidSightStimulus, AActor*, Target, bool, bSensed, FVector, StimulusLocation);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnProjectOrganoidHearingStimulus, AActor*, Instigator, FName, NoiseTag, EProjectOrganoidHearingStimulusKind, Kind, FVector, StimulusLocation, float, Strength);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidPlayerMovementHeard, AActor*, Instigator, EProjectOrganoidPlayerMovementNoiseState, MovementState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnProjectOrganoidHearingStimulus, AActor*, NoiseInstigator, FName, NoiseTag, EProjectOrganoidHearingStimulusKind, Kind, FVector, StimulusLocation, float, Strength);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidPlayerMovementHeard, AActor*, NoiseInstigator, EProjectOrganoidPlayerMovementNoiseState, MovementState);
 
 /**
  *  Host sensory stack built on UAIPerceptionComponent.

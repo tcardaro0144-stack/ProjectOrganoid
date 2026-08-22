@@ -146,9 +146,9 @@ void UProjectOrganoidSettingsSubsystem::ApplyAudioSettings()
 {
 	if (GEngine)
 	{
-		if (FAudioDeviceHandle AudioDevice = GEngine->GetMainAudioDeviceHandled())
+		if (FAudioDeviceHandle AudioDevice = GEngine->GetMainAudioDevice())
 		{
-			AudioDevice->SetTransientMasterVolume(MasterVolume);
+			AudioDevice->SetTransientPrimaryVolume(MasterVolume);
 		}
 	}
 

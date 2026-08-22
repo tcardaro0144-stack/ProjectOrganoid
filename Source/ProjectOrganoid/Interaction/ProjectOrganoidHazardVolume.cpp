@@ -23,10 +23,10 @@ AProjectOrganoidHazardVolume::AProjectOrganoidHazardVolume()
 	bScaleDamageByDistance = false;
 	bIsActive = true;
 
-	if (UBrushComponent* Brush = GetBrushComponent())
+	if (UBrushComponent* BrushComp = GetBrushComponent())
 	{
-		Brush->SetCollisionProfileName(TEXT("Trigger"));
-		Brush->SetGenerateOverlapEvents(true);
+		BrushComp->SetCollisionProfileName(TEXT("Trigger"));
+		BrushComp->SetGenerateOverlapEvents(true);
 	}
 }
 
@@ -58,10 +58,10 @@ void AProjectOrganoidHazardVolume::EndPlay(const EEndPlayReason::Type EndPlayRea
 
 void AProjectOrganoidHazardVolume::BindBrushOverlaps()
 {
-	if (UBrushComponent* Brush = GetBrushComponent())
+	if (UBrushComponent* BrushComp = GetBrushComponent())
 	{
-		Brush->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidHazardVolume::OnHazardBeginOverlap);
-		Brush->OnComponentEndOverlap.AddUniqueDynamic(this, &AProjectOrganoidHazardVolume::OnHazardEndOverlap);
+		BrushComp->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidHazardVolume::OnHazardBeginOverlap);
+		BrushComp->OnComponentEndOverlap.AddUniqueDynamic(this, &AProjectOrganoidHazardVolume::OnHazardEndOverlap);
 	}
 }
 
@@ -230,9 +230,9 @@ float AProjectOrganoidHazardVolume::CalculateDistanceScalingFactor(AActor* Targe
 	const float Distance = FVector::Dist(VolumeCenter, TargetActor->GetActorLocation());
 
 	float ApproximateRadius = 500.0f;
-	if (const UBrushComponent* Brush = GetBrushComponent())
+	if (const UBrushComponent* BrushComp = GetBrushComponent())
 	{
-		ApproximateRadius = FMath::Max(Brush->Bounds.SphereRadius, 1.0f);
+		ApproximateRadius = FMath::Max(BrushComp->Bounds.SphereRadius, 1.0f);
 	}
 
 	const float Alpha = FMath::Clamp(Distance / ApproximateRadius, 0.0f, 1.0f);

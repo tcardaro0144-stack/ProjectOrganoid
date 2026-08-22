@@ -241,7 +241,7 @@ protected:
 	void HandleDeath();
 
 	UFUNCTION()
-	void HandleHearingStimulus(AActor* Instigator, FName NoiseTag, EProjectOrganoidHearingStimulusKind Kind, FVector StimulusLocation, float Strength);
+	void HandleHearingStimulus(AActor* NoiseInstigator, FName NoiseTag, EProjectOrganoidHearingStimulusKind Kind, FVector StimulusLocation, float Strength);
 
 	UFUNCTION()
 	void HandleSightStimulus(AActor* Target, bool bSensed, FVector StimulusLocation);

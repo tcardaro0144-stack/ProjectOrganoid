@@ -55,7 +55,7 @@ void UProjectOrganoidFeedbackComponent::EnsureAudioComponents()
 		HeartbeatAudio = NewObject<UAudioComponent>(OwnerActor, TEXT("HeartbeatAudio"));
 		HeartbeatAudio->SetupAttachment(OwnerActor->GetRootComponent());
 		HeartbeatAudio->bAutoActivate = false;
-		HeartbeatAudio->bUISound = false;
+		HeartbeatAudio->SetUISound(false);
 		HeartbeatAudio->RegisterComponent();
 	}
 
@@ -64,7 +64,7 @@ void UProjectOrganoidFeedbackComponent::EnsureAudioComponents()
 		BreathingAudio = NewObject<UAudioComponent>(OwnerActor, TEXT("BreathingAudio"));
 		BreathingAudio->SetupAttachment(OwnerActor->GetRootComponent());
 		BreathingAudio->bAutoActivate = false;
-		BreathingAudio->bUISound = false;
+		BreathingAudio->SetUISound(false);
 		BreathingAudio->RegisterComponent();
 	}
 

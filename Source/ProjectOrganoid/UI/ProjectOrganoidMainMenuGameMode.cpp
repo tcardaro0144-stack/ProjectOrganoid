@@ -14,26 +14,6 @@ AProjectOrganoidMainMenuGameMode::AProjectOrganoidMainMenuGameMode()
 	bStartPlayersAsSpectators = true;
 }
 
-namespace ProjectOrganoidMainMenuGM
-{
-	static TSubclassOf<UProjectOrganoidMainMenuWidget> ResolveMainMenuWidgetClass(
-		TSubclassOf<UProjectOrganoidMainMenuWidget> ConfiguredClass)
-	{
-		if (ConfiguredClass && ConfiguredClass != UProjectOrganoidMainMenuWidget::StaticClass())
-		{
-			return ConfiguredClass;
-		}
-
-		if (UClass* WBPClass = LoadClass<UProjectOrganoidMainMenuWidget>(
-			nullptr, TEXT("/Game/UI/Menus/WBP_MainMenu.WBP_MainMenu_C")))
-		{
-			return WBPClass;
-		}
-
-		return ConfiguredClass ? ConfiguredClass : UProjectOrganoidMainMenuWidget::StaticClass();
-	}
-}
-
 void AProjectOrganoidMainMenuGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -73,27 +53,20 @@ void AProjectOrganoidMainMenuGameMode::SpawnMainMenuForPlayer(APlayerController*
 		return;
 	}
 
-	TSubclassOf<UProjectOrganoidMainMenuWidget> ClassToSpawn =
-		ProjectOrganoidMainMenuGM::ResolveMainMenuWidgetClass(MainMenuWidgetClass);
-
-	UProjectOrganoidMainMenuWidget* MenuWidget = CreateWidget<UProjectOrganoidMainMenuWidget>(PlayerController, ClassToSpawn);
-	if (!MenuWidget)
+	// Prefer the PlayerController path (also covers map-name auto-detect / PIE timing).
+	if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(PlayerController))
 	{
+		if (MainMenuWidgetClass && MainMenuWidgetClass != UProjectOrganoidMainMenuWidget::StaticClass())
+		{
+			OrganoidPC->MainMenuWidgetClass = MainMenuWidgetClass;
+		}
+
+		if (UProjectOrganoidMainMenuWidget* MenuWidget = OrganoidPC->EnsureTitleMainMenu())
+		{
+			PlayerMenuWidgets.Add(PlayerController, MenuWidget);
+		}
 		return;
 	}
 
-	MenuWidget->AddToViewport(10);
-
-	FInputModeUIOnly InputMode;
-	InputMode.SetWidgetToFocus(MenuWidget->TakeWidget());
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	PlayerController->SetInputMode(InputMode);
-	PlayerController->bShowMouseCursor = true;
-
-	if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(PlayerController))
-	{
-		OrganoidPC->SetPauseMenuAllowed(false);
-	}
-
-	PlayerMenuWidgets.Add(PlayerController, MenuWidget);
+	UE_LOG(LogTemp, Warning, TEXT("MainMenu: PlayerController is not AProjectOrganoidPlayerController — cannot auto-spawn WBP_MainMenu."));
 }

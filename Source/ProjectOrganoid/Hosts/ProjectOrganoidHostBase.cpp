@@ -136,13 +136,13 @@ bool AProjectOrganoidHostBase::HasSightOnPlayer() const
 }
 
 void AProjectOrganoidHostBase::HandleHearingStimulus(
-	AActor* Instigator,
+	AActor* NoiseInstigator,
 	FName NoiseTag,
 	EProjectOrganoidHearingStimulusKind Kind,
 	FVector StimulusLocation,
 	float Strength)
 {
-	OnNoiseHeard.Broadcast(Instigator, NoiseTag);
+	OnNoiseHeard.Broadcast(NoiseInstigator, NoiseTag);
 
 	FName StateName = TEXT("HeardNoise");
 	switch (Kind)

@@ -11,7 +11,7 @@ class USoundBase;
 class UPostProcessComponent;
 class UAudioComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidSpatialAudioTriggered, FVector, Location, FName, NoiseTag, AActor*, Instigator);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidSpatialAudioTriggered, FVector, Location, FName, NoiseTag, AActor*, NoiseInstigator);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidBPMChanged, float, NewBPM);
 
 /**
@@ -121,7 +121,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Audio|Spatial")
 	bool PlayFootstepAtLocation(
 		const FVector& Location,
-		AActor* Instigator,
+		AActor* NoiseInstigator,
 		float LoudnessOverride = -1.0f,
 		bool bIgnoreInterval = false,
 		FName NoiseTag = NAME_None,
@@ -129,7 +129,7 @@ public:
 
 	/** Play 3D gunfire and report AI hearing (tag: Gunfire). */
 	UFUNCTION(BlueprintCallable, Category = "Audio|Spatial")
-	void PlayGunfireAtLocation(const FVector& Location, AActor* Instigator, float LoudnessOverride = -1.0f, float MaxRangeOverride = -1.0f);
+	void PlayGunfireAtLocation(const FVector& Location, AActor* NoiseInstigator, float LoudnessOverride = -1.0f, float MaxRangeOverride = -1.0f);
 
 	/** Drive footsteps from Avery's movement speed (call from character Tick). */
 	UFUNCTION(BlueprintCallable, Category = "Audio|Spatial")
@@ -197,6 +197,6 @@ protected:
 	void UpdateBPMFromCharacter(AProjectOrganoidCharacter* Character, float DeltaTime);
 	void UpdateHeartbeatAudio();
 	void UpdatePostProcessSettings(float DeltaTime);
-	void ReportSpatialNoise(const FVector& Location, AActor* Instigator, float Loudness, float MaxRange, FName NoiseTag) const;
+	void ReportSpatialNoise(const FVector& Location, AActor* NoiseInstigator, float Loudness, float MaxRange, FName NoiseTag) const;
 	AProjectOrganoidCharacter* ResolveLocalCharacter() const;
 };

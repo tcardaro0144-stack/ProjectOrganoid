@@ -51,7 +51,12 @@ void AProjectOrganoidProjectile::InitFromWeapon(
 
 	if (InInstigatorController)
 	{
-		SetOwner(InInstigatorController->GetPawn() ? InInstigatorController->GetPawn() : InInstigatorPawn);
+		AActor* NewOwner = InInstigatorController->GetPawn();
+		if (!NewOwner)
+		{
+			NewOwner = InInstigatorPawn;
+		}
+		SetOwner(NewOwner);
 	}
 
 	CollisionSphere->IgnoreActorWhenMoving(GetOwner(), true);

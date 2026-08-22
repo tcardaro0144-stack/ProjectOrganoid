@@ -158,7 +158,7 @@ void UProjectOrganoidAudioSubsystem::EnsureHeartbeatAudio(AProjectOrganoidCharac
 		HeartbeatAudio = NewObject<UAudioComponent>(Character, TEXT("OrganoidManagedHeartbeat"));
 		HeartbeatAudio->SetupAttachment(Character->GetRootComponent());
 		HeartbeatAudio->bAutoActivate = false;
-		HeartbeatAudio->bUISound = true;
+		HeartbeatAudio->SetUISound(true);
 		HeartbeatAudio->RegisterComponent();
 	}
 
@@ -191,7 +191,7 @@ void UProjectOrganoidAudioSubsystem::UpdateHeartbeatAudio()
 
 bool UProjectOrganoidAudioSubsystem::PlayFootstepAtLocation(
 	const FVector& Location,
-	AActor* Instigator,
+	AActor* NoiseInstigator,
 	float LoudnessOverride,
 	bool bIgnoreInterval,
 	FName NoiseTag,
@@ -226,21 +226,21 @@ bool UProjectOrganoidAudioSubsystem::PlayFootstepAtLocation(
 				const float Occlusion = Ambience->EvaluateSoundOcclusion(
 					Listener->GetActorLocation() + FVector(0.0f, 0.0f, 64.0f),
 					Location,
-					Instigator);
+					NoiseInstigator);
 				Volume = 1.0f - (Occlusion * Ambience->MaxOcclusionAttenuation);
 			}
 		}
 		UGameplayStatics::PlaySoundAtLocation(World, FootstepSound, Location, Volume, 1.0f, 0.0f);
 	}
 
-	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, ResolvedTag);
-	OnSpatialAudioTriggered.Broadcast(Location, ResolvedTag, Instigator);
+	ReportSpatialNoise(Location, NoiseInstigator, Loudness, MaxRange, ResolvedTag);
+	OnSpatialAudioTriggered.Broadcast(Location, ResolvedTag, NoiseInstigator);
 	return true;
 }
 
 void UProjectOrganoidAudioSubsystem::PlayGunfireAtLocation(
 	const FVector& Location,
-	AActor* Instigator,
+	AActor* NoiseInstigator,
 	float LoudnessOverride,
 	float MaxRangeOverride)
 {
@@ -263,15 +263,15 @@ void UProjectOrganoidAudioSubsystem::PlayGunfireAtLocation(
 				const float Occlusion = Ambience->EvaluateSoundOcclusion(
 					Listener->GetActorLocation() + FVector(0.0f, 0.0f, 64.0f),
 					Location,
-					Instigator);
+					NoiseInstigator);
 				Volume = 1.0f - (Occlusion * Ambience->MaxOcclusionAttenuation);
 			}
 		}
 		UGameplayStatics::PlaySoundAtLocation(World, GunfireSound, Location, Volume, 1.0f, 0.0f);
 	}
 
-	ReportSpatialNoise(Location, Instigator, Loudness, MaxRange, ProjectOrganoidNoiseTags::Gunfire);
-	OnSpatialAudioTriggered.Broadcast(Location, ProjectOrganoidNoiseTags::Gunfire, Instigator);
+	ReportSpatialNoise(Location, NoiseInstigator, Loudness, MaxRange, ProjectOrganoidNoiseTags::Gunfire);
+	OnSpatialAudioTriggered.Broadcast(Location, ProjectOrganoidNoiseTags::Gunfire, NoiseInstigator);
 }
 
 void UProjectOrganoidAudioSubsystem::UpdatePlayerFootsteps(AProjectOrganoidCharacter* Character, float DeltaTime)
@@ -325,7 +325,7 @@ void UProjectOrganoidAudioSubsystem::UpdatePlayerFootsteps(AProjectOrganoidChara
 
 void UProjectOrganoidAudioSubsystem::ReportSpatialNoise(
 	const FVector& Location,
-	AActor* Instigator,
+	AActor* NoiseInstigator,
 	float Loudness,
 	float MaxRange,
 	FName NoiseTag) const
@@ -336,7 +336,7 @@ void UProjectOrganoidAudioSubsystem::ReportSpatialNoise(
 		return;
 	}
 
-	UAISense_Hearing::ReportNoiseEvent(World, Location, Loudness, Instigator, MaxRange, NoiseTag);
+	UAISense_Hearing::ReportNoiseEvent(World, Location, Loudness, NoiseInstigator, MaxRange, NoiseTag);
 }
 
 void UProjectOrganoidAudioSubsystem::SetToxicGasDistortion(float Intensity)
