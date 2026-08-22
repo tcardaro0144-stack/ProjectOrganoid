@@ -81,6 +81,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Menu|Save")
 	void OnSaveSlotsRefreshed(const TArray<FProjectOrganoidSaveSlotInfo>& Slots);
 
+	/** Preferred keyboard/gamepad focus target — New Game button, or the menu root. */
+	UFUNCTION(BlueprintCallable, Category = "Menu")
+	UWidget* GetDefaultFocusWidget();
+
 protected:
 
 	virtual void NativeConstruct() override;
@@ -151,4 +155,7 @@ protected:
 
 	UFUNCTION()
 	void HandleGraphicsQualityChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+	/** Build a guaranteed-visible runtime title menu (backdrop + centered New Game). */
+	void EnsureVisibleMenuLayout();
 };
