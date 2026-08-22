@@ -8,6 +8,12 @@ void UProjectOrganoidObjectiveSubsystem::Initialize(FSubsystemCollectionBase& Co
 {
 	Super::Initialize(Collection);
 
+	if (DefaultMissionAsset.IsNull())
+	{
+		DefaultMissionAsset = TSoftObjectPtr<UProjectOrganoidObjectiveDataAsset>(
+			FSoftObjectPath(TEXT("/Game/Data/Missions/DA_Mission_TheAudit.DA_Mission_TheAudit")));
+	}
+
 	if (!LoadDefaultMission())
 	{
 		SeedDefaultCampaignObjectives();
@@ -39,6 +45,14 @@ bool UProjectOrganoidObjectiveSubsystem::LoadMission(UProjectOrganoidObjectiveDa
 		ActiveMissionObjectiveIds.Reset();
 		bActiveMissionCompletionNotified = false;
 	}
+	else
+	{
+		// Sequential act: keep the journal, track completion against the new act only.
+		ActiveMissionObjectiveIds.Reset();
+		bActiveMissionCompletionNotified = false;
+	}
+
+	PendingNextMissionAsset = MissionAsset->NextMissionAsset;
 
 	ActiveMissionId = MissionAsset->MissionId;
 	ActiveMissionTitle = MissionAsset->MissionTitle.IsEmpty()
@@ -83,6 +97,7 @@ bool UProjectOrganoidObjectiveSubsystem::LoadMission(UProjectOrganoidObjectiveDa
 
 void UProjectOrganoidObjectiveSubsystem::SeedDefaultCampaignObjectives()
 {
+	// Fallback only — used when DA_Mission_TheAudit is missing from the cooked build.
 	if (Objectives.Num() > 0)
 	{
 		return;
@@ -380,6 +395,20 @@ void UProjectOrganoidObjectiveSubsystem::EvaluateActiveMissionCompletion()
 	{
 		bActiveMissionCompletionNotified = true;
 		OnMissionCompleted.Broadcast(ActiveMissionId);
+		TryLoadNextMission();
+	}
+}
+
+void UProjectOrganoidObjectiveSubsystem::TryLoadNextMission()
+{
+	if (PendingNextMissionAsset.IsNull())
+	{
+		return;
+	}
+
+	if (UProjectOrganoidObjectiveDataAsset* NextMission = PendingNextMissionAsset.LoadSynchronous())
+	{
+		LoadMission(NextMission, false);
 	}
 }
 

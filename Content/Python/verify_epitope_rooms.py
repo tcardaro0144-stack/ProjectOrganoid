@@ -24,6 +24,7 @@ EXPECTED = {
         "ProjectOrganoidUpgradeTerminal",
         "ProjectOrganoidDataPad",
         "ProjectOrganoidAmbienceZone",
+        "ProjectOrganoidItemPickup",
     ),
     "SL_Epitope_NeuroGenetics": (
         "ProjectOrganoidHazardZone",

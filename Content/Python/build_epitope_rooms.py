@@ -33,6 +33,10 @@ SPINE_MAP = "/Game/Maps/Lvl_Epitope"
 HOST_BP_DIR = "/Game/Hosts"
 HOST_BP_NAME = "BP_OrganoidHost"
 HOST_BP_PATH = f"{HOST_BP_DIR}/{HOST_BP_NAME}"
+ITEM_KEYCARD_PATH = "/Game/Data/Items/DA_Item_AdminKeycard"
+ITEM_SOT_PATH = "/Game/Data/Items/DA_Item_SOT"
+DIALOGUE_SURVIVOR_PATH = "/Game/Data/Dialogue/DA_Dialogue_IncineratorSurvivor"
+HOST_MESH_PATH = "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"
 
 CUBE_MESH = "/Engine/BasicShapes/Cube.Cube"
 HOST_BASE_CLASS = "/Script/ProjectOrganoid.ProjectOrganoidHostBase"
@@ -381,6 +385,26 @@ def place_scannable(location, label, display, entry_id, title, body, author):
     return scannable
 
 
+def load_data_asset(path):
+    if not unreal.EditorAssetLibrary.does_asset_exist(path):
+        report(f"data asset missing (run build_epitope_data.py): {path}")
+        return None
+    return unreal.EditorAssetLibrary.load_asset(path)
+
+
+def place_pickup(location, label, item_path, quantity=1, event_id=None):
+    item = load_data_asset(item_path)
+    pickup = spawn_organoid("ProjectOrganoidItemPickup", location, label)
+    if not pickup:
+        return None
+    if item:
+        set_prop(pickup, "ItemData", item)
+    set_prop(pickup, "Quantity", quantity)
+    if event_id:
+        set_prop(pickup, "PickupObjectiveEventId", event_id)
+    return pickup
+
+
 def place_host(location, label):
     host_class = None
     try:
@@ -472,6 +496,9 @@ def populate_admin(i):
     if upgrade:
         set_prop(upgrade, "InteractionPrompt", to_text("Access Dr. Sterling's Terminal"))
 
+    place_pickup(spot("nw", 0.35, 0.35, i, 80.0), "Pickup_AdminKeycard", ITEM_KEYCARD_PATH)
+    place_pickup(spot("se", 0.7, 0.35, i, 80.0), "Pickup_SOT_FieldOffice", ITEM_SOT_PATH, quantity=4)
+
     place_data_pad(
         spot("entry", 0.4, 0.62, i, 90.0), "DataPad_LockdownAuthorization",
         "Pad_Admin_Authorization", "Lockdown Authorization 44-C",
@@ -531,6 +558,16 @@ def populate_neuro(i):
                               spot("se", 0.72, 0.72, i, 100.0), "NPC_IncineratorSurvivor")
     if survivor:
         set_prop(survivor, "InteractionPrompt", to_text("Talk — Incinerator Bay"))
+        conversation = load_data_asset(DIALOGUE_SURVIVOR_PATH)
+        if conversation:
+            set_prop(survivor, "ConversationAsset", conversation)
+        mesh = load_data_asset(HOST_MESH_PATH)
+        skeletal = get_component(survivor, "MeshComponent")
+        if mesh and skeletal:
+            for setter in ("set_skeletal_mesh_asset", "set_skeletal_mesh"):
+                if hasattr(skeletal, setter):
+                    getattr(skeletal, setter)(mesh)
+                    break
 
     place_data_pad(
         spot("se", 0.5, 0.5, i, 90.0), "DataPad_EthicsObjection",
@@ -651,7 +688,8 @@ def populate_compute(i):
         "You will have worked out by now that I did not lose control of the substrate. I "
         "handed it over. It has been unfailingly reasonable ever since, which is the part "
         "I cannot make anyone understand.",
-        "Dr. E. Sterling")
+        "Dr. E. Sterling",
+        objective_event="Event_SterlingConfessionRead")
 
 
 def populate_reactor(i):
@@ -669,9 +707,11 @@ def populate_reactor(i):
                  unreal.Vector(950.0, 1250.0, 250.0), "SubLevel5_Reactor",
                  dps=9.0, toxicity=13.0, intensity=1.3)
 
-    place_terminal(spot("sw", 0.5, 0.5, i, 100.0), "Terminal_ControlSpine",
-                   "Terminal_ReactorControlSpine", "Reactor",
-                   mini_game="PasswordDecrypt", password="EPITAPH", single_use=False)
+    control = place_terminal(spot("sw", 0.5, 0.5, i, 100.0), "Terminal_ControlSpine",
+                             "Terminal_ReactorControlSpine", "Reactor",
+                             mini_game="PasswordDecrypt", password="EPITAPH", single_use=False)
+    if control:
+        set_prop(control, "SuccessObjectiveEventId", "Event_ReactorControlUsed")
 
     place_host(spot("ne", 0.5, 0.7, i, 100.0), "Host_PrimaryIncubator_Boss")
 

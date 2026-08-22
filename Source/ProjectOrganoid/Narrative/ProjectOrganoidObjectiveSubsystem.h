@@ -30,7 +30,7 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	/** Optional designer mission loaded on startup (falls back to seeded campaign if empty) */
+	/** Designer campaign start. Defaults to DA_Mission_TheAudit; seed is fallback only. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Objectives|Mission")
 	TSoftObjectPtr<UProjectOrganoidObjectiveDataAsset> DefaultMissionAsset;
 
@@ -162,10 +162,14 @@ protected:
 	bool bActiveMissionCompletionNotified = false;
 	int32 CachedJournalStage = 0;
 
+	UPROPERTY()
+	TSoftObjectPtr<UProjectOrganoidObjectiveDataAsset> PendingNextMissionAsset;
+
 	int32 FindObjectiveIndex(FName ObjectiveId) const;
 	void RequestPopup(const FProjectOrganoidObjective& Objective, FName Reason);
 	void SeedDefaultCampaignObjectives();
 	void EvaluateActiveMissionCompletion();
+	void TryLoadNextMission();
 	bool ArePrerequisitesMetForObjective(const FProjectOrganoidObjective& Objective) const;
 	void TryUnlockDependentObjectives(FName CompletedObjectiveId);
 	void BroadcastJournalState();

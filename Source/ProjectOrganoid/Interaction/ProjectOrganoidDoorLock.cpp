@@ -5,8 +5,10 @@
 #include "ProjectOrganoidInventoryComponent.h"
 #include "ProjectOrganoidItemData.h"
 #include "ProjectOrganoidPowerSubsystem.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AProjectOrganoidDoorLock::AProjectOrganoidDoorLock()
 {
@@ -101,6 +103,17 @@ void AProjectOrganoidDoorLock::SetLocked(bool bNewLocked)
 	InteractionPrompt = bIsLocked
 		? FText::FromString(TEXT("Use Keycard Lock"))
 		: FText::FromString(TEXT("Open / Close Door"));
+
+	if (!bIsLocked)
+	{
+		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+			{
+				Objectives->TriggerEvent(TEXT("Event_DoorUnlocked"));
+			}
+		}
+	}
 }
 
 void AProjectOrganoidDoorLock::SetOpen(bool bNewOpen)

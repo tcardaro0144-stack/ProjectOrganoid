@@ -13,7 +13,7 @@ struct FProjectOrganoidMissionTaskDefinition
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission|Task")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Task")
 	FProjectOrganoidObjective Objective;
 
 	/**
@@ -21,11 +21,11 @@ struct FProjectOrganoidMissionTaskDefinition
 	 *  ObjectiveId on each trigger is filled from Objective.ObjectiveId when the mission loads
 	 *  if left None.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission|Task")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Task")
 	TArray<FProjectOrganoidObjectiveEventTrigger> EventTriggers;
 
 	/** If true, activate this task when the mission is loaded */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission|Task")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Task")
 	bool bAutoActivate = true;
 };
 
@@ -39,15 +39,19 @@ class UProjectOrganoidObjectiveDataAsset : public UDataAsset
 
 public:
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission")
 	FName MissionId = NAME_None;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission")
 	FText MissionTitle;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission")
 	FText MissionDescription;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mission|Tasks")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Tasks")
 	TArray<FProjectOrganoidMissionTaskDefinition> Tasks;
+
+	/** Loaded when every task on this mission completes. Journal history is kept. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Chain")
+	TSoftObjectPtr<UProjectOrganoidObjectiveDataAsset> NextMissionAsset;
 };
