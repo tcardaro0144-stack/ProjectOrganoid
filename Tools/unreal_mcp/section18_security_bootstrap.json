@@ -1,0 +1,81 @@
+{
+  "title": "Section 18 Security terminal bootstrap snapshot",
+  "captured_at": "2026-08-27T19:38:07.659Z",
+  "running_bridge_at_capture": "0.3.0",
+  "source_bridge_ready": "0.3.1",
+  "do_not_execute_until_approved": true,
+  "original_spawn": {
+    "change_id": "chg_ae56d685-4a34-88c4-b56a-be93c1c9b1db",
+    "action": "spawn_blueprint_actor",
+    "status": "executed",
+    "save_performed": false,
+    "user": "Tom",
+    "second_review": "OrganoidAIBridge-reviewer",
+    "payload": {
+      "action": "spawn_blueprint_actor",
+      "description": "Section 18: spawn Admin_Terminal_Security from existing BP_AdminTerminal into SL_Epitope_Admin with atomic instance config. Do not save or compile. Do not touch Reception, Access Door, or legacy Terminal_AdminSecurity.",
+      "blueprint": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminTerminal",
+      "destination_package": "/Game/Maps/Epitope/SL_Epitope_Admin",
+      "required_package": "/Game/Maps/Epitope/SL_Epitope_Admin",
+      "label": "Admin_Terminal_Security",
+      "location": [2680, -400, 110],
+      "rotation": [0, 0, 0],
+      "scale": [1, 1, 1],
+      "save": false,
+      "compile": false,
+      "require_pie_stopped": true,
+      "properties": {
+        "TerminalID": "Terminal_AdminSecurity",
+        "Title": "Security Terminal",
+        "TerminalType": "Security",
+        "bInitiallyPowered": true,
+        "bOneShot": false,
+        "InteractionPrompt": "Use Terminal",
+        "InteractionRange": 150
+      }
+    }
+  },
+  "live_instance": {
+    "class": "BP_AdminTerminal_C",
+    "class_path": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminTerminal.BP_AdminTerminal_C",
+    "label": "Admin_Terminal_Security",
+    "name": "BP_AdminTerminal_C_1",
+    "owner_package": "/Game/Maps/Epitope/SL_Epitope_Admin",
+    "path": "/Game/Maps/Epitope/SL_Epitope_Admin.SL_Epitope_Admin:PersistentLevel.BP_AdminTerminal_C_1",
+    "location": [2680, -400, 110],
+    "rotation": [0, 0, 0],
+    "scale": [1, 1, 1],
+    "properties": {
+      "TerminalID": "Terminal_AdminSecurity",
+      "Title": "Security Terminal",
+      "TerminalType": {"numeric": 1, "internal": "NewEnumerator1", "display": "Security"},
+      "bInitiallyPowered": true,
+      "bOneShot": false,
+      "bIsPowered": false,
+      "bHasActivated": false,
+      "bIsInteractable": true,
+      "InteractionPrompt": "Use Terminal",
+      "InteractionRange": 150
+    }
+  },
+  "neighbors_must_remain": {
+    "Admin_Terminal_Reception": [1450, -150, 110],
+    "BP_AdminAccessDoor": [800, 0, 0],
+    "legacy_Terminal_AdminSecurity": [-1950, -1400, 100]
+  },
+  "durable_admin_package": {
+    "path": "Content/Maps/Epitope/SL_Epitope_Admin.umap",
+    "size": 266258,
+    "mtime": "2026-08-27 13:20:51.213",
+    "Admin_Terminal_Security_serialized": false,
+    "Admin_Terminal_Reception_serialized": true
+  },
+  "proposed_admin_only_save": {
+    "action": "save_maps",
+    "packages": ["/Game/Maps/Epitope/SL_Epitope_Admin"],
+    "required_package": "/Game/Maps/Epitope/SL_Epitope_Admin",
+    "compile": false,
+    "save_all": false,
+    "require_pie_stopped": true
+  }
+}

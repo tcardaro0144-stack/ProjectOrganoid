@@ -1,0 +1,70 @@
+{
+  "service": "OrganoidAIBridge",
+  "bind": "127.0.0.1",
+  "port": 8732,
+  "read_only_default": true,
+  "commands": {
+    "ping": {},
+    "get_editor_state": {},
+    "get_pie_state": {},
+    "get_player_pawn": {
+      "player_index": 0,
+      "include_sweep": true,
+      "direction": [1, 0, 0],
+      "distance": 150
+    },
+    "get_actor": { "name": "BP_AdminAccessDoor" },
+    "get_actor_property": { "actor": "Admin_Terminal_Reception", "property": "TerminalID" },
+    "get_component": { "actor": "BP_AdminAccessDoor", "component": "Door_Left" },
+    "list_actors_near": { "origin": [738, 96, 118], "radius": 400, "max": 40 },
+    "get_collision": { "actor": "BP_AdminAccessDoor", "component": "Door_Left" },
+    "capsule_sweep": { "distance": 150 },
+    "overlap_query": {},
+    "get_output_log": { "filter": "S17", "max": 100 },
+    "find_blueprint": { "path": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor" },
+    "get_blueprint_components": { "path": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor" },
+    "get_blueprint_members": { "path": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor" },
+    "get_user_defined_enum": {
+      "path": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/E_AdminTerminalType",
+      "blueprint_path": "/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminTerminal"
+    },
+    "prepare_write": {
+      "action": "move_actor_to_level",
+      "description": "Move Admin_Terminal_Reception from persistent Lvl_Epitope into SL_Epitope_Admin via native UEditorLevelUtils::MoveActorsToLevel on the game thread. No save. No compile. No Python.",
+      "actor": "Admin_Terminal_Reception",
+      "source_package": "/Game/Maps/Lvl_Epitope",
+      "destination_package": "/Game/Maps/Epitope/SL_Epitope_Admin",
+      "expected_location": [1450, -150, 110],
+      "expected_rotation": [0, 0, 0],
+      "expected_scale": [1, 1, 1],
+      "require_persistent_map": "/Game/Maps/Lvl_Epitope",
+      "require_pie_stopped": true,
+      "save": false,
+      "compile": false
+    },
+    "approve_write": { "change_id": "chg_...", "role": "user", "identity": "Tom" },
+    "execute_write": { "change_id": "chg_..." }
+  },
+  "gated_writes": {
+    "default": "read_only",
+    "requires": ["change_id", "user_approval", "second_review_approval"],
+    "allowlist": [
+      "delete_actor",
+      "set_component_property",
+      "set_collision",
+      "set_visibility",
+      "set_transform",
+      "compile_blueprint",
+      "save_asset",
+      "rerun_construction",
+      "add_blueprint_variable",
+      "add_scs_component",
+      "author_hologram_apply_state",
+      "move_actor_to_level",
+      "save_maps",
+      "set_actor_property",
+      "spawn_blueprint_actor"
+    ],
+    "forbidden": ["python_eval", "shell"]
+  }
+}

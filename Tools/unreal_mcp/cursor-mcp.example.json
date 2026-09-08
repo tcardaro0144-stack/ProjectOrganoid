@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "organoid-unreal-bridge": {
+      "command": "python",
+      "args": [
+        "Tools/unreal_mcp/server.py"
+      ]
+    }
+  }
+}
