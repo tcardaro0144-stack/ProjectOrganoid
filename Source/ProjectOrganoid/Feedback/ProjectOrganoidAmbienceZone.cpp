@@ -5,6 +5,10 @@
 #include "ProjectOrganoidCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/ReverbEffect.h"
+#include "Sound/SoundBase.h"
 
 AProjectOrganoidAmbienceZone::AProjectOrganoidAmbienceZone()
 {
@@ -29,8 +33,64 @@ void AProjectOrganoidAmbienceZone::BeginPlay()
 		ZoneId = GetFName();
 	}
 
+	if (RoomToneSound.IsNull())
+	{
+		RoomToneSound = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/Audio/Ambient/SW_FacilityBed.SW_FacilityBed")));
+	}
+
+	if (ZoneReverb.IsNull())
+	{
+		ZoneReverb = TSoftObjectPtr<UReverbEffect>(FSoftObjectPath(TEXT("/Engine/EngineSounds/ReverbSettings/BunkerHall.BunkerHall")));
+	}
+
 	ZoneVolume->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidAmbienceZone::HandleBeginOverlap);
 	ZoneVolume->OnComponentEndOverlap.AddDynamic(this, &AProjectOrganoidAmbienceZone::HandleEndOverlap);
+	SynchronizeOverlappingLocalCharacter();
+}
+
+void AProjectOrganoidAmbienceZone::SynchronizeOverlappingLocalCharacter()
+{
+	if (!ZoneVolume)
+	{
+		return;
+	}
+
+	ZoneVolume->UpdateOverlaps();
+
+	TArray<AActor*> Overlapping;
+	ZoneVolume->GetOverlappingActors(Overlapping, AProjectOrganoidCharacter::StaticClass());
+	for (AActor* Actor : Overlapping)
+	{
+		if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(Actor))
+		{
+			NotifyEnter(Character);
+			return;
+		}
+	}
+
+	if (bLocalPlayerInside)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APawn* Pawn = UGameplayStatics::GetPlayerPawn(World, 0);
+	AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(Pawn);
+	if (!Character)
+	{
+		return;
+	}
+
+	const FBox Bounds = ZoneVolume->Bounds.GetBox();
+	if (Bounds.IsInsideOrOn(Character->GetActorLocation()))
+	{
+		NotifyEnter(Character);
+	}
 }
 
 void AProjectOrganoidAmbienceZone::EndPlay(const EEndPlayReason::Type EndPlayReason)

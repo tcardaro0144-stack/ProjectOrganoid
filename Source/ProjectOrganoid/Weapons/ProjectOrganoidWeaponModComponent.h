@@ -16,7 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidWeaponModChanged,
  *  Owned by AProjectOrganoidWeapon.
  */
 UCLASS(ClassGroup = (ProjectOrganoid), meta = (BlueprintSpawnableComponent))
-class UProjectOrganoidWeaponModComponent : public UActorComponent
+class PROJECTORGANOID_API UProjectOrganoidWeaponModComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

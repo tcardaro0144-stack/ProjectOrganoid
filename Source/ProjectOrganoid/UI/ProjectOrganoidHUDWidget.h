@@ -19,7 +19,7 @@ class UProjectOrganoidItemData;
  *  Diegetic vitals overlay + objective pop-up notifications for Avery Vance.
  */
 UCLASS()
-class UProjectOrganoidHUDWidget : public UUserWidget
+class PROJECTORGANOID_API UProjectOrganoidHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -44,6 +44,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HUD|Vitals")
 	void UpdateVitalsFromCharacter();
 
+	UFUNCTION(BlueprintCallable, Category = "HUD|Adaptations")
+	void UpdateAdaptationFromCharacter();
+
+	/** Pull equipped magazine / matching reserve into the overlay */
+	UFUNCTION(BlueprintCallable, Category = "HUD|Weapon")
+	void UpdateAmmoFromCharacter();
+
+	/** Minimum ammo presentation: current magazine and reserve. Capacity is optional for UI. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Weapon")
+	void SetWeaponAmmo(int32 CurrentMagazine, int32 ReserveCount, int32 MagazineCapacity);
+
 	/** Push heart rate (BPM) into Blueprint visual/audio presentation */
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Vitals")
 	void SetHeartRateBPM(float BPM);
@@ -59,6 +70,16 @@ public:
 	/** Push current / max PE Energy into Blueprint presentation */
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Vitals")
 	void SetPEEnergy(float CurrentEnergy, float MaxEnergy);
+
+	/** Minimal equipped Biological Adaptation readout. No final art. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Adaptations")
+	void SetEquippedAdaptation(
+		const FText& AdaptationName,
+		float PECost,
+		float CooldownRemaining,
+		float CooldownDuration,
+		bool bAvailable,
+		FName UnavailableReason);
 
 	/** Fired when Tactical Mode engages — implement audio/visual effects in Blueprint */
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Tactical")
@@ -113,6 +134,16 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Inventory")
 	void OnInventoryItemAcquired(UProjectOrganoidItemData* ItemData, int32 Quantity);
+
+	/** Minimal C++ acquisition toast. No tutorial overlay / WBP. */
+	UFUNCTION(BlueprintCallable, Category = "HUD|Inventory")
+	void NotifyResourceAcquired(UProjectOrganoidItemData* ItemData, int32 Quantity);
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Inventory")
+	FText GetLastResourceNotification() const { return LastResourceNotification; }
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Weapon")
+	FText GetDisplayedAmmoText() const { return LastAmmoText; }
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "HUD|Craft")
 	void RefreshCraftingRecipes(const TArray<FProjectOrganoidCraftRecipe>& Recipes);
@@ -171,4 +202,15 @@ protected:
 	void RefreshActiveObjectiveList();
 	void BindPhotoScanEvents();
 	void UnbindPhotoScanEvents();
+	void EnsureMinimalResourcePresentation();
+
+	UPROPERTY()
+	TObjectPtr<class UTextBlock> AmmoReadoutText;
+
+	UPROPERTY()
+	TObjectPtr<class UTextBlock> ResourceNotificationText;
+
+	FText LastResourceNotification;
+	FText LastAmmoText;
+	float ResourceNotificationSecondsRemaining = 0.0f;
 };

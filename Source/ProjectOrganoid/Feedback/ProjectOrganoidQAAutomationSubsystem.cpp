@@ -8,6 +8,7 @@
 #include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidTelemetrySubsystem.h"
 #include "ProjectOrganoidCharacter.h"
+#include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"

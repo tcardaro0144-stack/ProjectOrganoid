@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "ProjectOrganoidInteractionTypes.h"
+#include "ProjectOrganoidWeaponTypes.h"
 #include "ProjectOrganoidItemData.generated.h"
 
 class UTexture2D;
@@ -27,7 +28,7 @@ enum class EProjectOrganoidItemType : uint8
  *  (e.g. Shotgun 2x4, Ammo 1x1, P226 1x2).
  */
 UCLASS(BlueprintType)
-class UProjectOrganoidItemData : public UPrimaryDataAsset
+class PROJECTORGANOID_API UProjectOrganoidItemData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 
@@ -37,6 +38,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
 	FText ItemName;
 
+	/** Inventory flavor text only. Not a medical/scientific claim surface. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
+	FText Description;
+
 	/** Inventory icon for UMG slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
 	TSoftObjectPtr<UTexture2D> Icon;
@@ -44,6 +49,13 @@ public:
 	/** Gameplay / UI item classification */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
 	EProjectOrganoidItemType ItemType = EProjectOrganoidItemType::None;
+
+	/**
+	 *  Ammo family for reserve stacks (used when ItemType == Ammo).
+	 *  Reload / consume match this against the equipped weapon's AmmoType.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Ammo")
+	EProjectOrganoidAmmoType AmmoType = EProjectOrganoidAmmoType::None;
 
 	/** Grid footprint width in slots (columns) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Grid", meta = (ClampMin = "1"))
@@ -59,6 +71,14 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security")
 	EProjectOrganoidSecurityTier SecurityTier = EProjectOrganoidSecurityTier::None;
+
+	/**
+	 *  When true, picking up this KeyItem fires Event_KeycardPickedUp.
+	 *  Default stays true so DA_Item_AdminKeycard still completes
+	 *  Main_ObtainAdminKeycard. Level-2+ campaign credentials set this false.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Security")
+	bool bBroadcastGenericKeycardObjectiveEvent = true;
 
 	/**
 	 *  Portable terminal / override spike. When true, Avery can lift security
@@ -83,8 +103,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Stack", meta = (ClampMin = "1", EditCondition = "bCanStack"))
 	int32 MaxStackCount = 1;
 
+	/**
+	 *  Direct health restored on a successful consumable use (0 = not a healing item).
+	 *  Applied through ApplyHealthDelta and clamped by MaxHealth. No toxicity/buffs.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item|Consumable", meta = (ClampMin = "0.0"))
+	float HealAmount = 0.0f;
+
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
 		return FPrimaryAssetId(TEXT("ProjectOrganoidItem"), GetFName());
 	}
+
+	/** Transient pistol-ammo definition for PIE tests. Campaign content uses DA_Item_PistolAmmo. */
+	static UProjectOrganoidItemData* CreateTransientPistolAmmo(UObject* Outer);
 };

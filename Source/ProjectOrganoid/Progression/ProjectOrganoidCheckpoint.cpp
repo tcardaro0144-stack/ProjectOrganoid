@@ -4,6 +4,7 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -12,11 +13,11 @@ AProjectOrganoidCheckpoint::AProjectOrganoidCheckpoint()
 	InteractionPrompt = FText::FromString(TEXT("Use Checkpoint"));
 
 	CheckpointMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CheckpointMesh"));
-	CheckpointMesh->SetupAttachment(InteractionSphere);
+	CheckpointMesh->SetupAttachment(InteractionSphere.Get());
 	CheckpointMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	AutosaveVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("AutosaveVolume"));
-	AutosaveVolume->SetupAttachment(InteractionSphere);
+	AutosaveVolume->SetupAttachment(InteractionSphere.Get());
 	AutosaveVolume->InitBoxExtent(FVector(120.0f, 120.0f, 100.0f));
 	AutosaveVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	AutosaveVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -75,16 +76,14 @@ bool AProjectOrganoidCheckpoint::TriggerCheckpointSave(AProjectOrganoidCharacter
 		return false;
 	}
 
-	if (bRestoreHealthOnSave)
-	{
-		const float Missing = Character->GetMaxHealth() - Character->GetHealth();
-		if (Missing > KINDA_SMALL_NUMBER)
-		{
-			Character->ApplyHealthDelta(Missing);
-		}
-	}
+	ApplyHealthStabilizationFloor(Character);
 
-	const bool bSucceeded = SaveSubsystem->SaveAtCheckpoint(Character, this, ResolveSaveSlot());
+	const FString Slot = ResolveSaveSlot();
+	const bool bSucceeded = SaveSubsystem->SaveAtCheckpoint(Character, this, Slot);
+	if (bSucceeded)
+	{
+		Character->NotifyCheckpointActivated(this, Slot);
+	}
 	BP_OnCheckpointSaved(Character, bSucceeded);
 	OnCheckpointUsed.Broadcast(this, Character, bSucceeded);
 	return bSucceeded;
@@ -117,6 +116,35 @@ void AProjectOrganoidCheckpoint::OnAutosaveVolumeBeginOverlap(
 
 	LastOverlapAutosaveTime = Now;
 	TriggerCheckpointSave(Character);
+}
+
+void AProjectOrganoidCheckpoint::ApplyHealthStabilizationFloor(AProjectOrganoidCharacter* Character) const
+{
+	if (!Character)
+	{
+		return;
+	}
+
+	const float MaxHealth = Character->GetMaxHealth();
+	if (MaxHealth <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	const float FloorPercent = FMath::Clamp(HealthStabilizationFloorPercent, 0.0f, 1.0f);
+	if (FloorPercent <= 0.0f)
+	{
+		return;
+	}
+
+	const float FloorHealth = MaxHealth * FloorPercent;
+	const float Current = Character->GetHealth();
+	if (Current + KINDA_SMALL_NUMBER >= FloorHealth)
+	{
+		return;
+	}
+
+	Character->ApplyHealthDelta(FloorHealth - Current);
 }
 
 FString AProjectOrganoidCheckpoint::ResolveSaveSlot() const

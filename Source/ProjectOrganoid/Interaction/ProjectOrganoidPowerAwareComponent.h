@@ -37,15 +37,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Role")
 	bool bIsSecurityCamera = false;
 
-	/** Laser tripwire / grid — disabled during Blackout */
+	/** Laser tripwire / grid — disabled unless the sector is Online */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Role")
 	bool bIsLaserGrid = false;
+
+	/** Primary room light — full Online, dim Emergency, off Blackout */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Role")
+	bool bIsSectorLight = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Lighting", meta = (ClampMin = "0.0"))
 	float NormalLightIntensity = 3000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Lighting", meta = (ClampMin = "0.0"))
 	float EmergencyLightIntensity = 1200.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Lighting", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float SectorEmergencyDimScale = 0.22f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Camera", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float EmergencyCameraDimScale = 0.35f;
@@ -71,4 +78,5 @@ protected:
 	void ApplyEmergencyLighting(EProjectOrganoidPowerState State);
 	void ApplySecurityCamera(EProjectOrganoidPowerState State);
 	void ApplyLaserGrid(EProjectOrganoidPowerState State);
+	void ApplySectorLighting(EProjectOrganoidPowerState State);
 };

@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "ProjectOrganoidInteractionTypes.h"
+#include "ProjectOrganoidLevelTypes.h"
+#include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidAudioAmbienceSubsystem.generated.h"
 
 class AProjectOrganoidCharacter;
@@ -108,6 +110,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Audio|Ambience|Vitals")
 	void NotifyHealthChanged(float CurrentHealth, float MaxHealth);
+
+	UFUNCTION(BlueprintCallable, Category = "Audio|Ambience|Power")
+	void NotifySectorPowerStress(bool bStressed);
 
 	// -------------------------------------------------------------------------
 	// Tunables
@@ -286,6 +291,8 @@ protected:
 	EProjectOrganoidHazardType PrimaryHazardType = EProjectOrganoidHazardType::None;
 
 	bool bCombatActive = false;
+	bool bSectorPowerStress = false;
+	bool bWorldDelegatesBound = false;
 	float CombatTimerRemaining = 0.0f;
 	float CombatIntensity = 0.0f;
 	int32 ActiveHazardCount = 0;
@@ -326,12 +333,25 @@ protected:
 
 	AProjectOrganoidCharacter* ResolveLocalCharacter() const;
 	EProjectOrganoidAmbienceState EvaluateDesiredState() const;
+	void EnsureDefaultLayerSounds();
+	void BindWorldDelegates();
+	void UnbindWorldDelegates();
+	void RefreshSectorPowerStress();
+
+	UFUNCTION()
+	void HandleSectorPowerChanged(EProjectOrganoidPowerSector Sector, EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState);
+
+	UFUNCTION()
+	void HandleFacilityPowerChanged(EProjectOrganoidPowerState FacilityState);
+
+	UFUNCTION()
+	void HandleSubLevelChanged(EProjectOrganoidSubLevelTag NewTag, EProjectOrganoidSubLevelTag PreviousTag);
 	void ApplyAmbienceState(EProjectOrganoidAmbienceState NewState, bool bForce = false);
 	void UpdateTargetsForState(EProjectOrganoidAmbienceState State);
 	void UpdateLayerVolumes(float DeltaTime);
 	void UpdateMixParameters(float DeltaTime);
 	void EnsureMusicLayers(AProjectOrganoidCharacter* Character);
-	void SyncLayerComponent(TObjectPtr<UAudioComponent>& Component, AProjectOrganoidCharacter* Character, const TSoftObjectPtr<USoundBase>& SoftSound, const TCHAR* ComponentName, float Volume);
+	void SyncLayerComponent(TObjectPtr<UAudioComponent>& Component, AProjectOrganoidCharacter* Character, const TSoftObjectPtr<USoundBase>& SoftSound, const TCHAR* ComponentName, float Volume, bool bStopWhenSilent = false);
 	void PushStateSoundMix(EProjectOrganoidAmbienceState State);
 	void PopActiveSoundMix();
 	void ApplyStateReverb(EProjectOrganoidAmbienceState State);

@@ -3,22 +3,37 @@
 #include "ProjectOrganoidCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
+#include "ProjectOrganoidLevelManagerSubsystem.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
+#include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "EnhancedActionKeyMapping.h"
+#include "InputAction.h"
 #include "InputActionValue.h"
+#include "InputMappingContext.h"
+#include "InputModifiers.h"
+#include "InputCoreTypes.h"
+#include "GameFramework/DamageType.h"
+#include "GameFramework/PlayerStart.h"
+#include "GameFramework/WorldSettings.h"
 #include "ProjectOrganoidInventoryComponent.h"
+#include "ProjectOrganoidInventoryTypes.h"
+#include "ProjectOrganoidItemData.h"
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeapon.h"
+#include "ProjectOrganoidWeaponModTypes.h"
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoidFeedbackComponent.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidPhotoScanComponent.h"
+#include "ProjectOrganoidBiologicalAdaptationComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidDialogueSubsystem.h"
 #include "ProjectOrganoidTelemetrySubsystem.h"
@@ -26,7 +41,10 @@
 #include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidHazardZone.h"
+#include "ProjectOrganoidCheckpoint.h"
+#include "ProjectOrganoidSaveSubsystem.h"
 #include "Components/BoxComponent.h"
+#include "TimerManager.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -57,8 +75,13 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f;
+	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
+	CameraBoom->TargetArmLength = 320.0f;
 	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->ProbeSize = 10.0f;
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->CameraLagSpeed = 10.0f;
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -84,8 +107,31 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	// Photography / scanning (DoF framing + lore extract)
 	PhotoScanComponent = CreateDefaultSubobject<UProjectOrganoidPhotoScanComponent>(TEXT("PhotoScanComponent"));
 
+	BiologicalAdaptationComponent = CreateDefaultSubobject<UProjectOrganoidBiologicalAdaptationComponent>(TEXT("BiologicalAdaptationComponent"));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	auto LoadAction = [](const TCHAR* Path) -> UInputAction*
+	{
+		return LoadObject<UInputAction>(nullptr, Path, nullptr, LOAD_NoWarn | LOAD_Quiet);
+	};
+	if (!JumpAction)
+	{
+		JumpAction = LoadAction(TEXT("/Game/Input/Actions/IA_Jump.IA_Jump"));
+	}
+	if (!MoveAction)
+	{
+		MoveAction = LoadAction(TEXT("/Game/Input/Actions/IA_Move.IA_Move"));
+	}
+	if (!LookAction)
+	{
+		LookAction = LoadAction(TEXT("/Game/Input/Actions/IA_Look.IA_Look"));
+	}
+	if (!MouseLookAction)
+	{
+		MouseLookAction = LoadAction(TEXT("/Game/Input/Actions/IA_MouseLook.IA_MouseLook"));
+	}
 }
 
 void AProjectOrganoidCharacter::BeginPlay()
@@ -117,6 +163,612 @@ void AProjectOrganoidCharacter::BeginPlay()
 			Telemetry->ReportGameplayEvent(TEXT("PlayerSpawn"), GetName());
 		}
 	}
+
+	LastSafeTransform = GetActorTransform();
+	bHasLastSafeTransform = true;
+	ApplyRuntimeMappingContext();
+	ApplyLookLimits();
+
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
+	if (MapName.Contains(TEXT("Lvl_Epitope"), ESearchCase::IgnoreCase))
+	{
+		HoldForFacilityGeometry();
+	}
+}
+
+void AProjectOrganoidCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	ApplyRuntimeMappingContext();
+	ApplyLookLimits();
+
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
+	if (MapName.Contains(TEXT("Lvl_Epitope"), ESearchCase::IgnoreCase))
+	{
+		ApplyCampaignOpeningStart();
+	}
+}
+
+void AProjectOrganoidCharacter::FellOutOfWorld(const UDamageType& /*DmgType*/)
+{
+	RecoverFromFall();
+}
+
+void AProjectOrganoidCharacter::EnsureRuntimeInput()
+{
+	auto MakeAction = [this](UInputAction*& Action, const TCHAR* Name, EInputActionValueType Type)
+	{
+		if (!Action)
+		{
+			Action = NewObject<UInputAction>(this, Name, RF_Transient);
+			Action->ValueType = Type;
+		}
+	};
+
+	MakeAction(JumpAction, TEXT("IA_Jump_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(MoveAction, TEXT("IA_Move_Runtime"), EInputActionValueType::Axis2D);
+	MakeAction(LookAction, TEXT("IA_Look_Runtime"), EInputActionValueType::Axis2D);
+	MakeAction(MouseLookAction, TEXT("IA_MouseLook_Runtime"), EInputActionValueType::Axis2D);
+	MakeAction(InteractAction, TEXT("IA_Interact_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(FireAction, TEXT("IA_Fire_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(TacticalAction, TEXT("IA_Tactical_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(ReloadAction, TEXT("IA_Reload_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(AbilityAction, TEXT("IA_Ability_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(UseConsumableAction, TEXT("IA_UseConsumable_Runtime"), EInputActionValueType::Boolean);
+
+	// Content IA_MouseLook can load as a non-Axis2D action. Look() then reads a zero
+	// Vector2D while WASD still works from IMC_Default. Force Axis2D in memory only.
+	if (LookAction)
+	{
+		LookAction->ValueType = EInputActionValueType::Axis2D;
+	}
+	if (MouseLookAction)
+	{
+		MouseLookAction->ValueType = EInputActionValueType::Axis2D;
+	}
+
+	if (RuntimeMappingContext)
+	{
+		return;
+	}
+
+	RuntimeMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_RuntimeDefault"), RF_Transient);
+
+	auto AddSwizzleY = [this](FEnhancedActionKeyMapping& Mapping)
+	{
+		UInputModifierSwizzleAxis* Swizzle = NewObject<UInputModifierSwizzleAxis>(RuntimeMappingContext);
+		Swizzle->Order = EInputAxisSwizzle::YXZ;
+		Mapping.Modifiers.Add(Swizzle);
+	};
+	auto AddNegate = [this](FEnhancedActionKeyMapping& Mapping)
+	{
+		Mapping.Modifiers.Add(NewObject<UInputModifierNegate>(RuntimeMappingContext));
+	};
+
+	{
+		FEnhancedActionKeyMapping& Mapping = RuntimeMappingContext->MapKey(MoveAction, EKeys::W);
+		AddSwizzleY(Mapping);
+	}
+	{
+		FEnhancedActionKeyMapping& Mapping = RuntimeMappingContext->MapKey(MoveAction, EKeys::S);
+		AddSwizzleY(Mapping);
+		AddNegate(Mapping);
+	}
+	{
+		FEnhancedActionKeyMapping& Mapping = RuntimeMappingContext->MapKey(MoveAction, EKeys::A);
+		AddNegate(Mapping);
+	}
+	RuntimeMappingContext->MapKey(MoveAction, EKeys::D);
+	// Mouse2D is not reliable on all UE5 Enhanced Input paths. Also bind the 1D axes
+	// onto the same Axis2D action the pawn already listens to for look.
+	RuntimeMappingContext->MapKey(MouseLookAction, EKeys::Mouse2D);
+	RuntimeMappingContext->MapKey(MouseLookAction, EKeys::MouseX);
+	{
+		FEnhancedActionKeyMapping& Mapping = RuntimeMappingContext->MapKey(MouseLookAction, EKeys::MouseY);
+		AddSwizzleY(Mapping);
+	}
+	RuntimeMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
+	RuntimeMappingContext->MapKey(InteractAction, EKeys::E);
+	RuntimeMappingContext->MapKey(FireAction, EKeys::LeftMouseButton);
+	RuntimeMappingContext->MapKey(TacticalAction, EKeys::RightMouseButton);
+	RuntimeMappingContext->MapKey(ReloadAction, EKeys::R);
+	RuntimeMappingContext->MapKey(AbilityAction, EKeys::Q);
+	RuntimeMappingContext->MapKey(UseConsumableAction, EKeys::H);
+}
+
+void AProjectOrganoidCharacter::ApplyRuntimeMappingContext()
+{
+	EnsureRuntimeInput();
+
+	const APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !RuntimeMappingContext)
+	{
+		return;
+	}
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+	{
+		// Priority 1 so mouse-look mappings win over a content IMC that may bind a
+		// different IA_MouseLook object (keyboard can still come from IMC_Default).
+		Subsystem->AddMappingContext(RuntimeMappingContext, 1);
+		UE_LOG(LogProjectOrganoid, Log, TEXT("Runtime Enhanced Input mapping applied (WASD / mouse look / E / LMB / RMB / H)."));
+	}
+}
+
+void AProjectOrganoidCharacter::RememberSafeGround(float DeltaTime)
+{
+	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (!MoveComp || !MoveComp->IsMovingOnGround())
+	{
+		return;
+	}
+
+	const FVector Location = GetActorLocation();
+	if (Location.Z < FallResetZ + 800.0f)
+	{
+		return;
+	}
+
+	SafeGroundTimer += DeltaTime;
+	if (SafeGroundTimer < 0.35f && bHasLastSafeTransform)
+	{
+		return;
+	}
+
+	SafeGroundTimer = 0.0f;
+	LastSafeTransform = GetActorTransform();
+	bHasLastSafeTransform = true;
+}
+
+void AProjectOrganoidCharacter::RecoverFromFall()
+{
+	if (bRecoveringFromFall)
+	{
+		return;
+	}
+
+	bRecoveringFromFall = true;
+
+	FTransform RecoverTM = LastSafeTransform;
+	if (!bHasLastSafeTransform || RecoverTM.GetLocation().Z < FallResetZ + 400.0f)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (AActor* Start = UGameplayStatics::GetActorOfClass(World, APlayerStart::StaticClass()))
+			{
+				RecoverTM = Start->GetActorTransform();
+			}
+			else
+			{
+				RecoverTM = FTransform(FRotator::ZeroRotator, FVector(0.0f, 0.0f, 200.0f));
+			}
+		}
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->SetMovementMode(MOVE_Walking);
+	}
+
+	SetActorTransform(RecoverTM, false, nullptr, ETeleportType::TeleportPhysics);
+	if (AController* PawnController = GetController())
+	{
+		PawnController->SetControlRotation(RecoverTM.Rotator());
+	}
+
+	UE_LOG(LogProjectOrganoid, Warning, TEXT("Fell off the Epitope plate spine — reset to last safe ground."));
+	bRecoveringFromFall = false;
+}
+
+void AProjectOrganoidCharacter::NotifyCheckpointActivated(AProjectOrganoidCheckpoint* Checkpoint, const FString& SaveSlot)
+{
+	if (!Checkpoint || SaveSlot.IsEmpty())
+	{
+		return;
+	}
+
+	LastActivatedCheckpoint = Checkpoint;
+	LastActivatedCheckpointSlot = SaveSlot;
+	bHasActivatedCheckpoint = true;
+}
+
+void AProjectOrganoidCharacter::SetPlayerControlEnabled(bool bEnabled)
+{
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		if (bEnabled)
+		{
+			MoveComp->SetMovementMode(MOVE_Walking);
+		}
+		else
+		{
+			MoveComp->StopMovementImmediately();
+			MoveComp->DisableMovement();
+		}
+	}
+
+	if (AController* PawnController = GetController())
+	{
+		PawnController->SetIgnoreMoveInput(!bEnabled);
+		PawnController->SetIgnoreLookInput(!bEnabled);
+	}
+
+	if (!bEnabled && bIsTacticalModeActive)
+	{
+		SetTacticalModeActive(false);
+	}
+}
+
+void AProjectOrganoidCharacter::BeginPlayerDeath()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	bIsDead = true;
+	Health = 0.0f;
+	if (WeaponComponent)
+	{
+		WeaponComponent->CancelReload();
+	}
+	SetPlayerControlEnabled(false);
+
+	UE_LOG(LogProjectOrganoid, Warning, TEXT("Nathan reached zero health. Entering death state."));
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DeathRestartTimer);
+		World->GetTimerManager().SetTimer(
+			DeathRestartTimer,
+			this,
+			&AProjectOrganoidCharacter::FinishPlayerDeathRestart,
+			DeathRestartDelaySeconds,
+			false);
+	}
+	else
+	{
+		FinishPlayerDeathRestart();
+	}
+}
+
+bool AProjectOrganoidCharacter::TryRestartFromActivatedCheckpoint()
+{
+	if (!bHasActivatedCheckpoint)
+	{
+		return false;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UProjectOrganoidSaveSubsystem* SaveSubsystem = GI->GetSubsystem<UProjectOrganoidSaveSubsystem>())
+		{
+			if (!LastActivatedCheckpointSlot.IsEmpty()
+				&& SaveSubsystem->DoesSaveExist(LastActivatedCheckpointSlot)
+				&& SaveSubsystem->LoadPlayerProgress(this, LastActivatedCheckpointSlot))
+			{
+				return true;
+			}
+		}
+	}
+
+	if (AProjectOrganoidCheckpoint* Checkpoint = LastActivatedCheckpoint.Get())
+	{
+		SetActorTransform(Checkpoint->GetActorTransform(), false, nullptr, ETeleportType::TeleportPhysics);
+		if (AController* PawnController = GetController())
+		{
+			PawnController->SetControlRotation(Checkpoint->GetActorRotation());
+		}
+		Health = MaxHealth;
+		return true;
+	}
+
+	return false;
+}
+
+bool AProjectOrganoidCharacter::TryRestartFromPlayerStart()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
+	if (MapName.Contains(TEXT("Lvl_Epitope"), ESearchCase::IgnoreCase))
+	{
+		if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+		{
+			const FTransform Opening = Levels->GetCampaignOpeningTransform();
+			SetActorTransform(Opening, false, nullptr, ETeleportType::TeleportPhysics);
+			if (AController* PawnController = GetController())
+			{
+				PawnController->SetControlRotation(Opening.Rotator());
+			}
+			Health = MaxHealth;
+			return true;
+		}
+	}
+
+	AActor* Start = UGameplayStatics::GetActorOfClass(World, APlayerStart::StaticClass());
+	if (!Start)
+	{
+		return false;
+	}
+
+	SetActorTransform(Start->GetActorTransform(), false, nullptr, ETeleportType::TeleportPhysics);
+	if (AController* PawnController = GetController())
+	{
+		PawnController->SetControlRotation(Start->GetActorRotation());
+	}
+	Health = MaxHealth;
+	return true;
+}
+
+void AProjectOrganoidCharacter::FinishPlayerDeathRestart()
+{
+	if (!bIsDead)
+	{
+		return;
+	}
+
+	bool bRestored = TryRestartFromActivatedCheckpoint();
+	if (!bRestored)
+	{
+		bRestored = TryRestartFromPlayerStart();
+	}
+
+	if (!bRestored)
+	{
+		UE_LOG(
+			LogProjectOrganoid,
+			Error,
+			TEXT("Death restart failed closed: no activated checkpoint and no PlayerStart."));
+		return;
+	}
+
+	bIsDead = false;
+	SetPlayerControlEnabled(true);
+	LastSafeTransform = GetActorTransform();
+	bHasLastSafeTransform = true;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
+		{
+			Ambience->NotifyHealthChanged(Health, MaxHealth);
+		}
+	}
+}
+
+void AProjectOrganoidCharacter::HoldForFacilityGeometry()
+{
+	if (!bSkipOpeningStartSnap)
+	{
+		ApplyCampaignOpeningStart();
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+		{
+			const FName AdminName = Levels->ResolveStreamingLevelName(EProjectOrganoidSubLevelTag::SubLevel1_Admin);
+			if (Levels->IsPartitionReady(AdminName))
+			{
+				return;
+			}
+		}
+	}
+
+	bWaitingForFacilityGeometry = true;
+	GeometryHoldSeconds = 0.0f;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->GravityScale = 0.0f;
+		MoveComp->SetMovementMode(MOVE_None);
+	}
+	SetActorEnableCollision(false);
+}
+
+void AProjectOrganoidCharacter::ReleaseFacilityGeometryHold(const FTransform& LandingTransform)
+{
+	SetActorTransform(LandingTransform, false, nullptr, ETeleportType::TeleportPhysics);
+	if (AController* PawnController = GetController())
+	{
+		PawnController->SetControlRotation(LandingTransform.Rotator());
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->GravityScale = 1.0f;
+		MoveComp->SetMovementMode(MOVE_Walking);
+		MoveComp->StopMovementImmediately();
+	}
+
+	SetActorEnableCollision(true);
+	LastSafeTransform = GetActorTransform();
+	bHasLastSafeTransform = true;
+	bWaitingForFacilityGeometry = false;
+}
+
+void AProjectOrganoidCharacter::ApplyCampaignOpeningStart()
+{
+	if (bSkipOpeningStartSnap)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>();
+	if (!Levels)
+	{
+		return;
+	}
+
+	const FTransform Opening = Levels->GetCampaignOpeningTransform();
+	SetActorTransform(Opening, false, nullptr, ETeleportType::TeleportPhysics);
+	if (AController* PawnController = GetController())
+	{
+		PawnController->SetControlRotation(Opening.Rotator());
+	}
+}
+
+void AProjectOrganoidCharacter::NotifyRestoredSavedTransform()
+{
+	bSkipOpeningStartSnap = true;
+	if (AController* PawnController = GetController())
+	{
+		PawnController->SetControlRotation(GetActorRotation());
+	}
+}
+
+void AProjectOrganoidCharacter::ApplyLookLimits()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!PlayerController || !PlayerController->PlayerCameraManager)
+	{
+		return;
+	}
+
+	PlayerController->PlayerCameraManager->ViewPitchMin = -50.0f;
+	PlayerController->PlayerCameraManager->ViewPitchMax = 65.0f;
+}
+
+void AProjectOrganoidCharacter::HandleInteract()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	if (InteractionComponent)
+	{
+		InteractionComponent->TryInteract();
+	}
+}
+
+void AProjectOrganoidCharacter::HandleFire()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	if (WeaponComponent)
+	{
+		WeaponComponent->FireEquippedWeapon();
+	}
+}
+
+void AProjectOrganoidCharacter::HandleReload()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	if (WeaponComponent)
+	{
+		WeaponComponent->ReloadEquippedWeapon();
+	}
+}
+
+void AProjectOrganoidCharacter::HandleTacticalToggle()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	ToggleTacticalMode();
+}
+
+void AProjectOrganoidCharacter::HandleAbilityActivate()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	if (BiologicalAdaptationComponent)
+	{
+		BiologicalAdaptationComponent->TryActivateEquipped();
+	}
+}
+
+void AProjectOrganoidCharacter::HandleUseConsumable()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+
+	TryUseFirstHealingConsumable();
+}
+
+bool AProjectOrganoidCharacter::TryUseConsumable(UProjectOrganoidItemData* ItemData)
+{
+	if (!ItemData || !InventoryComponent)
+	{
+		return false;
+	}
+
+	if (ItemData->ItemType != EProjectOrganoidItemType::Consumable)
+	{
+		return false;
+	}
+
+	if (ItemData->HealAmount <= 0.0f)
+	{
+		return false;
+	}
+
+	if (InventoryComponent->CountItem(ItemData) <= 0)
+	{
+		return false;
+	}
+
+	if (Health >= MaxHealth)
+	{
+		return false;
+	}
+
+	if (!InventoryComponent->ConsumeItem(ItemData, 1))
+	{
+		return false;
+	}
+
+	ApplyHealthDelta(ItemData->HealAmount);
+	return true;
+}
+
+bool AProjectOrganoidCharacter::TryUseFirstHealingConsumable()
+{
+	if (!InventoryComponent)
+	{
+		return false;
+	}
+
+	for (const FProjectOrganoidPlacedItem& Placed : InventoryComponent->GetAllItems())
+	{
+		if (Placed.IsValid()
+			&& Placed.ItemData
+			&& Placed.ItemData->ItemType == EProjectOrganoidItemType::Consumable
+			&& Placed.ItemData->HealAmount > 0.0f)
+		{
+			return TryUseConsumable(Placed.ItemData);
+		}
+	}
+
+	return false;
 }
 
 void AProjectOrganoidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -142,7 +794,7 @@ void AProjectOrganoidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason
 	Super::EndPlay(EndPlayReason);
 }
 
-void AProjectOrganoidCharacter::HandleInventoryItemPickedUp(UProjectOrganoidItemData* /*ItemData*/, int32 Quantity)
+void AProjectOrganoidCharacter::HandleInventoryItemPickedUp(UProjectOrganoidItemData* ItemData, int32 Quantity)
 {
 	if (Quantity <= 0)
 	{
@@ -156,6 +808,43 @@ void AProjectOrganoidCharacter::HandleInventoryItemPickedUp(UProjectOrganoidItem
 			Stats->RecordItemPickup(Quantity);
 		}
 	}
+
+	if (!ItemData)
+	{
+		return;
+	}
+
+	FString Name = ItemData->ItemName.ToString();
+	if (Name.IsEmpty())
+	{
+		Name = ItemData->GetName();
+	}
+
+	FString Line;
+	if (ItemData->ItemType == EProjectOrganoidItemType::Ammo)
+	{
+		const int32 Reserve = InventoryComponent
+			? InventoryComponent->CountAmmoOfType(ItemData->AmmoType)
+			: Quantity;
+		Line = FString::Printf(TEXT("%s +%d. Pistol reserve %d."), *Name, Quantity, Reserve);
+	}
+	else
+	{
+		Line = FString::Printf(TEXT("%s acquired."), *Name);
+		if (ItemData->ItemType == EProjectOrganoidItemType::Consumable && ItemData->HealAmount > 0.0f)
+		{
+			Line += TEXT(" Press H to use.");
+		}
+	}
+
+	if (!bHasShownFirstResourceHint)
+	{
+		bHasShownFirstResourceHint = true;
+		Line += TEXT(" Supplies are stored in your inventory.");
+	}
+
+	LastResourceFeedback = Line;
+	++ResourceFeedbackCount;
 }
 
 void AProjectOrganoidCharacter::Tick(float DeltaTime)
@@ -200,6 +889,43 @@ void AProjectOrganoidCharacter::Tick(float DeltaTime)
 	{
 		PEEnergy = FMath::Min(MaxPEEnergy, PEEnergy + (PERechargeRate * UndilatedDelta));
 	}
+
+	if (bWaitingForFacilityGeometry)
+	{
+		GeometryHoldSeconds += DeltaTime;
+		FName AdminName = NAME_None;
+		FTransform Landing = GetActorTransform();
+		bool bAdminReady = false;
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+			{
+				AdminName = Levels->ResolveStreamingLevelName(EProjectOrganoidSubLevelTag::SubLevel1_Admin);
+				bAdminReady = Levels->IsPartitionReady(AdminName);
+				if (!bSkipOpeningStartSnap)
+				{
+					Landing = Levels->GetCampaignOpeningTransform();
+				}
+			}
+		}
+
+		if (bAdminReady)
+		{
+			ReleaseFacilityGeometryHold(Landing);
+		}
+		else if (GeometryHoldSeconds >= 8.0f)
+		{
+			UE_LOG(LogProjectOrganoid, Warning, TEXT("Admin partition did not become visible — using campaign opening transform."));
+			ReleaseFacilityGeometryHold(Landing);
+		}
+		return;
+	}
+
+	RememberSafeGround(DeltaTime);
+	if (GetActorLocation().Z < FallResetZ)
+	{
+		RecoverFromFall();
+	}
 }
 
 void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
@@ -225,7 +951,7 @@ void AProjectOrganoidCharacter::SetTacticalModeActive(bool bActive)
 	OnTacticalModeChanged.Broadcast(bIsTacticalModeActive);
 }
 
-void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta)
+void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta, EProjectOrganoidHealthDeltaSource Source)
 {
 	if (Delta < 0.0f)
 	{
@@ -241,9 +967,32 @@ void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta)
 		{
 			if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
 			{
-				Ambience->NotifyCombatStimulus(0.45f);
+				if (Source == EProjectOrganoidHealthDeltaSource::EnvironmentalHazard)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("OrganoidHealthHazard t=%.3f delta=%.3f health=%.1f/%.1f player=%s"),
+						World->GetTimeSeconds(),
+						Delta,
+						Health,
+						MaxHealth,
+						IsPlayerControlled() ? TEXT("true") : TEXT("false"));
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("OrganoidHealthCombat t=%.3f delta=%.3f health=%.1f/%.1f player=%s"),
+						World->GetTimeSeconds(),
+						Delta,
+						Health,
+						MaxHealth,
+						IsPlayerControlled() ? TEXT("true") : TEXT("false"));
+					Ambience->NotifyCombatStimulus(0.45f);
+				}
 			}
 		}
+	}
+
+	if (bIsDead && Delta < 0.0f)
+	{
+		return;
 	}
 
 	Health = FMath::Clamp(Health + Delta, 0.0f, MaxHealth);
@@ -254,6 +1003,11 @@ void AProjectOrganoidCharacter::ApplyHealthDelta(float Delta)
 		{
 			Ambience->NotifyHealthChanged(Health, MaxHealth);
 		}
+	}
+
+	if (!bIsDead && Health <= 0.0f)
+	{
+		BeginPlayerDeath();
 	}
 }
 
@@ -302,7 +1056,7 @@ void AProjectOrganoidCharacter::OnTickHazard_Implementation(EProjectOrganoidHaza
 	}
 
 	// DamageAmount is already scaled by zone DPS * intensity * delta from the volume.
-	ApplyHealthDelta(-DamageAmount);
+	ApplyHealthDelta(-DamageAmount, EProjectOrganoidHealthDeltaSource::EnvironmentalHazard);
 
 	switch (HazardType)
 	{
@@ -416,6 +1170,71 @@ void AProjectOrganoidCharacter::ApplySavedWeaponStats(float InDamage, float InFi
 	}
 }
 
+bool AProjectOrganoidCharacter::UnlockWeaponMod(UProjectOrganoidWeaponModData* ModData)
+{
+	if (!ModData)
+	{
+		return false;
+	}
+
+	const FSoftObjectPath Path(ModData);
+	if (Path.IsNull() || UnlockedWeaponMods.Contains(Path))
+	{
+		return UnlockedWeaponMods.Contains(Path);
+	}
+
+	UnlockedWeaponMods.Add(Path);
+	return true;
+}
+
+bool AProjectOrganoidCharacter::IsWeaponModUnlocked(const UProjectOrganoidWeaponModData* ModData) const
+{
+	if (!ModData)
+	{
+		return false;
+	}
+
+	const FSoftObjectPath Path(ModData);
+	if (UnlockedWeaponMods.Contains(Path))
+	{
+		return true;
+	}
+
+	for (const FSoftObjectPath& Existing : UnlockedWeaponMods)
+	{
+		if (Existing.TryLoad() == ModData)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+TArray<UProjectOrganoidWeaponModData*> AProjectOrganoidCharacter::GetUnlockedWeaponMods() const
+{
+	TArray<UProjectOrganoidWeaponModData*> Result;
+	for (const FSoftObjectPath& Path : UnlockedWeaponMods)
+	{
+		if (UProjectOrganoidWeaponModData* Mod = Cast<UProjectOrganoidWeaponModData>(Path.TryLoad()))
+		{
+			Result.AddUnique(Mod);
+		}
+	}
+	return Result;
+}
+
+void AProjectOrganoidCharacter::ApplyUnlockedWeaponMods(const TArray<FSoftObjectPath>& Paths)
+{
+	UnlockedWeaponMods.Reset();
+	for (const FSoftObjectPath& Path : Paths)
+	{
+		if (!Path.IsNull())
+		{
+			UnlockedWeaponMods.AddUnique(Path);
+		}
+	}
+}
+
 int32 AProjectOrganoidCharacter::GetUpgradeLevel(EProjectOrganoidUpgradeType UpgradeType) const
 {
 	switch (UpgradeType)
@@ -498,6 +1317,11 @@ bool AProjectOrganoidCharacter::ApplyUpgrade(
 
 void AProjectOrganoidCharacter::ToggleTacticalMode()
 {
+	if (bIsDead)
+	{
+		return;
+	}
+
 	if (bIsTacticalModeActive)
 	{
 		SetTacticalModeActive(false);
@@ -583,20 +1407,51 @@ bool AProjectOrganoidCharacter::IsInDialogue() const
 
 void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+	EnsureRuntimeInput();
 
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Look);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Look);
-
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		if (JumpAction)
+		{
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		}
+		if (MoveAction)
+		{
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Move);
+		}
+		if (MouseLookAction)
+		{
+			EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Look);
+		}
+		if (LookAction)
+		{
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::Look);
+		}
+		if (InteractAction)
+		{
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleInteract);
+		}
+		if (FireAction)
+		{
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleFire);
+		}
+		if (ReloadAction)
+		{
+			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleReload);
+		}
+		if (TacticalAction)
+		{
+			EnhancedInputComponent->BindAction(TacticalAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleTacticalToggle);
+		}
+		if (AbilityAction)
+		{
+			EnhancedInputComponent->BindAction(AbilityAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleAbilityActivate);
+		}
+		if (UseConsumableAction)
+		{
+			EnhancedInputComponent->BindAction(UseConsumableAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleUseConsumable);
+		}
 		if (PhotoModeAction)
 		{
 			EnhancedInputComponent->BindAction(PhotoModeAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::TogglePhotoMode);
@@ -609,6 +1464,8 @@ void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		{
 			EnhancedInputComponent->BindAction(PhotoCaptureAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::CapturePhotoScreenshot);
 		}
+
+		ApplyRuntimeMappingContext();
 	}
 	else
 	{
@@ -627,15 +1484,23 @@ void AProjectOrganoidCharacter::Move(const FInputActionValue& Value)
 
 void AProjectOrganoidCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+	if (Value.GetValueType() == EInputActionValueType::Axis1D)
+	{
+		DoLook(Value.Get<float>(), 0.0f);
+		return;
+	}
 
-	// route the input
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
 void AProjectOrganoidCharacter::DoMove(float Right, float Forward)
 {
+	if (bIsDead)
+	{
+		return;
+	}
+
 	if (GetController() != nullptr)
 	{
 		// find out which way is forward
@@ -656,12 +1521,14 @@ void AProjectOrganoidCharacter::DoMove(float Right, float Forward)
 
 void AProjectOrganoidCharacter::DoLook(float Yaw, float Pitch)
 {
-	if (GetController() != nullptr)
+	if (GetController() == nullptr)
 	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
+		return;
 	}
+
+	const float PitchSign = bInvertLookY ? 1.0f : -1.0f;
+	AddControllerYawInput(Yaw * LookYawScale);
+	AddControllerPitchInput(Pitch * PitchSign * LookPitchScale);
 }
 
 void AProjectOrganoidCharacter::DoJumpStart()

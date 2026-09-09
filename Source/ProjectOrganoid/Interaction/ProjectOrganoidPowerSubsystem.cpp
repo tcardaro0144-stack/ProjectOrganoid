@@ -26,11 +26,30 @@ void UProjectOrganoidPowerSubsystem::SeedDefaultSectorStates()
 	SectorStates.Reset();
 	SectorStates.Add(EProjectOrganoidPowerSector::FacilityWide, EProjectOrganoidPowerState::Online);
 	SectorStates.Add(EProjectOrganoidPowerSector::Admin, EProjectOrganoidPowerState::Online);
-	SectorStates.Add(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Online);
-	SectorStates.Add(EProjectOrganoidPowerSector::Cryo, EProjectOrganoidPowerState::Online);
+	SectorStates.Add(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Emergency);
+	SectorStates.Add(EProjectOrganoidPowerSector::Cryo, EProjectOrganoidPowerState::Blackout);
 	SectorStates.Add(EProjectOrganoidPowerSector::Compute, EProjectOrganoidPowerState::Online);
-	SectorStates.Add(EProjectOrganoidPowerSector::Reactor, EProjectOrganoidPowerState::Online);
-	FacilityPowerState = EProjectOrganoidPowerState::Online;
+	SectorStates.Add(EProjectOrganoidPowerSector::Reactor, EProjectOrganoidPowerState::Emergency);
+	RefreshFacilityPowerState();
+}
+
+EProjectOrganoidPowerSector UProjectOrganoidPowerSubsystem::PowerSectorFromSubLevel(EProjectOrganoidSubLevelTag Tag)
+{
+	switch (Tag)
+	{
+	case EProjectOrganoidSubLevelTag::SubLevel1_Admin:
+		return EProjectOrganoidPowerSector::Admin;
+	case EProjectOrganoidSubLevelTag::SubLevel2_NeuroGenetics:
+		return EProjectOrganoidPowerSector::NeuroGenetics;
+	case EProjectOrganoidSubLevelTag::SubLevel3_Cryo:
+		return EProjectOrganoidPowerSector::Cryo;
+	case EProjectOrganoidSubLevelTag::SubLevel4_Compute:
+		return EProjectOrganoidPowerSector::Compute;
+	case EProjectOrganoidSubLevelTag::SubLevel5_Reactor:
+		return EProjectOrganoidPowerSector::Reactor;
+	default:
+		return EProjectOrganoidPowerSector::FacilityWide;
+	}
 }
 
 void UProjectOrganoidPowerSubsystem::RegisterPowerAwareComponent(UProjectOrganoidPowerAwareComponent* Component)

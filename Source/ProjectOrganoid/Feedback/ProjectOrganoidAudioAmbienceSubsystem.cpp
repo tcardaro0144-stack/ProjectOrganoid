@@ -3,8 +3,11 @@
 #include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidAmbienceZone.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidLevelManagerSubsystem.h"
+#include "ProjectOrganoidPowerSubsystem.h"
 #include "Components/AudioComponent.h"
 #include "Engine/World.h"
+#include "HAL/PlatformStackWalk.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/ReverbEffect.h"
 #include "Sound/SoundBase.h"
@@ -15,16 +18,45 @@ namespace ProjectOrganoidAmbience
 {
 	static const FName ReverbTag(TEXT("ProjectOrganoidAmbience"));
 	static const FName EnvironmentReverbTag(TEXT("ProjectOrganoidEnvironment"));
+
+	/** Combat/Critical must not keep a looping voice alive at inaudible volume. */
+	static constexpr float LayerSilentVolume = KINDA_SMALL_NUMBER;
+
+	static void ApplySilentAwareLayerPlayback(UAudioComponent* Component, float Volume, bool bStopWhenSilent)
+	{
+		if (!Component)
+		{
+			return;
+		}
+
+		Component->SetVolumeMultiplier(Volume);
+
+		if (bStopWhenSilent && Volume <= LayerSilentVolume)
+		{
+			if (Component->IsPlaying())
+			{
+				Component->Stop();
+			}
+			return;
+		}
+
+		if (!Component->IsPlaying())
+		{
+			Component->Play();
+		}
+	}
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	EnsureDefaultLayerSounds();
 	UpdateTargetsForState(CurrentState);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::Deinitialize()
 {
+	UnbindWorldDelegates();
 	UnbindLocalPlayerCharacter(nullptr);
 	PopActiveSoundMix();
 	ClearActiveReverb();
@@ -57,6 +89,8 @@ TStatId UProjectOrganoidAudioAmbienceSubsystem::GetStatId() const
 
 void UProjectOrganoidAudioAmbienceSubsystem::Tick(float DeltaTime)
 {
+	BindWorldDelegates();
+
 	AProjectOrganoidCharacter* Character = BoundCharacter.IsValid()
 		? BoundCharacter.Get()
 		: ResolveLocalCharacter();
@@ -132,10 +166,24 @@ void UProjectOrganoidAudioAmbienceSubsystem::UnbindLocalPlayerCharacter(AProject
 
 void UProjectOrganoidAudioAmbienceSubsystem::NotifyCombatStimulus(float Intensity)
 {
+	const bool bWasCombat = bCombatActive;
 	const float Clamped = FMath::Max(0.0f, Intensity) * CombatStimulusGain;
 	CombatIntensity = FMath::Clamp(CombatIntensity + Clamped, 0.0f, 1.0f);
 	CombatTimerRemaining = CombatLingerSeconds;
 	bCombatActive = CombatIntensity > KINDA_SMALL_NUMBER || Clamped > KINDA_SMALL_NUMBER;
+
+	UE_LOG(LogTemp, Warning, TEXT("OrganoidCombatStimulus t=%.3f intensity=%.3f rising=%s"),
+		GetWorld() ? GetWorld()->GetTimeSeconds() : -1.0f,
+		Clamped,
+		(!bWasCombat && bCombatActive) ? TEXT("true") : TEXT("false"));
+
+	if (!bWasCombat && bCombatActive)
+	{
+		ANSICHAR Stack[4096];
+		Stack[0] = 0;
+		FPlatformStackWalk::StackWalkAndDump(Stack, UE_ARRAY_COUNT(Stack), 0);
+		UE_LOG(LogTemp, Warning, TEXT("OrganoidCombatStimulusStack:\n%s"), ANSI_TO_TCHAR(Stack));
+	}
 
 	if (bCombatActive)
 	{
@@ -197,6 +245,167 @@ void UProjectOrganoidAudioAmbienceSubsystem::NotifyHealthChanged(float CurrentHe
 	ApplyAmbienceState(EvaluateDesiredState());
 }
 
+void UProjectOrganoidAudioAmbienceSubsystem::NotifySectorPowerStress(bool bStressed)
+{
+	if (bSectorPowerStress == bStressed)
+	{
+		return;
+	}
+
+	bSectorPowerStress = bStressed;
+	ApplyAmbienceState(EvaluateDesiredState());
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::EnsureDefaultLayerSounds()
+{
+	const FSoftObjectPath FacilityBed(TEXT("/Game/Audio/Ambient/SW_FacilityBed.SW_FacilityBed"));
+	const FSoftObjectPath TensionBed(TEXT("/Game/Audio/Ambient/SW_TensionBed.SW_TensionBed"));
+	const FSoftObjectPath AlarmPulse(TEXT("/Game/Audio/Ambient/SW_AlarmPulse.SW_AlarmPulse"));
+
+	if (AmbientLayerSound.IsNull())
+	{
+		AmbientLayerSound = TSoftObjectPtr<USoundBase>(FacilityBed);
+	}
+	if (TensionLayerSound.IsNull())
+	{
+		TensionLayerSound = TSoftObjectPtr<USoundBase>(TensionBed);
+	}
+	if (CombatLayerSound.IsNull())
+	{
+		CombatLayerSound = TSoftObjectPtr<USoundBase>(AlarmPulse);
+	}
+	if (CriticalLayerSound.IsNull())
+	{
+		CriticalLayerSound = TSoftObjectPtr<USoundBase>(AlarmPulse);
+	}
+
+	if (ExplorationReverb.IsNull())
+	{
+		ExplorationReverb = TSoftObjectPtr<UReverbEffect>(FSoftObjectPath(TEXT("/Engine/EngineSounds/ReverbSettings/BunkerHall.BunkerHall")));
+	}
+	if (HazardReverb.IsNull())
+	{
+		HazardReverb = TSoftObjectPtr<UReverbEffect>(FSoftObjectPath(TEXT("/Engine/EngineSounds/ReverbSettings/SewerPipe.SewerPipe")));
+	}
+	if (CombatReverb.IsNull())
+	{
+		CombatReverb = TSoftObjectPtr<UReverbEffect>(FSoftObjectPath(TEXT("/Engine/EngineSounds/ReverbSettings/Hallway.Hallway")));
+	}
+	if (CriticalReverb.IsNull())
+	{
+		CriticalReverb = TSoftObjectPtr<UReverbEffect>(FSoftObjectPath(TEXT("/Engine/EngineSounds/ReverbSettings/Cave.Cave")));
+	}
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::BindWorldDelegates()
+{
+	if (bWorldDelegatesBound)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+	{
+		Power->OnSectorPowerChanged.AddDynamic(this, &UProjectOrganoidAudioAmbienceSubsystem::HandleSectorPowerChanged);
+		Power->OnFacilityPowerChanged.AddDynamic(this, &UProjectOrganoidAudioAmbienceSubsystem::HandleFacilityPowerChanged);
+	}
+
+	if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+	{
+		Levels->OnSubLevelChanged.AddDynamic(this, &UProjectOrganoidAudioAmbienceSubsystem::HandleSubLevelChanged);
+	}
+
+	bWorldDelegatesBound = true;
+	RefreshSectorPowerStress();
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::UnbindWorldDelegates()
+{
+	if (!bWorldDelegatesBound)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->OnSectorPowerChanged.RemoveDynamic(this, &UProjectOrganoidAudioAmbienceSubsystem::HandleSectorPowerChanged);
+			Power->OnFacilityPowerChanged.RemoveDynamic(this, &UProjectOrganoidAudioAmbienceSubsystem::HandleFacilityPowerChanged);
+		}
+
+		if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+		{
+			Levels->OnSubLevelChanged.RemoveDynamic(this, &UProjectOrganoidAudioAmbienceSubsystem::HandleSubLevelChanged);
+		}
+	}
+
+	bWorldDelegatesBound = false;
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::RefreshSectorPowerStress()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>();
+	if (!Power)
+	{
+		return;
+	}
+
+	if (Power->GetFacilityPowerState() == EProjectOrganoidPowerState::Blackout)
+	{
+		NotifySectorPowerStress(true);
+		return;
+	}
+
+	EProjectOrganoidSubLevelTag ActiveTag = EProjectOrganoidSubLevelTag::None;
+	if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
+	{
+		ActiveTag = Levels->GetActiveSubLevelTag();
+	}
+
+	const EProjectOrganoidPowerSector Sector = UProjectOrganoidPowerSubsystem::PowerSectorFromSubLevel(ActiveTag);
+	const EProjectOrganoidPowerState State = Power->GetSectorPowerState(Sector);
+	NotifySectorPowerStress(State == EProjectOrganoidPowerState::Emergency || State == EProjectOrganoidPowerState::Blackout);
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::HandleSectorPowerChanged(
+	EProjectOrganoidPowerSector Sector,
+	EProjectOrganoidPowerState NewState,
+	EProjectOrganoidPowerState PreviousState)
+{
+	(void)Sector;
+	(void)NewState;
+	(void)PreviousState;
+	RefreshSectorPowerStress();
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::HandleFacilityPowerChanged(EProjectOrganoidPowerState FacilityState)
+{
+	(void)FacilityState;
+	RefreshSectorPowerStress();
+}
+
+void UProjectOrganoidAudioAmbienceSubsystem::HandleSubLevelChanged(
+	EProjectOrganoidSubLevelTag NewTag,
+	EProjectOrganoidSubLevelTag PreviousTag)
+{
+	(void)NewTag;
+	(void)PreviousTag;
+	RefreshSectorPowerStress();
+}
+
 AProjectOrganoidCharacter* UProjectOrganoidAudioAmbienceSubsystem::ResolveLocalCharacter() const
 {
 	UWorld* World = GetWorld();
@@ -229,7 +438,7 @@ EProjectOrganoidAmbienceState UProjectOrganoidAudioAmbienceSubsystem::EvaluateDe
 		return EProjectOrganoidAmbienceState::Hazard;
 	}
 
-	if (HealthNormalized <= TensionHealthThreshold)
+	if (bSectorPowerStress || HealthNormalized <= TensionHealthThreshold)
 	{
 		return EProjectOrganoidAmbienceState::Tension;
 	}
@@ -274,7 +483,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateTargetsForState(EProjectOrgan
 		TargetAmbientVolume = 0.55f;
 		TargetTensionVolume = 0.85f;
 		TargetCombatVolume = 0.0f;
-		TargetCriticalVolume = 0.15f * (1.0f - HealthNormalized);
+		TargetCriticalVolume = 0.0f;
 		TargetMixPitch = 0.97f;
 		TargetMixVolume = 1.05f;
 		break;
@@ -292,7 +501,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateTargetsForState(EProjectOrgan
 		TargetAmbientVolume = 0.35f;
 		TargetTensionVolume = FMath::Clamp(0.4f + HazardIntensity * 0.1f, 0.4f, 0.9f);
 		TargetCombatVolume = bCombatActive ? 0.35f : 0.0f;
-		TargetCriticalVolume = 0.1f;
+		TargetCriticalVolume = 0.0f;
 		TargetMixPitch = 0.94f;
 		TargetMixVolume = 1.1f;
 		break;
@@ -323,14 +532,8 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateLayerVolumes(float DeltaTime)
 	{
 		TensionLayerAudio->SetVolumeMultiplier(TensionLayerVolume);
 	}
-	if (CombatLayerAudio)
-	{
-		CombatLayerAudio->SetVolumeMultiplier(CombatLayerVolume);
-	}
-	if (CriticalLayerAudio)
-	{
-		CriticalLayerAudio->SetVolumeMultiplier(CriticalLayerVolume);
-	}
+	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CombatLayerAudio, CombatLayerVolume, true);
+	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CriticalLayerAudio, CriticalLayerVolume, true);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::UpdateMixParameters(float DeltaTime)
@@ -369,10 +572,10 @@ void UProjectOrganoidAudioAmbienceSubsystem::EnsureMusicLayers(AProjectOrganoidC
 		return;
 	}
 
-	SyncLayerComponent(AmbientLayerAudio, Character, AmbientLayerSound, TEXT("OrganoidAmbientLayer"), AmbientLayerVolume);
-	SyncLayerComponent(TensionLayerAudio, Character, TensionLayerSound, TEXT("OrganoidTensionLayer"), TensionLayerVolume);
-	SyncLayerComponent(CombatLayerAudio, Character, CombatLayerSound, TEXT("OrganoidCombatLayer"), CombatLayerVolume);
-	SyncLayerComponent(CriticalLayerAudio, Character, CriticalLayerSound, TEXT("OrganoidCriticalLayer"), CriticalLayerVolume);
+	SyncLayerComponent(AmbientLayerAudio, Character, AmbientLayerSound, TEXT("OrganoidAmbientLayer"), AmbientLayerVolume, false);
+	SyncLayerComponent(TensionLayerAudio, Character, TensionLayerSound, TEXT("OrganoidTensionLayer"), TensionLayerVolume, false);
+	SyncLayerComponent(CombatLayerAudio, Character, CombatLayerSound, TEXT("OrganoidCombatLayer"), CombatLayerVolume, true);
+	SyncLayerComponent(CriticalLayerAudio, Character, CriticalLayerSound, TEXT("OrganoidCriticalLayer"), CriticalLayerVolume, true);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
@@ -380,7 +583,8 @@ void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
 	AProjectOrganoidCharacter* Character,
 	const TSoftObjectPtr<USoundBase>& SoftSound,
 	const TCHAR* ComponentName,
-	float Volume)
+	float Volume,
+	bool bStopWhenSilent)
 {
 	USoundBase* Sound = SoftSound.LoadSynchronous();
 	if (!Sound)
@@ -407,12 +611,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
 		Component->SetSound(Sound);
 	}
 
-	Component->SetVolumeMultiplier(Volume);
-
-	if (!Component->IsPlaying())
-	{
-		Component->Play();
-	}
+	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(Component, Volume, bStopWhenSilent);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::PushStateSoundMix(EProjectOrganoidAmbienceState State)

@@ -7,8 +7,9 @@
 #include "ProjectOrganoidHostBase.h"
 #include "ProjectOrganoidHazardZone.h"
 #include "ProjectOrganoidAudioSubsystem.h"
-#include "ProjectOrganoidAudioAmbienceSubsystem.h"
 #include "ProjectOrganoidWeaponModComponent.h"
+#include "ProjectOrganoidInventoryComponent.h"
+#include "HAL/PlatformTime.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/DamageType.h"
@@ -20,7 +21,8 @@
 
 AProjectOrganoidWeapon::AProjectOrganoidWeapon()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	SetRootComponent(WeaponMesh);
@@ -33,6 +35,9 @@ void AProjectOrganoidWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
+	MagazineCapacity = FMath::Max(1, MagazineCapacity);
+	CurrentMagazine = FMath::Clamp(CurrentMagazine, 0, MagazineCapacity);
+
 	if (!OwnerCharacter)
 	{
 		OwnerCharacter = Cast<AProjectOrganoidCharacter>(GetOwner());
@@ -40,6 +45,16 @@ void AProjectOrganoidWeapon::BeginPlay()
 		{
 			OwnerCharacter = Cast<AProjectOrganoidCharacter>(GetInstigator());
 		}
+	}
+}
+
+void AProjectOrganoidWeapon::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bIsReloading && FPlatformTime::Seconds() >= ReloadFinishRealTimeSeconds)
+	{
+		FinishReload();
 	}
 }
 
@@ -55,7 +70,7 @@ void AProjectOrganoidWeapon::SetWeaponOwnerCharacter(AProjectOrganoidCharacter* 
 
 bool AProjectOrganoidWeapon::CanFire() const
 {
-	if (!GetWorld())
+	if (!GetWorld() || bIsReloading || CurrentMagazine <= 0)
 	{
 		return false;
 	}
@@ -71,6 +86,7 @@ bool AProjectOrganoidWeapon::Fire()
 		return false;
 	}
 
+	CurrentMagazine = FMath::Max(0, CurrentMagazine - 1);
 	LastFireTimeSeconds = GetWorld()->GetTimeSeconds();
 
 	const bool bFired = (BallisticsMode == EProjectOrganoidBallisticsMode::Projectile)
@@ -83,6 +99,109 @@ bool AProjectOrganoidWeapon::Fire()
 	}
 
 	return bFired;
+}
+
+void AProjectOrganoidWeapon::SetCurrentMagazine(int32 NewCount)
+{
+	MagazineCapacity = FMath::Max(1, MagazineCapacity);
+	CurrentMagazine = FMath::Clamp(NewCount, 0, MagazineCapacity);
+}
+
+FProjectOrganoidWeaponMagazineState AProjectOrganoidWeapon::CaptureMagazineState() const
+{
+	FProjectOrganoidWeaponMagazineState State;
+	State.WeaponClass = FSoftClassPath(GetClass());
+	State.AmmoType = AmmoType;
+	State.LoadedMagazineCount = CurrentMagazine;
+	return State;
+}
+
+void AProjectOrganoidWeapon::ApplyMagazineState(const FProjectOrganoidWeaponMagazineState& State)
+{
+	if (!State.IsValid())
+	{
+		return;
+	}
+
+	const FSoftClassPath ThisClass(GetClass());
+	if (State.WeaponClass.IsValid() && State.WeaponClass != ThisClass)
+	{
+		return;
+	}
+
+	CancelReload();
+	SetCurrentMagazine(State.LoadedMagazineCount);
+}
+
+UProjectOrganoidInventoryComponent* AProjectOrganoidWeapon::GetOwnerInventory() const
+{
+	return OwnerCharacter ? OwnerCharacter->GetInventoryComponent() : nullptr;
+}
+
+bool AProjectOrganoidWeapon::CanReload() const
+{
+	if (bIsReloading || CurrentMagazine >= MagazineCapacity || AmmoType == EProjectOrganoidAmmoType::None)
+	{
+		return false;
+	}
+
+	const UProjectOrganoidInventoryComponent* Inventory = GetOwnerInventory();
+	return Inventory && Inventory->CountAmmoOfType(AmmoType) > 0;
+}
+
+bool AProjectOrganoidWeapon::RequestReload()
+{
+	if (!CanReload())
+	{
+		return false;
+	}
+
+	bIsReloading = true;
+	ReloadFinishRealTimeSeconds = FPlatformTime::Seconds() + static_cast<double>(FMath::Max(0.05f, ReloadDurationSeconds));
+	return true;
+}
+
+void AProjectOrganoidWeapon::CancelReload()
+{
+	bIsReloading = false;
+	ReloadFinishRealTimeSeconds = 0.0;
+}
+
+void AProjectOrganoidWeapon::FinishReload()
+{
+	if (!bIsReloading)
+	{
+		return;
+	}
+
+	bIsReloading = false;
+	ReloadFinishRealTimeSeconds = 0.0;
+
+	UProjectOrganoidInventoryComponent* Inventory = GetOwnerInventory();
+	if (!Inventory)
+	{
+		return;
+	}
+
+	const int32 Deficit = GetMagazineDeficit();
+	if (Deficit <= 0)
+	{
+		return;
+	}
+
+	const int32 Reserve = Inventory->CountAmmoOfType(AmmoType);
+	const int32 Transfer = FMath::Min(Deficit, Reserve);
+	if (Transfer <= 0)
+	{
+		return;
+	}
+
+	if (!Inventory->ConsumeAmmoOfType(AmmoType, Transfer))
+	{
+		return;
+	}
+
+	SetCurrentMagazine(CurrentMagazine + Transfer);
 }
 
 bool AProjectOrganoidWeapon::CanFireOverchargedPulse() const
@@ -139,10 +258,13 @@ void AProjectOrganoidWeapon::ReportGunfireNoise() const
 	const float Loudness = GetEffectiveGunfireNoiseLoudness();
 	const float MaxRange = GetEffectiveGunfireNoiseMaxRange();
 
-	if (UProjectOrganoidAudioAmbienceSubsystem* Ambience = GetWorld()->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>())
-	{
-		Ambience->NotifyCombatStimulus(1.0f);
-	}
+	UE_LOG(LogTemp, Warning, TEXT("OrganoidGunfireNoise t=%.3f weapon=%s owner=%s player=%s"),
+		GetWorld()->GetTimeSeconds(),
+		*GetName(),
+		OwnerCharacter ? *OwnerCharacter->GetActorNameOrLabel() : TEXT("none"),
+		(OwnerCharacter && OwnerCharacter->IsPlayerControlled()) ? TEXT("true") : TEXT("false"));
+
+	++GunfireReportCount;
 
 	if (UProjectOrganoidAudioSubsystem* AudioSubsystem = GetWorld()->GetSubsystem<UProjectOrganoidAudioSubsystem>())
 	{

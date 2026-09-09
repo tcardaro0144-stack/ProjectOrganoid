@@ -18,6 +18,34 @@ enum class EProjectOrganoidAmmoType : uint8
 	Special UMETA(DisplayName = "Special / Denature")
 };
 
+/**
+ *  Per-weapon loaded magazine snapshot.
+ *  Loaded rounds are weapon state only — never mirrored into inventory.
+ *  The save/holster map is keyed by WeaponClass so future multi-weapon
+ *  ownership can persist each firearm's magazine without rewriting fire,
+ *  reload, or reserve-consume logic. This block persists the equipped
+ *  pistol only; do not treat a single EquippedMagazineCount as the model.
+ */
+USTRUCT(BlueprintType)
+struct FProjectOrganoidWeaponMagazineState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Weapon|Ammo")
+	FSoftClassPath WeaponClass;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Weapon|Ammo")
+	EProjectOrganoidAmmoType AmmoType = EProjectOrganoidAmmoType::None;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Weapon|Ammo")
+	int32 LoadedMagazineCount = 0;
+
+	bool IsValid() const
+	{
+		return WeaponClass.IsValid() && LoadedMagazineCount >= 0;
+	}
+};
+
 /** Ballistic delivery mode */
 UENUM(BlueprintType)
 enum class EProjectOrganoidBallisticsMode : uint8

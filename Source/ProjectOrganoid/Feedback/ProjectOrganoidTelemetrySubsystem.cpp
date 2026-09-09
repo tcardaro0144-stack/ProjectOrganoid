@@ -216,7 +216,8 @@ FString UProjectOrganoidTelemetrySubsystem::FlushSessionLogToDisk()
 
 	FString Body;
 	Body += FString::Printf(TEXT("ProjectOrganoid telemetry flush %s\n"), *SessionId);
-	for (const FProjectOrganoidTelemetryRecord& Record : RecentRecords)
+	const TArray<FProjectOrganoidTelemetryRecord> RecordsCopy = RecentRecords;
+	for (const FProjectOrganoidTelemetryRecord& Record : RecordsCopy)
 	{
 		Body += FString::Printf(
 			TEXT("[%s][%s][%s] %s\n"),

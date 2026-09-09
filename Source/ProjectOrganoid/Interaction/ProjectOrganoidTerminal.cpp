@@ -182,6 +182,17 @@ void AProjectOrganoidTerminal::ApplyHackRewards(AProjectOrganoidCharacter* Chara
 
 	NotifyObjectiveEvent(SuccessObjectiveEventId);
 
+	if (bApplyPowerChangeOnSuccess)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+			{
+				Power->SetSectorPowerState(PowerSector, PowerStateOnSuccess);
+			}
+		}
+	}
+
 	if (bSingleUse)
 	{
 		bIsInteractable = false;

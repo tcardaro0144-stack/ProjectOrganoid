@@ -28,10 +28,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Pause")
 	TSubclassOf<UProjectOrganoidPauseWidget> PauseWidgetClass;
 
-	/** Title menu class (defaults to Content Browser /Game/UI/Menus/WBP_MainMenu). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|MainMenu")
-	TSubclassOf<UProjectOrganoidMainMenuWidget> MainMenuWidgetClass;
-
 	/** Map name token that triggers automatic main-menu spawn (PIE-safe Contains match). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|MainMenu")
 	FName TitleMapNameToken = FName(TEXT("Lvl_MainMenu"));
@@ -56,7 +52,7 @@ public:
 	bool IsPauseMenuAllowed() const { return bPauseMenuAllowed; }
 
 	/**
-	 *  Creates WBP_MainMenu, adds it to the viewport, and switches to UI-only input.
+	 *  Creates the C++ title menu, adds it to the viewport, and switches to UI-only input.
 	 *  Safe to call multiple times — no-ops if the title menu is already up.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "UI|MainMenu")
@@ -65,9 +61,20 @@ public:
 	UFUNCTION(BlueprintPure, Category = "UI|MainMenu")
 	bool IsTitleMainMenuVisible() const;
 
+	/** True when the loaded map is Lvl_MainMenu or the auth GameMode is the title GameMode. */
+	bool ShouldAutoSpawnTitleMainMenu() const;
+
+	/** Remove the title overlay and release UI capture. Safe if no menu is up. */
+	UFUNCTION(BlueprintCallable, Category = "UI|MainMenu")
+	void DismissTitleMainMenu();
+
+	/** GameOnly input, hidden cursor, unpaused — required after New Game travel. */
+	UFUNCTION(BlueprintCallable, Category = "UI|MainMenu")
+	void EnterGameplayControl();
+
 protected:
 
-	/** Input Mapping Contexts */
+	/** Input Mapping Contexts — optional content assets. Runtime fallback is created on Avery. */
 	UPROPERTY(EditAnywhere, Category = "Input|Input Mappings")
 	TArray<UInputMappingContext*> DefaultMappingContexts;
 
@@ -96,20 +103,23 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI|Pause")
 	bool bPauseMenuOpen = false;
 
+	/** Gameplay GameMode enables this. Title / default stays off so WBP_PauseMenu cannot cover the main menu. */
 	UPROPERTY(BlueprintReadOnly, Category = "UI|Pause")
-	bool bPauseMenuAllowed = true;
+	bool bPauseMenuAllowed = false;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
+	/** Local player is assigned here — safest moment to CreateWidget. */
+	virtual void ReceivedPlayer() override;
+
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
+
+	virtual void OnPossess(APawn* InPawn) override;
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
 
-	/** True when auth GameMode is the title GameMode or the loaded map is Lvl_MainMenu. */
-	bool ShouldAutoSpawnTitleMainMenu() const;
-
-	TSubclassOf<UProjectOrganoidMainMenuWidget> ResolveMainMenuWidgetClass() const;
+	TSubclassOf<UProjectOrganoidPauseWidget> ResolvePauseWidgetClass() const;
 };

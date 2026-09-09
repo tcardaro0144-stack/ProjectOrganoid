@@ -9,6 +9,7 @@
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidWeaponModComponent.h"
+#include "ProjectOrganoidBiologicalAdaptationComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "Engine/World.h"
@@ -330,6 +331,19 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 				SaveGame->EquippedWeaponMods = ModComp->CaptureModState();
 			}
 		}
+
+		SaveGame->UnlockedWeaponMods = Character->GetUnlockedWeaponModPaths();
+		SaveGame->bHasUnlockedWeaponMods = true;
+
+		SaveGame->WeaponMagazineStates = WeaponComp->CaptureMagazineStates();
+		SaveGame->bHasWeaponMagazineStates = true;
+	}
+
+	if (UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = Character->GetBiologicalAdaptationComponent())
+	{
+		SaveGame->UnlockedAdaptations = AdaptComp->GetUnlockedAdaptationPaths();
+		SaveGame->EquippedAdaptation = AdaptComp->GetEquippedAdaptationPath();
+		SaveGame->bHasBiologicalAdaptations = true;
 	}
 
 	if (UProjectOrganoidInventoryComponent* Inventory = Character->GetInventoryComponent())
@@ -417,6 +431,20 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 		SaveGame->WeaponFireRate,
 		SaveGame->WeaponPenetration);
 
+	if (SaveGame->bHasUnlockedWeaponMods)
+	{
+		Character->ApplyUnlockedWeaponMods(SaveGame->UnlockedWeaponMods);
+	}
+
+	if (SaveGame->bHasBiologicalAdaptations)
+	{
+		if (UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = Character->GetBiologicalAdaptationComponent())
+		{
+			AdaptComp->ApplyUnlockedAdaptations(SaveGame->UnlockedAdaptations);
+			AdaptComp->ApplyEquippedAdaptation(SaveGame->EquippedAdaptation);
+		}
+	}
+
 	if (UProjectOrganoidWeaponComponent* WeaponComp = Character->GetWeaponComponent())
 	{
 		if (AProjectOrganoidWeapon* Weapon = WeaponComp->GetEquippedWeapon())
@@ -425,6 +453,11 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 			{
 				ModComp->ApplyModState(SaveGame->EquippedWeaponMods);
 			}
+		}
+
+		if (SaveGame->bHasWeaponMagazineStates)
+		{
+			WeaponComp->ApplyMagazineStates(SaveGame->WeaponMagazineStates);
 		}
 	}
 
@@ -469,6 +502,7 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 	if (bRestorePlayerTransformOnLoad && SaveGame->bHasPlayerTransform)
 	{
 		Character->SetActorTransform(SaveGame->PlayerTransform, false, nullptr, ETeleportType::TeleportPhysics);
+		Character->NotifyRestoredSavedTransform();
 	}
 
 	return true;

@@ -2,6 +2,7 @@
 
 #include "ProjectOrganoidInteractionComponent.h"
 #include "ProjectOrganoidInteractable.h"
+#include "ProjectOrganoidAdminTerminalInvestigation.h"
 #include "ProjectOrganoidCharacter.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
@@ -120,7 +121,12 @@ bool UProjectOrganoidInteractionComponent::TryInteract()
 		return false;
 	}
 
-	return FocusedInteractable->Interact(OwnerCharacter);
+	const bool bOk = FocusedInteractable->Interact(OwnerCharacter);
+	if (bOk)
+	{
+		ProjectOrganoidAdminTerminalInvestigation::NotifyActivated(FocusedInteractable, OwnerCharacter);
+	}
+	return bOk;
 }
 
 FText UProjectOrganoidInteractionComponent::GetFocusedPrompt() const

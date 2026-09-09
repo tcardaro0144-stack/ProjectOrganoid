@@ -20,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidGateStateChange
  *  presents a keycard or terminal hacking tool of sufficient clearance.
  */
 UCLASS(Blueprintable)
-class AProjectOrganoidSecurityGate : public AProjectOrganoidInteractable
+class PROJECTORGANOID_API AProjectOrganoidSecurityGate : public AProjectOrganoidInteractable
 {
 	GENERATED_BODY()
 

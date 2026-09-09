@@ -6,9 +6,14 @@
 #include "GameFramework/Actor.h"
 #include "ProjectOrganoidInteractionTypes.h"
 #include "ProjectOrganoidLevelTypes.h"
+#include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidHazardZone.generated.h"
 
 class UBoxComponent;
+class UStaticMeshComponent;
+class UPointLightComponent;
+class UAudioComponent;
+class USoundBase;
 class AProjectOrganoidCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHazardApplied, AProjectOrganoidCharacter*, Character, EProjectOrganoidHazardType, HazardType);
@@ -30,6 +35,15 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UBoxComponent> HazardVolume;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> HazardBeacon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPointLightComponent> HazardLight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UAudioComponent> HazardAudio;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard")
 	EProjectOrganoidHazardType HazardType = EProjectOrganoidHazardType::ToxicGas;
@@ -63,6 +77,29 @@ public:
 	/** If true, ignore sub-level gating and remain controllable only via bIsActive */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Level")
 	bool bIgnoreSubLevelContext = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Power")
+	EProjectOrganoidPowerSector PowerSector = EProjectOrganoidPowerSector::Admin;
+
+	/** UV banks and powered emitters go dark unless the sector is Online */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Power")
+	bool bRequiresSectorOnline = false;
+
+	/** Physical leaks hit harder while the sector is blacked out */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Power")
+	bool bIntensifyDuringBlackout = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Power", meta = (ClampMin = "1.0", ClampMax = "4.0"))
+	float BlackoutIntensityScale = 1.45f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Audio")
+	TSoftObjectPtr<USoundBase> HazardLoopSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Audio", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HazardLoopVolume = 0.45f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hazard|Presentation")
+	bool bShowHazardBeacon = true;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Hazard|Level")
 	float EnvironmentDamageMultiplier = 1.0f;
@@ -99,9 +136,24 @@ protected:
 	UFUNCTION()
 	void OnHazardEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	UPROPERTY(BlueprintReadOnly, Category = "Hazard|Power")
+	bool bPowerAllowsOperation = true;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Hazard|Power")
+	float PowerDamageScale = 1.0f;
+
 	void ApplyHazardDefaultsForType();
 	void ApplyHazardToActor(AActor* Actor, float DeltaSeconds);
 	float ComputeTickDamageAmount(float DeltaSeconds) const;
+	bool IsEffectivelyActive() const;
+	void RefreshPowerGating();
+	void RefreshPresentation();
+	void NotifyOccupantsEnter();
+	void NotifyOccupantsExit();
+	FLinearColor ColorForHazardType() const;
+
+	UFUNCTION()
+	void HandleSectorPowerChanged(EProjectOrganoidPowerSector Sector, EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState);
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

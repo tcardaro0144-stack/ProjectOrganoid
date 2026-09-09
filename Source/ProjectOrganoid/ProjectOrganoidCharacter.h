@@ -5,13 +5,17 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Engine/TimerHandle.h"
 #include "ProjectOrganoidUpgradeTypes.h"
 #include "ProjectOrganoidHazardInterface.h"
+#include "ProjectOrganoidWeaponModTypes.h"
 #include "ProjectOrganoidCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UInputMappingContext;
+class UDamageType;
 class UProjectOrganoidInventoryComponent;
 class UProjectOrganoidItemData;
 class UProjectOrganoidWeaponComponent;
@@ -19,6 +23,8 @@ class UProjectOrganoidInteractionComponent;
 class UProjectOrganoidFeedbackComponent;
 class UProjectOrganoidLogComponent;
 class UProjectOrganoidPhotoScanComponent;
+class UProjectOrganoidBiologicalAdaptationComponent;
+class AProjectOrganoidCheckpoint;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -30,7 +36,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidTacticalModeChange
  *  Suit vitals, PE Energy, and Parasite Eve-style Tactical Sphere targeting.
  */
 UCLASS()
-class AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHazardInterface
+class PROJECTORGANOID_API AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHazardInterface
 {
 	GENERATED_BODY()
 
@@ -65,6 +71,10 @@ class AProjectOrganoidCharacter : public ACharacter, public IProjectOrganoidHaza
 	/** Photography / scanning mode (DoF + lore extract + hi-res capture) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UProjectOrganoidPhotoScanComponent* PhotoScanComponent;
+
+	/** Biological Adaptation ownership, loadout, and activation */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UProjectOrganoidBiologicalAdaptationComponent* BiologicalAdaptationComponent;
 	
 protected:
 
@@ -103,6 +113,26 @@ protected:
 	/** Capture high-res screenshot (photo mode) */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* PhotoCaptureAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* TacticalAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ReloadAction;
+
+	/** Activate the currently equipped Biological Adaptation */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* AbilityAction;
+
+	/** Use the first healing consumable in inventory (no inventory grid UI yet) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* UseConsumableAction;
 
 	/** Current suit integrity / health */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Suit Vitals")
@@ -163,6 +193,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Upgrade")
 	int32 WeaponPenetrationUpgradeLevel = 0;
 
+	/**
+	 *  Owned / unlocked weapon modifications. Distinct from installed loadout.
+	 *  Removing a mod at a Research Station never clears an entry here.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Progression|WeaponMods")
+	TArray<FSoftObjectPath> UnlockedWeaponMods;
+
 public:
 
 	/** Constructor */
@@ -177,6 +214,8 @@ protected:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void FellOutOfWorld(const UDamageType& DmgType) override;
 
 	/** Apply or clear Tactical Mode time dilation and state */
 	void SetTacticalModeActive(bool bActive);
@@ -191,6 +230,60 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	void HandleInteract();
+	void HandleFire();
+	void HandleReload();
+	void HandleTacticalToggle();
+	void HandleAbilityActivate();
+	void HandleUseConsumable();
+
+	void EnsureRuntimeInput();
+	void ApplyRuntimeMappingContext();
+	void RecoverFromFall();
+	void BeginPlayerDeath();
+	void FinishPlayerDeathRestart();
+	void SetPlayerControlEnabled(bool bEnabled);
+	bool TryRestartFromActivatedCheckpoint();
+	bool TryRestartFromPlayerStart();
+	void RememberSafeGround(float DeltaTime);
+	void HoldForFacilityGeometry();
+	void ReleaseFacilityGeometryHold(const FTransform& LandingTransform);
+	void ApplyLookLimits();
+
+	UPROPERTY()
+	TObjectPtr<UInputMappingContext> RuntimeMappingContext;
+
+	FTransform LastSafeTransform = FTransform::Identity;
+	bool bHasLastSafeTransform = false;
+	bool bIsDead = false;
+	bool bHasActivatedCheckpoint = false;
+	FString LastActivatedCheckpointSlot;
+	TWeakObjectPtr<AProjectOrganoidCheckpoint> LastActivatedCheckpoint;
+	FTimerHandle DeathRestartTimer;
+	float DeathRestartDelaySeconds = 1.0f;
+	float SafeGroundTimer = 0.0f;
+	bool bRecoveringFromFall = false;
+	bool bWaitingForFacilityGeometry = false;
+	float GeometryHoldSeconds = 0.0f;
+	bool bSkipOpeningStartSnap = false;
+
+	FString LastResourceFeedback;
+	int32 ResourceFeedbackCount = 0;
+	bool bHasShownFirstResourceHint = false;
+
+	/** World Z below the Reactor plate where Avery is teleported back. */
+	UPROPERTY(EditAnywhere, Category = "World")
+	float FallResetZ = -7200.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Input", meta = (ClampMin = "0.05", ClampMax = "2.0"))
+	float LookYawScale = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Input", meta = (ClampMin = "0.05", ClampMax = "2.0"))
+	float LookPitchScale = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	bool bInvertLookY = false;
 
 public:
 
@@ -246,9 +339,45 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
 	float GetMaxToxicity() const { return MaxToxicity; }
 
-	/** Apply a signed health change (hazards pass negative values) */
+	/** Apply a signed health change. Environmental hazard ticks must not raise Combat solely from HP loss. */
 	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
-	void ApplyHealthDelta(float Delta);
+	void ApplyHealthDelta(float Delta, EProjectOrganoidHealthDeltaSource Source = EProjectOrganoidHealthDeltaSource::Generic);
+
+	/**
+	 *  Narrow consumable-use path. Verifies Consumable + HealAmount > 0 + valid stack.
+	 *  Refuses at full health without consuming. On success consumes 1 and applies HealAmount.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Consumable")
+	bool TryUseConsumable(UProjectOrganoidItemData* ItemData);
+
+	/** Player H-key path: use the first healing consumable in the grid. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Consumable")
+	bool TryUseFirstHealingConsumable();
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Resources")
+	FString GetLastResourceFeedback() const { return LastResourceFeedback; }
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Resources")
+	int32 GetResourceFeedbackCount() const { return ResourceFeedbackCount; }
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Resources")
+	bool HasShownFirstResourceHint() const { return bHasShownFirstResourceHint; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	bool IsPlayerDead() const { return bIsDead; }
+
+	/** Called only after a successful checkpoint save. Stores the actor + slot, never a sector name. */
+	UFUNCTION(BlueprintCallable, Category = "Checkpoint")
+	void NotifyCheckpointActivated(AProjectOrganoidCheckpoint* Checkpoint, const FString& SaveSlot);
+
+	UFUNCTION(BlueprintPure, Category = "Checkpoint")
+	bool HasActivatedCheckpoint() const { return bHasActivatedCheckpoint; }
+
+	UFUNCTION(BlueprintPure, Category = "Checkpoint")
+	AProjectOrganoidCheckpoint* GetLastActivatedCheckpoint() const { return LastActivatedCheckpoint.Get(); }
+
+	UFUNCTION(BlueprintPure, Category = "Checkpoint")
+	FString GetLastActivatedCheckpointSlot() const { return LastActivatedCheckpointSlot; }
 
 	/** Apply a signed toxicity change */
 	UFUNCTION(BlueprintCallable, Category = "Suit Vitals")
@@ -266,6 +395,14 @@ public:
 	virtual void OnEnteredHazard_Implementation(EProjectOrganoidHazardType HazardType, float Intensity) override;
 	virtual void OnTickHazard_Implementation(EProjectOrganoidHazardType HazardType, float DamageAmount, float DeltaTime) override;
 	virtual void OnExitedHazard_Implementation(EProjectOrganoidHazardType HazardType) override;
+
+	/** New Game / first possess / geometry-hold / timeout Vestibule landing. No-ops after a save restore. */
+	UFUNCTION(BlueprintCallable, Category = "World")
+	void ApplyCampaignOpeningStart();
+
+	/** Save-load restored PlayerTransform. Geometry hold must not snap to the New Game Vestibule. */
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void NotifyRestoredSavedTransform();
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void ApplySavedVitals(float InHealth, float InMaxHealth, float InToxicity, float InMaxToxicity, float InHeartRate, float InPEEnergy, float InMaxPEEnergy);
@@ -300,8 +437,35 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Upgrade")
 	int32 GetWeaponPenetrationUpgradeLevel() const { return WeaponPenetrationUpgradeLevel; }
 
+	UFUNCTION(BlueprintCallable, Category = "Progression|WeaponMods")
+	bool UnlockWeaponMod(UProjectOrganoidWeaponModData* ModData);
+
+	UFUNCTION(BlueprintPure, Category = "Progression|WeaponMods")
+	bool IsWeaponModUnlocked(const UProjectOrganoidWeaponModData* ModData) const;
+
+	UFUNCTION(BlueprintPure, Category = "Progression|WeaponMods")
+	TArray<UProjectOrganoidWeaponModData*> GetUnlockedWeaponMods() const;
+
+	UFUNCTION(BlueprintPure, Category = "Progression|WeaponMods")
+	TArray<FSoftObjectPath> GetUnlockedWeaponModPaths() const { return UnlockedWeaponMods; }
+
+	UFUNCTION(BlueprintCallable, Category = "Progression|WeaponMods|Save")
+	void ApplyUnlockedWeaponMods(const TArray<FSoftObjectPath>& Paths);
+
 	UFUNCTION(BlueprintPure, Category = "Tactical")
 	bool IsTacticalModeActive() const { return bIsTacticalModeActive; }
+
+	UFUNCTION(BlueprintPure, Category = "Tactical")
+	float GetTacticalSphereRadius() const { return TacticalSphereRadius; }
+
+	UFUNCTION(BlueprintPure, Category = "Tactical")
+	float GetTacticalTimeDilation() const { return TacticalTimeDilation; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetPERechargeRate() const { return PERechargeRate; }
+
+	UFUNCTION(BlueprintPure, Category = "Suit Vitals")
+	float GetPEDrainRate() const { return PEDrainRate; }
 
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
@@ -344,4 +508,7 @@ public:
 
 	/** Returns photography / scanning component **/
 	FORCEINLINE UProjectOrganoidPhotoScanComponent* GetPhotoScanComponent() const { return PhotoScanComponent; }
+
+	/** Returns Biological Adaptation component **/
+	FORCEINLINE UProjectOrganoidBiologicalAdaptationComponent* GetBiologicalAdaptationComponent() const { return BiologicalAdaptationComponent; }
 };

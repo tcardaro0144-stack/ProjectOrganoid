@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidInteracted, AProj
  *  Base world interactable for Avery (doors, terminals, pickups, locks).
  */
 UCLASS(Abstract, Blueprintable)
-class AProjectOrganoidInteractable : public AActor
+class PROJECTORGANOID_API AProjectOrganoidInteractable : public AActor
 {
 	GENERATED_BODY()
 

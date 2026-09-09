@@ -25,6 +25,7 @@ EXPECTED = {
         "ProjectOrganoidDataPad",
         "ProjectOrganoidAmbienceZone",
         "ProjectOrganoidItemPickup",
+        "ProjectOrganoidFacilityLight",
     ),
     "SL_Epitope_NeuroGenetics": (
         "ProjectOrganoidHazardZone",
@@ -34,6 +35,8 @@ EXPECTED = {
         "ProjectOrganoidDataPad",
         "ProjectOrganoidDialogueNPC",
         "ProjectOrganoidAmbienceZone",
+        "ProjectOrganoidFacilityLight",
+        "ProjectOrganoidPowerPanel",
     ),
     "SL_Epitope_Cryo": (
         "ProjectOrganoidHazardZone",
@@ -43,6 +46,8 @@ EXPECTED = {
         "ProjectOrganoidDataPad",
         "ProjectOrganoidScannableActor",
         "ProjectOrganoidAmbienceZone",
+        "ProjectOrganoidFacilityLight",
+        "ProjectOrganoidPowerPanel",
     ),
     "SL_Epitope_Compute": (
         "ProjectOrganoidHazardZone",
@@ -52,6 +57,7 @@ EXPECTED = {
         "ProjectOrganoidScannableActor",
         "ProjectOrganoidDataPad",
         "ProjectOrganoidAmbienceZone",
+        "ProjectOrganoidFacilityLight",
     ),
     "SL_Epitope_Reactor": (
         "ProjectOrganoidHazardZone",
@@ -60,6 +66,7 @@ EXPECTED = {
         "ProjectOrganoidScannableActor",
         "ProjectOrganoidDataPad",
         "ProjectOrganoidAmbienceZone",
+        "ProjectOrganoidFacilityLight",
     ),
 }
 
@@ -96,7 +103,26 @@ def verify_level(path, expected_classes=()):
         report(f"  expected classes present")
 
     walls = sum(1 for a in actors if a.get_actor_label().startswith("Wall_"))
+    light_count = counts.get("ProjectOrganoidFacilityLight", 0)
+    panel_count = counts.get("ProjectOrganoidPowerPanel", 0)
+    if light_count < 9:
+        missing.append("ProjectOrganoidFacilityLight x9")
+        report(f"  SHORT lights={light_count}/9")
+    if path.endswith("SL_Epitope_NeuroGenetics") or path.endswith("SL_Epitope_Cryo"):
+        if panel_count < 1:
+            missing.append("ProjectOrganoidPowerPanel")
+            report(f"  SHORT panels={panel_count}/1")
+
+    labels = sorted({a.get_actor_label() for a in actors})
+    light_labels = [name for name in labels if name.startswith("Light_") or name.startswith("EmergencyLight_")]
+    panel_labels = [name for name in labels if name.startswith("PowerPanel_")]
     report(f"  walls={walls} meshes={counts.get('StaticMeshActor', 0)}")
+    report(
+        f"  lights={light_count} [{', '.join(light_labels) or 'none'}] "
+        f"panels={panel_count} [{', '.join(panel_labels) or 'none'}] "
+        f"hazards={counts.get('ProjectOrganoidHazardZone', 0)} "
+        f"ambience={counts.get('ProjectOrganoidAmbienceZone', 0)}"
+    )
     return missing
 
 

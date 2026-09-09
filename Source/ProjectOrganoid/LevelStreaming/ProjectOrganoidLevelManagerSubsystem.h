@@ -40,7 +40,7 @@ struct FProjectOrganoidRegionStreamRecord
  *  Any number of partitions may be in flight at once.
  */
 UCLASS()
-class UProjectOrganoidLevelManagerSubsystem : public UWorldSubsystem
+class PROJECTORGANOID_API UProjectOrganoidLevelManagerSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -119,6 +119,22 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Level|Streaming")
 	int32 GetResidentRegionCount() const;
+
+	/** True once the partition's world is loaded and visible — not merely requested. */
+	UFUNCTION(BlueprintPure, Category = "Level|Streaming")
+	bool IsPartitionReady(FName StreamingLevelName) const;
+
+	/**
+	 *  New Game / first-possess / geometry-hold / timeout landing.
+	 *  Vestibule interior facing east. Not the Lvl_Epitope PlayerStart.
+	 *  Save-load must not use this; it restores PlayerTransform instead.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Level|Streaming")
+	FTransform GetCampaignOpeningTransform() const;
+
+	/** Same location as GetCampaignOpeningTransform. Used if Admin never becomes resident. */
+	UFUNCTION(BlueprintPure, Category = "Level|Streaming")
+	FVector GetFallbackSpawnLocation() const;
 
 	/** Force a reconcile now rather than waiting for the next tick of the timer. */
 	UFUNCTION(BlueprintCallable, Category = "Level|Streaming")
@@ -222,4 +238,8 @@ protected:
 
 	void ReconcileStreaming();
 	bool IsPartitionProtected(FName StreamingLevelName) const;
+	void EnsureMissingPartitionsRegistered();
+	static FString PartitionPackagePath(FName StreamingLevelName);
+	static FString NormalizePartitionName(const FString& InName);
+	bool TryRegisterPartition(const FProjectOrganoidSubLevelDefinition& Def);
 };

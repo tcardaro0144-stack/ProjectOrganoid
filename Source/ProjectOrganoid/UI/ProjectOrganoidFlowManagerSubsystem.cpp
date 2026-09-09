@@ -3,24 +3,37 @@
 #include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "ProjectOrganoidLoadingScreenWidget.h"
 #include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidMainMenuGameMode.h"
+#include "ProjectOrganoidMainMenuWidget.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidLevelManagerSubsystem.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidLevelTypes.h"
-#include "Engine/World.h"
 #include "Engine/GameInstance.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerStart.h"
+#include "GameFramework/SpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
-#include "GameFramework/PlayerController.h"
 
 void UProjectOrganoidFlowManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	FlowState = EProjectOrganoidFlowState::Boot;
+	PostLoadMapHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(
+		this, &UProjectOrganoidFlowManagerSubsystem::HandlePostLoadMap);
 }
 
 void UProjectOrganoidFlowManagerSubsystem::Deinitialize()
 {
+	if (PostLoadMapHandle.IsValid())
+	{
+		FCoreUObjectDelegates::PostLoadMapWithWorld.Remove(PostLoadMapHandle);
+		PostLoadMapHandle.Reset();
+	}
 	HideLoadingScreen();
 	Super::Deinitialize();
 }
@@ -46,14 +59,8 @@ void UProjectOrganoidFlowManagerSubsystem::ShowLoadingScreen(const FText& Initia
 {
 	HideLoadingScreen();
 
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0);
-	if (!PC)
+	UGameInstance* GI = GetGameInstance();
+	if (!GI)
 	{
 		return;
 	}
@@ -64,7 +71,8 @@ void UProjectOrganoidFlowManagerSubsystem::ShowLoadingScreen(const FText& Initia
 		ClassToSpawn = UProjectOrganoidLoadingScreenWidget::StaticClass();
 	}
 
-	ActiveLoadingScreen = CreateWidget<UProjectOrganoidLoadingScreenWidget>(PC, ClassToSpawn);
+	// GameInstance-owned so the overlay survives OpenLevel and can be dismissed after possession.
+	ActiveLoadingScreen = CreateWidget<UProjectOrganoidLoadingScreenWidget>(GI, ClassToSpawn);
 	if (ActiveLoadingScreen)
 	{
 		ActiveLoadingScreen->AddToViewport(1000);
@@ -96,15 +104,74 @@ void UProjectOrganoidFlowManagerSubsystem::SetLoadingProgress(float Progress01, 
 	}
 }
 
+void UProjectOrganoidFlowManagerSubsystem::PrepareForTravel()
+{
+	DismissLeftoverTitleWidgets();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (AProjectOrganoidPlayerController* PC = Cast<AProjectOrganoidPlayerController>(
+			UGameplayStatics::GetPlayerController(World, 0)))
+		{
+			PC->DismissTitleMainMenu();
+			PC->SetPause(false);
+			PC->FlushPressedKeys();
+		}
+
+		if (UGameViewportClient* Viewport = World->GetGameViewport())
+		{
+			Viewport->RemoveAllViewportWidgets();
+		}
+	}
+}
+
+void UProjectOrganoidFlowManagerSubsystem::DismissLeftoverTitleWidgets()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (AProjectOrganoidPlayerController* PC = Cast<AProjectOrganoidPlayerController>(
+			UGameplayStatics::GetPlayerController(World, 0)))
+		{
+			PC->DismissTitleMainMenu();
+		}
+	}
+}
+
 void UProjectOrganoidFlowManagerSubsystem::TravelToGameplayLevel(FName LevelName)
 {
+	if (FlowState == EProjectOrganoidFlowState::Loading)
+	{
+		return;
+	}
+
 	const FName Target = LevelName.IsNone() ? GameplayLevelName : LevelName;
 	PendingGameplayLevel = Target;
 	SetFlowState(EProjectOrganoidFlowState::Loading);
+	PrepareForTravel();
 	ShowLoadingScreen(FText::FromString(TEXT("Initializing Epitope lockdown...")));
 	SetLoadingProgress(0.35f, FText::FromString(TEXT("Streaming facility sectors...")));
 	LoadingStartTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
-	UGameplayStatics::OpenLevel(this, Target);
+
+	TWeakObjectPtr<UProjectOrganoidFlowManagerSubsystem> WeakThis(this);
+	const FName TravelTarget = Target;
+	auto DoTravel = [WeakThis, TravelTarget]()
+	{
+		if (!WeakThis.IsValid())
+		{
+			return;
+		}
+		UGameplayStatics::OpenLevel(WeakThis.Get(), TravelTarget);
+	};
+
+	if (UWorld* World = GetWorld())
+	{
+		// Next tick so the New Game click / UI capture is fully released first.
+		World->GetTimerManager().SetTimerForNextTick(DoTravel);
+	}
+	else
+	{
+		DoTravel();
+	}
 }
 
 void UProjectOrganoidFlowManagerSubsystem::StartNewGame(FName OverrideGameplayLevel)
@@ -127,15 +194,92 @@ void UProjectOrganoidFlowManagerSubsystem::ReturnToTitle()
 {
 	PendingLoadSlot.Reset();
 	SetFlowState(EProjectOrganoidFlowState::Loading);
+	PrepareForTravel();
 	ShowLoadingScreen(FText::FromString(TEXT("Returning to title...")));
 	UGameplayStatics::OpenLevel(this, TitleLevelName);
 	SetFlowState(EProjectOrganoidFlowState::Title);
 }
 
+void UProjectOrganoidFlowManagerSubsystem::ApplyGameplayHandoff(bool bHideLoadingNow)
+{
+	DismissLeftoverTitleWidgets();
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		if (bHideLoadingNow)
+		{
+			HideLoadingScreen();
+		}
+		return;
+	}
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0);
+	if (AProjectOrganoidGameMode* GameplayGM = Cast<AProjectOrganoidGameMode>(World->GetAuthGameMode()))
+	{
+		GameplayGM->EnsurePossessedGameplayPawn(PC);
+	}
+	else if (PC)
+	{
+		APawn* Existing = PC->GetPawn();
+		if (!Existing || Existing->IsA(ASpectatorPawn::StaticClass()))
+		{
+			if (Existing)
+			{
+				PC->UnPossess();
+				Existing->Destroy();
+			}
+
+			UClass* PawnClass = AProjectOrganoidCharacter::StaticClass();
+			FTransform SpawnTM = FTransform::Identity;
+			if (AActor* Start = UGameplayStatics::GetActorOfClass(World, APlayerStart::StaticClass()))
+			{
+				SpawnTM = Start->GetActorTransform();
+			}
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			if (APawn* Spawned = World->SpawnActor<APawn>(PawnClass, SpawnTM, SpawnParams))
+			{
+				PC->Possess(Spawned);
+			}
+		}
+
+		if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(PC))
+		{
+			OrganoidPC->SetPauseMenuAllowed(true);
+			OrganoidPC->EnterGameplayControl();
+		}
+		else
+		{
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->bShowMouseCursor = false;
+			PC->SetShowMouseCursor(false);
+		}
+	}
+
+	if (bHideLoadingNow)
+	{
+		HideLoadingScreen();
+	}
+}
+
 void UProjectOrganoidFlowManagerSubsystem::NotifyGameplayMapReady(AProjectOrganoidGameMode* /*GameMode*/)
 {
+	UWorld* CurrentWorld = GetWorld();
+	const FString MapName = CurrentWorld
+		? UGameplayStatics::GetCurrentLevelName(CurrentWorld, /*bRemovePrefixString=*/true)
+		: FString();
+	if (MapName.Contains(TEXT("Lvl_MainMenu"), ESearchCase::IgnoreCase))
+	{
+		EnterTitleState();
+		return;
+	}
+
 	SetFlowState(EProjectOrganoidFlowState::Gameplay);
 	SetLoadingProgress(0.9f, FText::FromString(TEXT("Synchronizing Avery's suit telemetry...")));
+	ApplyGameplayHandoff(false);
 
 	UWorld* World = GetWorld();
 	if (!World)
@@ -156,6 +300,67 @@ void UProjectOrganoidFlowManagerSubsystem::NotifyGameplayMapReady(AProjectOrgano
 			WeakThis->HideLoadingScreen();
 		}
 	}, Remaining > KINDA_SMALL_NUMBER ? Remaining : 0.05f, false);
+}
+
+void UProjectOrganoidFlowManagerSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
+{
+	if (!LoadedWorld || LoadedWorld->GetGameInstance() != GetGameInstance())
+	{
+		return;
+	}
+
+	if (!LoadedWorld->IsGameWorld())
+	{
+		return;
+	}
+
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(LoadedWorld, /*bRemovePrefixString=*/true);
+	if (MapName.Contains(TEXT("Lvl_MainMenu"), ESearchCase::IgnoreCase))
+	{
+		HideLoadingScreen();
+		EnterTitleState();
+
+		TWeakObjectPtr<UWorld> WeakWorld(LoadedWorld);
+		LoadedWorld->GetTimerManager().SetTimerForNextTick([WeakWorld]()
+		{
+			UWorld* World = WeakWorld.Get();
+			if (!World)
+			{
+				return;
+			}
+			for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+			{
+				if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(It->Get()))
+				{
+					OrganoidPC->SetPauseMenuAllowed(false);
+					OrganoidPC->EnsureTitleMainMenu();
+				}
+			}
+		});
+		return;
+	}
+
+	if (FlowState == EProjectOrganoidFlowState::Loading
+		|| MapName.Equals(TEXT("Lvl_Epitope"), ESearchCase::IgnoreCase))
+	{
+		SetFlowState(EProjectOrganoidFlowState::Gameplay);
+
+		const bool bWrongGameMode = LoadedWorld->GetAuthGameMode()
+			&& LoadedWorld->GetAuthGameMode()->IsA(AProjectOrganoidMainMenuGameMode::StaticClass());
+
+		TWeakObjectPtr<UProjectOrganoidFlowManagerSubsystem> WeakThis(this);
+		LoadedWorld->GetTimerManager().SetTimerForNextTick([WeakThis, bWrongGameMode]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->ApplyGameplayHandoff(bWrongGameMode);
+				if (bWrongGameMode)
+				{
+					WeakThis->HideLoadingScreen();
+				}
+			}
+		});
+	}
 }
 
 bool UProjectOrganoidFlowManagerSubsystem::RequestSectorTransition(EProjectOrganoidSubLevelTag TargetTag, bool bTeleportToDestination)

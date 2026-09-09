@@ -3,7 +3,11 @@
 #include "ProjectOrganoidLevelManagerSubsystem.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidHazardZone.h"
+#include "AssetRegistry/ARFilter.h"
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/LevelStreaming.h"
+#include "Engine/LevelStreamingDynamic.h"
 #include "Engine/World.h"
 #include "Misc/PackageName.h"
 #include "TimerManager.h"
@@ -42,6 +46,16 @@ void UProjectOrganoidLevelManagerSubsystem::Initialize(FSubsystemCollectionBase&
 void UProjectOrganoidLevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
+
+	EnsureMissingPartitionsRegistered();
+
+	const FString MapName = InWorld.GetMapName();
+	if (MapName.Contains(TEXT("Lvl_Epitope")) && ActiveSubLevelTag == EProjectOrganoidSubLevelTag::None)
+	{
+		const FName AdminName = ResolveStreamingLevelName(EProjectOrganoidSubLevelTag::SubLevel1_Admin);
+		FindOrAddRecord(AdminName);
+		SetActiveSubLevelTag(EProjectOrganoidSubLevelTag::SubLevel1_Admin);
+	}
 
 	InWorld.GetTimerManager().SetTimer(
 		ReconcileTimerHandle,
@@ -103,6 +117,11 @@ FName UProjectOrganoidLevelManagerSubsystem::ResolveStreamingLevelName(EProjectO
 
 // -- Residency ---------------------------------------------------------------------------
 
+FString UProjectOrganoidLevelManagerSubsystem::NormalizePartitionName(const FString& InName)
+{
+	return UWorld::RemovePIEPrefix(FPackageName::GetShortName(InName));
+}
+
 ULevelStreaming* UProjectOrganoidLevelManagerSubsystem::FindStreamingLevel(FName StreamingLevelName) const
 {
 	UWorld* World = GetWorld();
@@ -111,7 +130,7 @@ ULevelStreaming* UProjectOrganoidLevelManagerSubsystem::FindStreamingLevel(FName
 		return nullptr;
 	}
 
-	const FString Target = StreamingLevelName.ToString();
+	const FString Target = NormalizePartitionName(StreamingLevelName.ToString());
 	for (ULevelStreaming* Streaming : World->GetStreamingLevels())
 	{
 		if (!Streaming)
@@ -120,13 +139,34 @@ ULevelStreaming* UProjectOrganoidLevelManagerSubsystem::FindStreamingLevel(FName
 		}
 
 		const FString PackageName = Streaming->GetWorldAssetPackageName();
-		if (PackageName == Target || FPackageName::GetShortName(PackageName) == Target)
+		if (NormalizePartitionName(PackageName) == Target
+			|| NormalizePartitionName(Streaming->GetName()) == Target
+			|| NormalizePartitionName(Streaming->PackageNameToLoad.ToString()) == Target)
 		{
 			return Streaming;
 		}
 	}
 
 	return nullptr;
+}
+
+bool UProjectOrganoidLevelManagerSubsystem::IsPartitionReady(FName StreamingLevelName) const
+{
+	const ULevelStreaming* Streaming = FindStreamingLevel(StreamingLevelName);
+	return Streaming && Streaming->IsLevelLoaded() && Streaming->IsLevelVisible();
+}
+
+FTransform UProjectOrganoidLevelManagerSubsystem::GetCampaignOpeningTransform() const
+{
+	// Live Vestibule: floor top z=20, capsule half=96, +2uu skin. x=200 is west of AccessTrigger (x=350).
+	const FVector Location(200.0f, 0.0f, 118.0f);
+	const FRotator Rotation(0.0f, 0.0f, 0.0f); // Yaw 0 = +X / east toward Reception
+	return FTransform(Rotation, Location);
+}
+
+FVector UProjectOrganoidLevelManagerSubsystem::GetFallbackSpawnLocation() const
+{
+	return GetCampaignOpeningTransform().GetLocation();
 }
 
 FProjectOrganoidRegionStreamRecord* UProjectOrganoidLevelManagerSubsystem::FindOrAddRecord(FName StreamingLevelName)
@@ -244,6 +284,127 @@ void UProjectOrganoidLevelManagerSubsystem::ReconcileStreamingNow()
 	ReconcileStreaming();
 }
 
+FString UProjectOrganoidLevelManagerSubsystem::PartitionPackagePath(FName StreamingLevelName)
+{
+	return FString::Printf(TEXT("/Game/Maps/Epitope/%s"), *StreamingLevelName.ToString());
+}
+
+bool UProjectOrganoidLevelManagerSubsystem::TryRegisterPartition(const FProjectOrganoidSubLevelDefinition& Def)
+{
+	UWorld* World = GetWorld();
+	if (!World || Def.StreamingLevelName.IsNone())
+	{
+		return false;
+	}
+
+	if (FindStreamingLevel(Def.StreamingLevelName))
+	{
+		return true;
+	}
+
+	const FString ShortName = Def.StreamingLevelName.ToString();
+	TArray<FString> Candidates;
+	Candidates.Add(PartitionPackagePath(Def.StreamingLevelName));
+	Candidates.Add(FString::Printf(TEXT("/Game/Maps/%s"), *ShortName));
+
+	if (FModuleManager::Get().IsModuleLoaded(TEXT("AssetRegistry")) || FModuleManager::LoadModulePtr<FAssetRegistryModule>(TEXT("AssetRegistry")))
+	{
+		IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+		FARFilter Filter;
+		Filter.ClassPaths.Add(UWorld::StaticClass()->GetClassPathName());
+		Filter.PackagePaths.Add(TEXT("/Game/Maps"));
+		Filter.bRecursivePaths = true;
+		TArray<FAssetData> Worlds;
+		AssetRegistry.GetAssets(Filter, Worlds);
+		for (const FAssetData& Asset : Worlds)
+		{
+			if (Asset.AssetName == Def.StreamingLevelName)
+			{
+				Candidates.AddUnique(Asset.PackageName.ToString());
+			}
+		}
+	}
+
+	FString FoundOnDisk;
+	if (FPackageName::SearchForPackageOnDisk(ShortName, &FoundOnDisk))
+	{
+		FString LongPackage;
+		if (FPackageName::TryConvertFilenameToLongPackageName(FoundOnDisk, LongPackage))
+		{
+			Candidates.AddUnique(LongPackage);
+		}
+	}
+
+	const bool bAdmin = (Def.Tag == EProjectOrganoidSubLevelTag::SubLevel1_Admin);
+	for (const FString& Package : Candidates)
+	{
+		bool bSuccess = false;
+		ULevelStreamingDynamic::FLoadLevelInstanceParams Params(World, Package, FTransform::Identity);
+		Params.OptionalLevelNameOverride = &ShortName;
+		Params.bInitiallyVisible = bAdmin;
+		Params.bAllowReuseExitingLevelStreaming = true;
+
+		if (ULevelStreamingDynamic::LoadLevelInstance(Params, bSuccess) && bSuccess && FindStreamingLevel(Def.StreamingLevelName))
+		{
+			UE_LOG(LogOrganoidStreaming, Log, TEXT("Registered partition '%s' from %s"), *ShortName, *Package);
+			return true;
+		}
+	}
+
+	for (const FString& Package : Candidates)
+	{
+		ULevelStreamingDynamic* Streaming = NewObject<ULevelStreamingDynamic>(World, *ShortName, RF_Transient);
+		if (!Streaming)
+		{
+			continue;
+		}
+
+		Streaming->SetWorldAssetByPackageName(FName(*Package));
+		Streaming->PackageNameToLoad = FName(*Package);
+		Streaming->SetShouldBeLoaded(true);
+		Streaming->SetShouldBeVisible(bAdmin);
+		Streaming->bInitiallyLoaded = true;
+		Streaming->bInitiallyVisible = bAdmin;
+		World->AddStreamingLevel(Streaming);
+
+		if (FindStreamingLevel(Def.StreamingLevelName))
+		{
+			UE_LOG(LogOrganoidStreaming, Log, TEXT("Manually registered partition '%s' from %s"), *ShortName, *Package);
+			return true;
+		}
+	}
+
+	return FindStreamingLevel(Def.StreamingLevelName) != nullptr;
+}
+
+void UProjectOrganoidLevelManagerSubsystem::EnsureMissingPartitionsRegistered()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FString MapName = World->GetMapName();
+	if (!MapName.Contains(TEXT("Lvl_Epitope")))
+	{
+		return;
+	}
+
+	for (const FProjectOrganoidSubLevelDefinition& Def : SubLevelDefinitions)
+	{
+		if (Def.StreamingLevelName.IsNone() || FindStreamingLevel(Def.StreamingLevelName))
+		{
+			continue;
+		}
+
+		if (TryRegisterPartition(Def))
+		{
+			WarnedMissingLevels.Remove(Def.StreamingLevelName);
+		}
+	}
+}
+
 void UProjectOrganoidLevelManagerSubsystem::ReconcileStreaming()
 {
 	UWorld* World = GetWorld();
@@ -277,15 +438,22 @@ void UProjectOrganoidLevelManagerSubsystem::ReconcileStreaming()
 		ULevelStreaming* Streaming = FindStreamingLevel(LevelName);
 		if (!Streaming)
 		{
+			EnsureMissingPartitionsRegistered();
+			Streaming = FindStreamingLevel(LevelName);
+		}
+		if (!Streaming)
+		{
 			if (bDesired && !WarnedMissingLevels.Contains(LevelName))
 			{
 				WarnedMissingLevels.Add(LevelName);
 				UE_LOG(LogOrganoidStreaming, Warning,
-					TEXT("Partition '%s' was requested but is not registered on the persistent level. Add it in Window > Levels."),
-					*LevelName.ToString());
+					TEXT("Partition '%s' was requested but could not be registered. Expected package %s."),
+					*LevelName.ToString(), *PartitionPackagePath(LevelName));
 			}
 			continue;
 		}
+
+		WarnedMissingLevels.Remove(LevelName);
 
 		if (bDesired)
 		{

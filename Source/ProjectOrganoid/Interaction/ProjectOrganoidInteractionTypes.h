@@ -36,3 +36,11 @@ enum class EProjectOrganoidHazardApplicationType : uint8
 	Continuous UMETA(DisplayName = "Continuous (Over Time)"),
 	Burst UMETA(DisplayName = "Burst (Interval Pulses)")
 };
+
+/** Distinguishes hostile/generic vitals loss from environmental hazard ticks. */
+UENUM(BlueprintType)
+enum class EProjectOrganoidHealthDeltaSource : uint8
+{
+	Generic UMETA(DisplayName = "Generic"),
+	EnvironmentalHazard UMETA(DisplayName = "Environmental Hazard")
+};

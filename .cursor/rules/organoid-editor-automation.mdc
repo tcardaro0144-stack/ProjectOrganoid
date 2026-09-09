@@ -1,0 +1,54 @@
+---
+description: Approved Organoid editor automation — Tom approves, the agent executes native Unreal APIs
+alwaysApply: true
+---
+
+# Organoid approved editor automation
+
+The Organoid system is not limited to PIE playtests. After a payload is prepared and dual-approved, the agent executes the editor operation. Tom should not routinely click Unreal UI for deterministic allowlisted tasks.
+
+## Workflow
+
+1. Grok plans the exact payload.
+2. `prepare_write` — fail-closed preflight, `change_id`, **no mutation**.
+3. `approve_write` `role=user` (Tom) with a non-empty identity.
+4. `approve_write` `role=second_review` with a **different** identity.
+5. Agent `execute_write` (`session.read_only=false`) — native Unreal API on the game thread.
+6. Bridge / playtest bot verifies. Grok reports.
+
+The agent must **never** independently decide to mutate the project.
+
+## Security (unchanged)
+
+Durable editor mutations still require: explicit prepared payload, user approval, distinct second review, exact `change_id`, fail-closed preflight. No Python eval. No shell. No Save All. No `save_asset` on map packages.
+
+## After approval, execute natively (do not ask Tom to click)
+
+Use OrganoidAIBridge `execute_write`, not Levels-window clicks, File → Save All, or Unreal Python, when a native API exists:
+
+- save one explicit map/sublevel (`save_maps`)
+- save an explicit package set (`save_maps` packages array)
+- compile one explicit Blueprint (`compile_blueprint`)
+- spawn/configure an approved actor (`spawn_blueprint_actor`)
+- move an approved actor between levels (`move_actor_to_level`)
+- set approved actor/component properties
+- start/stop controlled PIE / run registered playtests (`run_playtest`; does not mutate assets)
+
+Playtests remain `playtest_mutates_assets=false`. Map saves stay on `save_maps`.
+
+## `save_maps` persistent-world policy
+
+`UEditorLoadingAndSavingUtils::SavePackages` saves the explicit `UPackage` list. It does **not** require a particular persistent world.
+
+- **Admin-only** `[/Game/Maps/Epitope/SL_Epitope_Admin]`: Admin package/level must be loaded; PIE stopped; unique Security + Reception on Admin; do **not** include `Lvl_MainMenu` or `Lvl_Epitope`. Persistent may be `Lvl_MainMenu`.
+- **Neuro-only** `[/Game/Maps/Epitope/SL_Epitope_NeuroGenetics]`: Neuro package/level must be loaded; PIE stopped; unique `NavMeshBounds_NeuroGenetics` on Neuro; do **not** include `Lvl_MainMenu`, Admin, or `Lvl_Epitope`. Persistent may be `Lvl_MainMenu`.
+- **Two-package** `[Admin, /Game/Maps/Lvl_Epitope]`: persistent map **must** be `Lvl_Epitope`.
+- **Lvl_Epitope-only** `[/Game/Maps/Lvl_Epitope]`: persistent map **must** be `Lvl_Epitope`; unique `Spine_Landing_Admin` and `Gate_ResearchWing` on `Lvl_Epitope`; do **not** include Admin, Neuro, or `Lvl_MainMenu`.
+
+Do not open another persistent map to satisfy Admin-only save. That can unload unsaved streaming-level actors.
+
+Opening `Lvl_Epitope` as persistent is allowed for approved `trim_spine_landing_admin` when Admin is already saved and no world packages are dirty. That action only shrinks `Spine_Landing_Admin` and `Spine_Bridge_Admin` Y scale. It does not save; persist with Lvl_Epitope-only `save_maps`.
+
+## Plugin reload while unsaved work exists
+
+Do not close/restart Unreal if that would discard unsaved Admin actors. Prefer Live Coding (`EnableForSession` + compile) so worlds stay loaded. Do not treat Tom's manual Levels save as the default path.

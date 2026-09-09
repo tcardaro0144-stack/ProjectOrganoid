@@ -27,6 +27,10 @@ public:
 
 protected:
 
+	virtual void NativeConstruct() override;
+
+	void EnsureVisibleLoadingLayout();
+
 	UPROPERTY(BlueprintReadOnly, Category = "UI|Loading")
 	FText CurrentStatus;
 

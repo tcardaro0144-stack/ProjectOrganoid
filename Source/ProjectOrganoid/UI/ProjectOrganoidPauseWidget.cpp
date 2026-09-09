@@ -4,10 +4,15 @@
 #include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidSettingsSubsystem.h"
 #include "ProjectOrganoidFlowManagerSubsystem.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/ComboBoxString.h"
+#include "Components/Image.h"
 #include "Components/Slider.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -41,9 +46,90 @@ namespace ProjectOrganoidPauseUI
 void UProjectOrganoidPauseWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	EnsureVisiblePauseLayout();
 	BindWidgetCallbacks();
 	SyncSettingsWidgets();
-	OnPauseOpened();
+}
+
+void UProjectOrganoidPauseWidget::EnsureVisiblePauseLayout()
+{
+	if (!WidgetTree)
+	{
+		return;
+	}
+
+	UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(GetRootWidget());
+	if (!RootCanvas)
+	{
+		RootCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootCanvas"));
+		WidgetTree->RootWidget = RootCanvas;
+	}
+
+	if (!WidgetTree->FindWidget(TEXT("PauseDimmer")))
+	{
+		UImage* Dimmer = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("PauseDimmer"));
+		if (UCanvasPanelSlot* DimmerSlot = RootCanvas->AddChildToCanvas(Dimmer))
+		{
+			DimmerSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+			DimmerSlot->SetOffsets(FMargin(0.0f));
+			DimmerSlot->SetZOrder(0);
+		}
+		FSlateBrush Brush;
+		Brush.DrawAs = ESlateBrushDrawType::Image;
+		Brush.TintColor = FSlateColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.7f));
+		Dimmer->SetBrush(Brush);
+		Dimmer->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	if (ResumeButton && ReturnToMainMenuButton && QuitButton)
+	{
+		return;
+	}
+
+	UVerticalBox* MenuBox = WidgetTree->FindWidget<UVerticalBox>(TEXT("PauseBox"));
+	if (!MenuBox)
+	{
+		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("PauseBox"));
+		if (UCanvasPanelSlot* BoxSlot = RootCanvas->AddChildToCanvas(MenuBox))
+		{
+			BoxSlot->SetAnchors(FAnchors(0.5f, 0.5f, 0.5f, 0.5f));
+			BoxSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+			BoxSlot->SetAutoSize(true);
+			BoxSlot->SetZOrder(1);
+		}
+	}
+
+	auto MakeLabeledButton = [this, MenuBox](TObjectPtr<UButton>& Target, const TCHAR* Name, const TCHAR* Label)
+	{
+		if (Target)
+		{
+			return;
+		}
+		Target = WidgetTree->FindWidget<UButton>(Name);
+		if (!Target)
+		{
+			Target = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), Name);
+			UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+			Text->SetText(FText::FromString(Label));
+			Target->SetContent(Text);
+			MenuBox->AddChildToVerticalBox(Target);
+		}
+	};
+
+	if (!TitleText)
+	{
+		TitleText = WidgetTree->FindWidget<UTextBlock>(TEXT("TitleText"));
+		if (!TitleText)
+		{
+			TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
+			TitleText->SetText(FText::FromString(TEXT("PAUSED")));
+			MenuBox->AddChildToVerticalBox(TitleText);
+		}
+	}
+
+	MakeLabeledButton(ResumeButton, TEXT("ResumeButton"), TEXT("RESUME"));
+	MakeLabeledButton(ReturnToMainMenuButton, TEXT("ReturnToMainMenuButton"), TEXT("MAIN MENU"));
+	MakeLabeledButton(QuitButton, TEXT("QuitButton"), TEXT("QUIT"));
 }
 
 void UProjectOrganoidPauseWidget::BindWidgetCallbacks()

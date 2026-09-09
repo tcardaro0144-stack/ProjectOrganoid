@@ -1,6 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidHostBase.h"
+#include "ProjectOrganoidHostAIController.h"
+#include "ProjectOrganoidEncounterPresenceSubsystem.h"
+#include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidInteractionTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -9,15 +13,20 @@
 #include "ProjectOrganoidPerceptionComponent.h"
 #include "ProjectOrganoidHitReactionComponent.h"
 #include "TimerManager.h"
+#include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
+#include "CollisionQueryParams.h"
+#include "CollisionShape.h"
+#include "Engine/World.h"
 
 AProjectOrganoidHostBase::AProjectOrganoidHostBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
-	AIControllerClass = AAIController::StaticClass();
+	AIControllerClass = AProjectOrganoidHostAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	bUseControllerRotationYaw = false;
 
@@ -66,6 +75,16 @@ void AProjectOrganoidHostBase::ConfigureWeakPointHitbox(USphereComponent* Hitbox
 	Hitbox->ComponentTags.AddUnique(Tag);
 }
 
+void AProjectOrganoidHostBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bBiologicalLocomotorSlowActive && FPlatformTime::Seconds() >= BiologicalLocomotorSlowExpireRealTime)
+	{
+		ClearBiologicalLocomotorSlow();
+	}
+}
+
 void AProjectOrganoidHostBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -75,6 +94,8 @@ void AProjectOrganoidHostBase::BeginPlay()
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 
 	SyncHostPerception();
+	EnsureHostAIController();
+	BindHostPerceptionToController();
 
 	if (HostPerception)
 	{
@@ -94,6 +115,13 @@ void AProjectOrganoidHostBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearAllTimersForObject(this);
+		if (UProjectOrganoidEncounterPresenceSubsystem* Presence = World->GetSubsystem<UProjectOrganoidEncounterPresenceSubsystem>())
+		{
+			if (AController* AI = GetController())
+			{
+				Presence->SetEncounterSourceActive(FName(*AI->GetName()), false);
+			}
+		}
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -135,6 +163,107 @@ bool AProjectOrganoidHostBase::HasSightOnPlayer() const
 	return HostPerception && HostPerception->HasSightOnTarget();
 }
 
+AActor* AProjectOrganoidHostBase::GetCurrentSightTarget() const
+{
+	return HostPerception ? HostPerception->GetCurrentSightTarget() : nullptr;
+}
+
+void AProjectOrganoidHostBase::RememberPerceivedPlayerLocation(const FVector& WorldLocation)
+{
+	LastKnownPlayerLocation = WorldLocation;
+	bHasLastKnownPlayerLocation = true;
+}
+
+void AProjectOrganoidHostBase::BroadcastCombatState(EProjectOrganoidHostCombatState NewState)
+{
+	FName StateName = TEXT("Idle");
+	switch (NewState)
+	{
+	case EProjectOrganoidHostCombatState::Investigate:
+		StateName = TEXT("Investigate");
+		break;
+	case EProjectOrganoidHostCombatState::Pursue:
+		StateName = TEXT("Pursue");
+		break;
+	case EProjectOrganoidHostCombatState::Attack:
+		StateName = TEXT("Attack");
+		break;
+	case EProjectOrganoidHostCombatState::Search:
+		StateName = TEXT("Search");
+		break;
+	case EProjectOrganoidHostCombatState::Return:
+		StateName = TEXT("Return");
+		break;
+	case EProjectOrganoidHostCombatState::Dead:
+		StateName = TEXT("Dead");
+		break;
+	default:
+		StateName = TEXT("Idle");
+		break;
+	}
+	OnHostStateChanged.Broadcast(StateName);
+}
+
+EProjectOrganoidHostCombatState AProjectOrganoidHostBase::GetCombatState() const
+{
+	if (const AProjectOrganoidHostAIController* AI = Cast<AProjectOrganoidHostAIController>(GetController()))
+	{
+		return AI->GetCombatState();
+	}
+	return bIsDead || bIsIncapacitated
+		? EProjectOrganoidHostCombatState::Dead
+		: EProjectOrganoidHostCombatState::Idle;
+}
+
+void AProjectOrganoidHostBase::EnsureHostAIController()
+{
+	if (Cast<AProjectOrganoidHostAIController>(GetController()))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (AController* Old = GetController())
+	{
+		Old->UnPossess();
+		Old->Destroy();
+	}
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AProjectOrganoidHostAIController* NewAI = World->SpawnActor<AProjectOrganoidHostAIController>(Params))
+	{
+		NewAI->Possess(this);
+		BindHostPerceptionToController();
+	}
+}
+
+void AProjectOrganoidHostBase::NotifyAIPreempt()
+{
+	if (AProjectOrganoidHostAIController* AI = Cast<AProjectOrganoidHostAIController>(GetController()))
+	{
+		AI->HandleHostPreempt();
+	}
+}
+
+void AProjectOrganoidHostBase::BindHostPerceptionToController()
+{
+	AProjectOrganoidHostAIController* AI = Cast<AProjectOrganoidHostAIController>(GetController());
+	if (!AI || !HostPerception)
+	{
+		return;
+	}
+
+	AI->SetPerceptionComponent(*HostPerception);
+	SyncHostPerception();
+	HostPerception->RequestStimuliListenerUpdate();
+}
+
 void AProjectOrganoidHostBase::HandleHearingStimulus(
 	AActor* NoiseInstigator,
 	FName NoiseTag,
@@ -165,11 +294,184 @@ void AProjectOrganoidHostBase::HandleHearingStimulus(
 	}
 
 	OnHostStateChanged.Broadcast(StateName);
+
+	if (AProjectOrganoidHostAIController* AI = Cast<AProjectOrganoidHostAIController>(GetController()))
+	{
+		AI->RequestInvestigateAt(StimulusLocation);
+	}
 }
 
 void AProjectOrganoidHostBase::HandleSightStimulus(AActor* Target, bool bSensed, FVector StimulusLocation)
 {
+	if (bSensed)
+	{
+		RememberPerceivedPlayerLocation(Target ? Target->GetActorLocation() : StimulusLocation);
+	}
 	OnHostStateChanged.Broadcast(bSensed ? TEXT("SightAcquired") : TEXT("SightLost"));
+}
+
+bool AProjectOrganoidHostBase::CanAttemptMelee() const
+{
+	return !bIsDead && !bIsIncapacitated && !bIsStaggered && !bMeleeWindupActive && !bMeleeOnCooldown;
+}
+
+bool AProjectOrganoidHostBase::IsTargetInMeleeRange(const AActor* Target, float ExtraRange) const
+{
+	if (!Target)
+	{
+		return false;
+	}
+
+	const float Allowed = (MeleeAttackRange * MeleeCommitRangeSlack) + ExtraRange;
+	const FVector Delta = Target->GetActorLocation() - GetActorLocation();
+	return Delta.Size2D() <= Allowed;
+}
+
+bool AProjectOrganoidHostBase::HasValidMeleeLineOfSight(const AActor* Target) const
+{
+	UWorld* World = GetWorld();
+	if (!World || !Target)
+	{
+		return false;
+	}
+
+	const FVector Start = GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+	const FVector End = Target->GetActorLocation() + FVector(0.0f, 0.0f, 80.0f);
+	FCollisionQueryParams Params(FName(TEXT("HostMeleeLoS")), false, this);
+	Params.AddIgnoredActor(Target);
+
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	{
+		return Hit.GetActor() == Target;
+	}
+
+	return true;
+}
+
+AProjectOrganoidCharacter* AProjectOrganoidHostBase::ResolveMeleeSweepTarget() const
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	const FVector Forward = GetActorForwardVector();
+	const FVector Start = GetActorLocation() + Forward * 20.0f + FVector(0.0f, 0.0f, 40.0f);
+	const FVector End = Start + Forward * MeleeAttackRange;
+	FCollisionQueryParams Params(FName(TEXT("HostMeleeSweep")), false, this);
+
+	FHitResult Hit;
+	if (!World->SweepSingleByChannel(
+		Hit,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_Pawn,
+		FCollisionShape::MakeSphere(MeleeSweepRadius),
+		Params))
+	{
+		return nullptr;
+	}
+
+	return Cast<AProjectOrganoidCharacter>(Hit.GetActor());
+}
+
+bool AProjectOrganoidHostBase::TryBeginMeleeAttack(AProjectOrganoidCharacter* Target)
+{
+	bLastMeleeCommitDealtDamage = false;
+	if (!CanAttemptMelee() || !Target || Target->IsPlayerDead())
+	{
+		return false;
+	}
+	if (!IsTargetInMeleeRange(Target) || !HasValidMeleeLineOfSight(Target))
+	{
+		return false;
+	}
+
+	MeleeTarget = Target;
+	bMeleeWindupActive = true;
+	OnHostStateChanged.Broadcast(TEXT("MeleeWindup"));
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(MeleeWindupTimer);
+		World->GetTimerManager().SetTimer(
+			MeleeWindupTimer,
+			this,
+			&AProjectOrganoidHostBase::CommitMeleeAttack,
+			MeleeWindupSeconds,
+			false);
+	}
+	else
+	{
+		CommitMeleeAttack();
+	}
+
+	return true;
+}
+
+void AProjectOrganoidHostBase::CancelMeleeAttack()
+{
+	if (!bMeleeWindupActive)
+	{
+		MeleeTarget.Reset();
+		return;
+	}
+
+	bMeleeWindupActive = false;
+	MeleeTarget.Reset();
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(MeleeWindupTimer);
+	}
+	OnHostStateChanged.Broadcast(TEXT("MeleeCancelled"));
+}
+
+void AProjectOrganoidHostBase::CommitMeleeAttack()
+{
+	bMeleeWindupActive = false;
+	bLastMeleeCommitDealtDamage = false;
+
+	AProjectOrganoidCharacter* Target = MeleeTarget.Get();
+	MeleeTarget.Reset();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			MeleeCooldownTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				bMeleeOnCooldown = false;
+			}),
+			MeleeCooldownSeconds,
+			false);
+	}
+	bMeleeOnCooldown = true;
+
+	if (bIsDead || bIsIncapacitated || bIsStaggered || !Target || Target->IsPlayerDead())
+	{
+		OnHostStateChanged.Broadcast(TEXT("MeleeCancelled"));
+		return;
+	}
+
+	if (!IsTargetInMeleeRange(Target) || !HasValidMeleeLineOfSight(Target))
+	{
+		OnHostStateChanged.Broadcast(TEXT("MeleeCancelled"));
+		return;
+	}
+
+	AProjectOrganoidCharacter* Swept = ResolveMeleeSweepTarget();
+	if (Swept != Target || !Swept->IsPlayerControlled())
+	{
+		OnHostStateChanged.Broadcast(TEXT("MeleeCancelled"));
+		return;
+	}
+
+	Swept->ApplyHealthDelta(-MeleeDamage, EProjectOrganoidHealthDeltaSource::Generic);
+	bLastMeleeCommitDealtDamage = true;
+	OnHostStateChanged.Broadcast(TEXT("MeleeCommit"));
 }
 
 EProjectOrganoidWeakPointType AProjectOrganoidHostBase::ResolveWeakPoint_Implementation(const FHitResult& Hit) const
@@ -205,6 +507,11 @@ EProjectOrganoidWeakPointType AProjectOrganoidHostBase::ResolveWeakPoint_Impleme
 	}
 
 	return EProjectOrganoidWeakPointType::None;
+}
+
+void AProjectOrganoidHostBase::ApplyResolvedOrganoidHit(const FProjectOrganoidBallisticHit& HitInfo, AActor* DamageCauser)
+{
+	ApplyOrganoidHit_Implementation(HitInfo, DamageCauser);
 }
 
 void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrganoidBallisticHit& HitInfo, AActor* DamageCauser)
@@ -484,9 +791,10 @@ void AProjectOrganoidHostBase::SetStaggered(bool bNewStaggered)
 
 	bIsStaggered = bNewStaggered;
 	OnHostStateChanged.Broadcast(bIsStaggered ? TEXT("Staggered") : TEXT("StaggerCleared"));
-
 	if (bIsStaggered)
 	{
+		CancelMeleeAttack();
+		NotifyAIPreempt();
 		if (UWorld* World = GetWorld())
 		{
 			World->GetTimerManager().ClearTimer(StaggerTimer);
@@ -509,6 +817,10 @@ void AProjectOrganoidHostBase::SetBlinded(bool bNewBlinded)
 
 	bIsBlinded = bNewBlinded;
 	OnHostStateChanged.Broadcast(bIsBlinded ? TEXT("Blinded") : TEXT("SightRestored"));
+	if (bIsBlinded)
+	{
+		NotifyAIPreempt();
+	}
 }
 
 void AProjectOrganoidHostBase::SetDismembered(bool bNewDismembered)
@@ -551,6 +863,8 @@ void AProjectOrganoidHostBase::SetIncapacitated(bool bNewIncapacitated)
 		}
 
 		OnHostStateChanged.Broadcast(TEXT("Incapacitated"));
+		CancelMeleeAttack();
+		NotifyAIPreempt();
 	}
 }
 
@@ -572,6 +886,10 @@ void AProjectOrganoidHostBase::RefreshMovementSpeed()
 	{
 		Speed *= LocomotorSlowMultiplier;
 	}
+	if (bBiologicalLocomotorSlowActive)
+	{
+		Speed *= BiologicalLocomotorSlowMultiplier;
+	}
 	if (bIsEnraged)
 	{
 		Speed *= RageSpeedMultiplier;
@@ -583,6 +901,46 @@ void AProjectOrganoidHostBase::RefreshMovementSpeed()
 void AProjectOrganoidHostBase::RestoreLocomotorSpeed()
 {
 	RefreshMovementSpeed();
+}
+
+bool AProjectOrganoidHostBase::ApplyBiologicalLocomotorSlow(float SpeedMultiplier, float DurationSeconds)
+{
+	if (bIsDead || bIsIncapacitated)
+	{
+		return false;
+	}
+
+	BiologicalLocomotorSlowMultiplier = FMath::Clamp(SpeedMultiplier, 0.05f, 1.0f);
+	bBiologicalLocomotorSlowActive = true;
+	BiologicalLocomotorSlowExpireRealTime = FPlatformTime::Seconds() + static_cast<double>(FMath::Max(0.1f, DurationSeconds));
+	PrimaryActorTick.bCanEverTick = true;
+	if (!PrimaryActorTick.IsTickFunctionRegistered())
+	{
+		if (ULevel* Level = GetLevel())
+		{
+			PrimaryActorTick.Target = this;
+			PrimaryActorTick.RegisterTickFunction(Level);
+		}
+	}
+	SetActorTickEnabled(true);
+	RefreshMovementSpeed();
+	OnHostStateChanged.Broadcast(TEXT("BiologicalLocomotorSlow"));
+	return true;
+}
+
+void AProjectOrganoidHostBase::ClearBiologicalLocomotorSlow()
+{
+	if (!bBiologicalLocomotorSlowActive)
+	{
+		return;
+	}
+
+	bBiologicalLocomotorSlowActive = false;
+	BiologicalLocomotorSlowMultiplier = 1.0f;
+	BiologicalLocomotorSlowExpireRealTime = 0.0;
+	SetActorTickEnabled(false);
+	RefreshMovementSpeed();
+	OnHostStateChanged.Broadcast(TEXT("BiologicalLocomotorSlowCleared"));
 }
 
 void AProjectOrganoidHostBase::RestoreOpticalSight()
@@ -619,6 +977,7 @@ void AProjectOrganoidHostBase::ClearStatusEffects()
 
 	bIsStaggered = false;
 	bIsBlinded = false;
+	ClearBiologicalLocomotorSlow();
 
 	if (!bIsIncapacitated && !bIsDead)
 	{
@@ -641,7 +1000,10 @@ void AProjectOrganoidHostBase::HandleDeath()
 	bIsDead = true;
 	bHasBioShield = false;
 	bIsEnraged = false;
+	ClearBiologicalLocomotorSlow();
+	CancelMeleeAttack();
 	SetIncapacitated(true);
+	NotifyAIPreempt();
 
 	if (UWorld* World = GetWorld())
 	{

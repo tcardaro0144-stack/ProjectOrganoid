@@ -20,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidSecurityGateOve
  *  lockdowns, and broadcasts gate override events for objectives / UI.
  */
 UCLASS()
-class UProjectOrganoidSecuritySubsystem : public UWorldSubsystem
+class PROJECTORGANOID_API UProjectOrganoidSecuritySubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 

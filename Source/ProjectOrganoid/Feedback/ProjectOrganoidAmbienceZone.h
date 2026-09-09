@@ -16,7 +16,7 @@ class AProjectOrganoidCharacter;
  *  into UProjectOrganoidAudioAmbienceSubsystem when Avery enters.
  */
 UCLASS(Blueprintable)
-class AProjectOrganoidAmbienceZone : public AActor
+class PROJECTORGANOID_API AProjectOrganoidAmbienceZone : public AActor
 {
 	GENERATED_BODY()
 
@@ -62,6 +62,14 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Audio|Zone")
 	bool IsLocalPlayerInside() const { return bLocalPlayerInside; }
+
+	/**
+	 * Register the local Avery pawn if it is already inside ZoneVolume.
+	 * Called from BeginPlay so streamed/spawned-inside cases do not wait for a new overlap event.
+	 * Safe to call repeatedly; NotifyEnter refuses duplicate registration.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Audio|Zone")
+	void SynchronizeOverlappingLocalCharacter();
 
 protected:
 

@@ -22,7 +22,7 @@ enum class EProjectOrganoidWeaponModSlot : uint8
  *  Installed via Sterling terminal / WeaponModComponent.
  */
 UCLASS(BlueprintType)
-class UProjectOrganoidWeaponModData : public UPrimaryDataAsset
+class PROJECTORGANOID_API UProjectOrganoidWeaponModData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 

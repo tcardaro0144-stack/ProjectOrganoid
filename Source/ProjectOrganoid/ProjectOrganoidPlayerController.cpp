@@ -4,17 +4,22 @@
 #include "ProjectOrganoidPauseWidget.h"
 #include "ProjectOrganoidMainMenuWidget.h"
 #include "ProjectOrganoidMainMenuGameMode.h"
+#include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "ProjectOrganoidUIAssetPaths.h"
 #include "EnhancedInputSubsystems.h"
+#include "Components/InputComponent.h"
 #include "Engine/Blueprint.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Camera/PlayerCameraManager.h"
+#include "GameFramework/Pawn.h"
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "UObject/SoftObjectPath.h"
-#include "UObject/ConstructorHelpers.h"
 #include "ProjectOrganoid.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "InputCoreTypes.h"
@@ -24,33 +29,24 @@ AProjectOrganoidPlayerController::AProjectOrganoidPlayerController()
 	// Keep input ticking so Escape can close the pause menu while the world is paused.
 	bShouldPerformFullTickWhenPaused = true;
 
-	// Bind CDO default to the Content Browser asset:
-	// /Game/UI/Menus/WBP_MainMenu  (Content/UI/Menus/WBP_MainMenu.uasset)
-	static ConstructorHelpers::FClassFinder<UProjectOrganoidMainMenuWidget> MainMenuBP(
-		ProjectOrganoidUIAssetPaths::MainMenuWidgetFinder);
-	if (MainMenuBP.Succeeded())
+	// Content IMC is optional. Never probe the template ThirdPerson path — that asset
+	// is not in this project and LoadObject spam-fails Enhanced Input on every PIE.
+	if (DefaultMappingContexts.IsEmpty())
 	{
-		MainMenuWidgetClass = MainMenuBP.Class;
+		if (UInputMappingContext* IMC = LoadObject<UInputMappingContext>(
+			nullptr,
+			TEXT("/Game/Input/IMC_Default.IMC_Default"),
+			nullptr,
+			LOAD_NoWarn | LOAD_Quiet))
+		{
+			DefaultMappingContexts.AddUnique(IMC);
+		}
 	}
-	// WBP_PauseMenu is optional — resolved at runtime if/when the asset exists.
 }
 
 void AProjectOrganoidPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (!PauseWidgetClass || PauseWidgetClass == UProjectOrganoidPauseWidget::StaticClass())
-	{
-		if (UClass* WBPClass = LoadClass<UProjectOrganoidPauseWidget>(
-			nullptr, ProjectOrganoidUIAssetPaths::PauseMenuWidgetClass))
-		{
-			PauseWidgetClass = WBPClass;
-		}
-		else if (!PauseWidgetClass)
-		{
-			PauseWidgetClass = UProjectOrganoidPauseWidget::StaticClass();
-		}
-	}
 
 	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
@@ -70,21 +66,58 @@ void AProjectOrganoidPlayerController::BeginPlay()
 		}
 	}
 
-	// Auto-create WBP_MainMenu on title maps / MainMenu GameMode (no Level Blueprint).
+	if (!IsLocalPlayerController())
+	{
+		return;
+	}
+
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
+	if (MapName.Contains(TEXT("Lvl_Epitope"), ESearchCase::IgnoreCase))
+	{
+		EnterGameplayControl();
+		return;
+	}
+
+	SetPauseMenuAllowed(false);
+
+	TitleMainMenuWidget = CreateWidget<UProjectOrganoidMainMenuWidget>(
+		this, UProjectOrganoidMainMenuWidget::StaticClass());
+	if (!TitleMainMenuWidget)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			TitleMainMenuWidget = CreateWidget<UProjectOrganoidMainMenuWidget>(
+				GI, UProjectOrganoidMainMenuWidget::StaticClass());
+		}
+	}
+	if (!TitleMainMenuWidget)
+	{
+		UE_LOG(LogProjectOrganoid, Error, TEXT("BeginPlay: CreateWidget failed for C++ title menu."));
+		return;
+	}
+
+	TitleMainMenuWidget->AddToViewport(10);
+	TitleMainMenuWidget->SetVisibility(ESlateVisibility::Visible);
+	TitleMainMenuWidget->TakeWidget();
+
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(TitleMainMenuWidget->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	SetShowMouseCursor(true);
+	bShowMouseCursor = true;
+
+	UE_LOG(LogProjectOrganoid, Log, TEXT("TITLE_CPP_ONLY: BeginPlay spawned UProjectOrganoidMainMenuWidget on '%s'."), *MapName);
+}
+
+void AProjectOrganoidPlayerController::ReceivedPlayer()
+{
+	Super::ReceivedPlayer();
+
 	if (IsLocalPlayerController() && ShouldAutoSpawnTitleMainMenu())
 	{
-		if (UWorld* World = GetWorld())
-		{
-			// Next tick so local player / viewport are fully ready in PIE.
-			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-			{
-				EnsureTitleMainMenu();
-			}));
-		}
-		else
-		{
-			EnsureTitleMainMenu();
-		}
+		SetPauseMenuAllowed(false);
+		EnsureTitleMainMenu();
 	}
 }
 
@@ -122,6 +155,13 @@ void AProjectOrganoidPlayerController::SetupInputComponent()
 
 bool AProjectOrganoidPlayerController::ShouldAutoSpawnTitleMainMenu() const
 {
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
+	const FString Token = TitleMapNameToken.ToString();
+	if (!Token.IsEmpty() && MapName.Contains(Token, ESearchCase::IgnoreCase))
+	{
+		return true;
+	}
+
 	if (const UWorld* World = GetWorld())
 	{
 		if (Cast<AProjectOrganoidMainMenuGameMode>(World->GetAuthGameMode()))
@@ -130,85 +170,49 @@ bool AProjectOrganoidPlayerController::ShouldAutoSpawnTitleMainMenu() const
 		}
 	}
 
-	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
-	const FString Token = TitleMapNameToken.ToString();
-	return !Token.IsEmpty() && MapName.Contains(Token);
+	return false;
 }
 
-TSubclassOf<UProjectOrganoidMainMenuWidget> AProjectOrganoidPlayerController::ResolveMainMenuWidgetClass() const
+TSubclassOf<UProjectOrganoidPauseWidget> AProjectOrganoidPlayerController::ResolvePauseWidgetClass() const
 {
-	auto IsUsableMenuClass = [](const UClass* Class) -> bool
+	auto IsUsablePauseClass = [](const UClass* Class) -> bool
 	{
 		return Class
 			&& !Class->HasAnyClassFlags(CLASS_Abstract)
-			&& Class->IsChildOf(UProjectOrganoidMainMenuWidget::StaticClass());
+			&& Class->IsChildOf(UProjectOrganoidPauseWidget::StaticClass());
 	};
 
-	if (IsUsableMenuClass(MainMenuWidgetClass))
+	if (IsUsablePauseClass(PauseWidgetClass) && PauseWidgetClass != UProjectOrganoidPauseWidget::StaticClass())
 	{
-		return MainMenuWidgetClass;
+		return PauseWidgetClass;
 	}
 
-	// Exact Content Browser generated-class path:
-	// /Game/UI/Menus/WBP_MainMenu.WBP_MainMenu_C
+	const FSoftClassPath SoftClassPath(ProjectOrganoidUIAssetPaths::PauseMenuWidgetClass);
+	if (UClass* LoadedClass = SoftClassPath.TryLoadClass<UProjectOrganoidPauseWidget>())
 	{
-		const FSoftClassPath SoftClassPath(ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
-		if (UClass* LoadedClass = SoftClassPath.TryLoadClass<UProjectOrganoidMainMenuWidget>())
+		if (IsUsablePauseClass(LoadedClass))
 		{
-			if (IsUsableMenuClass(LoadedClass))
-			{
-				UE_LOG(LogProjectOrganoid, Log, TEXT("ResolveMainMenuWidgetClass: SoftClassPath OK (%s)"),
-					ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
-				return LoadedClass;
-			}
-		}
-	}
-
-	if (UClass* LoadedClass = LoadClass<UProjectOrganoidMainMenuWidget>(
-		nullptr, ProjectOrganoidUIAssetPaths::MainMenuWidgetClass))
-	{
-		if (IsUsableMenuClass(LoadedClass))
-		{
-			UE_LOG(LogProjectOrganoid, Log, TEXT("ResolveMainMenuWidgetClass: LoadClass OK (%s)"),
-				ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
 			return LoadedClass;
 		}
 	}
 
-	// Load the WidgetBlueprint asset, then use GeneratedClass.
-	// /Game/UI/Menus/WBP_MainMenu.WBP_MainMenu
-	if (UObject* Asset = StaticLoadObject(
-		UObject::StaticClass(),
-		nullptr,
-		ProjectOrganoidUIAssetPaths::MainMenuWidgetAsset))
+	if (UObject* Asset = StaticLoadObject(UObject::StaticClass(), nullptr, ProjectOrganoidUIAssetPaths::PauseMenuWidgetAsset))
 	{
 		if (const UBlueprint* Blueprint = Cast<UBlueprint>(Asset))
 		{
 			if (UClass* Generated = Blueprint->GeneratedClass.Get())
 			{
-				if (IsUsableMenuClass(Generated))
+				if (IsUsablePauseClass(Generated))
 				{
-					UE_LOG(LogProjectOrganoid, Log, TEXT("ResolveMainMenuWidgetClass: Blueprint GeneratedClass OK (%s)"),
-						ProjectOrganoidUIAssetPaths::MainMenuWidgetAsset);
 					return Generated;
 				}
 			}
 		}
-
-		if (UClass* AsClass = Cast<UClass>(Asset))
-		{
-			if (IsUsableMenuClass(AsClass))
-			{
-				return AsClass;
-			}
-		}
 	}
 
-	UE_LOG(LogProjectOrganoid, Error,
-		TEXT("ResolveMainMenuWidgetClass: failed to load %s (disk: Content/UI/Menus/WBP_MainMenu.uasset)"),
-		ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
-
-	return UProjectOrganoidMainMenuWidget::StaticClass();
+	UE_LOG(LogProjectOrganoid, Warning,
+		TEXT("ResolvePauseWidgetClass: WBP_PauseMenu unavailable, using C++ parent."));
+	return UProjectOrganoidPauseWidget::StaticClass();
 }
 
 bool AProjectOrganoidPlayerController::IsTitleMainMenuVisible() const
@@ -228,44 +232,10 @@ UProjectOrganoidMainMenuWidget* AProjectOrganoidPlayerController::EnsureTitleMai
 		return TitleMainMenuWidget;
 	}
 
-	// CreateWidget requires a valid owning Player (or World/GI). During Live Coding
-	// re-instancing / early BeginPlay the PC can exist without Player yet.
-	if (!Player)
-	{
-		if (UWorld* World = GetWorld())
-		{
-			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-			{
-				if (Player)
-				{
-					EnsureTitleMainMenu();
-				}
-			}));
-		}
-		UE_LOG(LogProjectOrganoid, Verbose, TEXT("EnsureTitleMainMenu: deferring until Player is attached."));
-		return nullptr;
-	}
-
-	const TSubclassOf<UProjectOrganoidMainMenuWidget> ClassToSpawn = ResolveMainMenuWidgetClass();
-	if (!ClassToSpawn)
-	{
-		UE_LOG(LogProjectOrganoid, Error,
-			TEXT("EnsureTitleMainMenu: no widget class (expected %s)."),
-			ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
-		return nullptr;
-	}
-
-	if (ClassToSpawn == UProjectOrganoidMainMenuWidget::StaticClass())
-	{
-		UE_LOG(LogProjectOrganoid, Warning,
-			TEXT("EnsureTitleMainMenu: using C++ parent only — failed to load %s"),
-			ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
-	}
-
+	const TSubclassOf<UProjectOrganoidMainMenuWidget> ClassToSpawn = UProjectOrganoidMainMenuWidget::StaticClass();
 	TitleMainMenuWidget = CreateWidget<UProjectOrganoidMainMenuWidget>(this, ClassToSpawn);
 	if (!TitleMainMenuWidget)
 	{
-		// Fallback owner if PC still rejects CreateWidget.
 		if (UGameInstance* GI = GetGameInstance())
 		{
 			TitleMainMenuWidget = CreateWidget<UProjectOrganoidMainMenuWidget>(GI, ClassToSpawn);
@@ -273,7 +243,7 @@ UProjectOrganoidMainMenuWidget* AProjectOrganoidPlayerController::EnsureTitleMai
 	}
 	if (!TitleMainMenuWidget)
 	{
-		UE_LOG(LogProjectOrganoid, Error, TEXT("EnsureTitleMainMenu: CreateWidget failed for %s"), *GetNameSafe(ClassToSpawn));
+		UE_LOG(LogProjectOrganoid, Error, TEXT("EnsureTitleMainMenu: CreateWidget failed for C++ title menu."));
 		return nullptr;
 	}
 
@@ -281,7 +251,6 @@ UProjectOrganoidMainMenuWidget* AProjectOrganoidPlayerController::EnsureTitleMai
 	TitleMainMenuWidget->SetVisibility(ESlateVisibility::Visible);
 
 	FInputModeUIOnly InputMode;
-	// Focus the New Game button so keyboard/gamepad navigation starts on it.
 	TSharedPtr<SWidget> FocusTarget;
 	if (UWidget* DefaultFocus = TitleMainMenuWidget->GetDefaultFocusWidget())
 	{
@@ -292,12 +261,9 @@ UProjectOrganoidMainMenuWidget* AProjectOrganoidPlayerController::EnsureTitleMai
 	SetInputMode(InputMode);
 	SetShowMouseCursor(true);
 	bShowMouseCursor = true;
-
 	SetPauseMenuAllowed(false);
 
-	UE_LOG(LogProjectOrganoid, Log, TEXT("EnsureTitleMainMenu: spawned %s from %s (UI-only + cursor)"),
-		*GetNameSafe(ClassToSpawn),
-		ProjectOrganoidUIAssetPaths::MainMenuWidgetClass);
+	UE_LOG(LogProjectOrganoid, Log, TEXT("TITLE_CPP_ONLY: EnsureTitleMainMenu spawned UProjectOrganoidMainMenuWidget."));
 	return TitleMainMenuWidget;
 }
 
@@ -325,24 +291,21 @@ void AProjectOrganoidPlayerController::OpenPauseMenu()
 		return;
 	}
 
-	TSubclassOf<UProjectOrganoidPauseWidget> ClassToSpawn = PauseWidgetClass;
-	if (!ClassToSpawn)
-	{
-		ClassToSpawn = LoadClass<UProjectOrganoidPauseWidget>(
-			nullptr, ProjectOrganoidUIAssetPaths::PauseMenuWidgetClass);
-	}
-	if (!ClassToSpawn)
-	{
-		ClassToSpawn = UProjectOrganoidPauseWidget::StaticClass();
-	}
+	TSubclassOf<UProjectOrganoidPauseWidget> ClassToSpawn = ResolvePauseWidgetClass();
 
 	PauseWidget = CreateWidget<UProjectOrganoidPauseWidget>(this, ClassToSpawn);
+	if (!PauseWidget && ClassToSpawn != UProjectOrganoidPauseWidget::StaticClass())
+	{
+		UE_LOG(LogProjectOrganoid, Warning, TEXT("OpenPauseMenu: WBP_PauseMenu failed to spawn, using C++ layout."));
+		PauseWidget = CreateWidget<UProjectOrganoidPauseWidget>(this, UProjectOrganoidPauseWidget::StaticClass());
+	}
 	if (!PauseWidget)
 	{
 		return;
 	}
 
 	PauseWidget->AddToViewport(100);
+	PauseWidget->OnPauseOpened();
 	bPauseMenuOpen = true;
 
 	SetPause(true);
@@ -383,6 +346,70 @@ void AProjectOrganoidPlayerController::SetPauseMenuAllowed(bool bAllowed)
 	if (!bAllowed && bPauseMenuOpen)
 	{
 		ClosePauseMenu();
+	}
+}
+
+void AProjectOrganoidPlayerController::DismissTitleMainMenu()
+{
+	if (TitleMainMenuWidget)
+	{
+		TitleMainMenuWidget->DismissFromViewport();
+		TitleMainMenuWidget = nullptr;
+	}
+
+	if (FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().ReleaseAllPointerCapture();
+		FSlateApplication::Get().ClearKeyboardFocus(EFocusCause::SetDirectly);
+	}
+
+	FlushPressedKeys();
+}
+
+void AProjectOrganoidPlayerController::EnterGameplayControl()
+{
+	DismissTitleMainMenu();
+
+	if (bPauseMenuOpen)
+	{
+		ClosePauseMenu();
+	}
+
+	SetPause(false);
+	SetIgnoreMoveInput(false);
+	SetIgnoreLookInput(false);
+
+	FInputModeGameOnly InputMode;
+	InputMode.SetConsumeCaptureMouseDown(true);
+	SetInputMode(InputMode);
+	SetShowMouseCursor(false);
+	bShowMouseCursor = false;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerCameraManager* CameraManager = PlayerCameraManager)
+		{
+			CameraManager->SetManualCameraFade(0.0f, FLinearColor::Black, false);
+		}
+
+		if (UGameViewportClient* Viewport = World->GetGameViewport())
+		{
+			Viewport->SetMouseLockMode(EMouseLockMode::LockOnCapture);
+			Viewport->SetHideCursorDuringCapture(true);
+		}
+	}
+
+	UE_LOG(LogProjectOrganoid, Log, TEXT("EnterGameplayControl: GameOnly input, cursor hidden, title dismissed."));
+}
+
+void AProjectOrganoidPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	const FString MapName = UGameplayStatics::GetCurrentLevelName(this, /*bRemovePrefixString=*/true);
+	if (InPawn && MapName.Contains(TEXT("Lvl_Epitope"), ESearchCase::IgnoreCase))
+	{
+		EnterGameplayControl();
 	}
 }
 

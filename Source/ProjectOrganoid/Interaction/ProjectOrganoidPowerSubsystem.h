@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "ProjectOrganoidLevelTypes.h"
 #include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidPowerSubsystem.generated.h"
 
@@ -91,6 +92,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Power")
 	TArray<FProjectOrganoidSectorPowerStatus> GetAllSectorStatuses() const;
+
+	UFUNCTION(BlueprintPure, Category = "Power")
+	static EProjectOrganoidPowerSector PowerSectorFromSubLevel(EProjectOrganoidSubLevelTag Tag);
 
 protected:
 

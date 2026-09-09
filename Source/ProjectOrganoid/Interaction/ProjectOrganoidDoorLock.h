@@ -16,7 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidDoorStateChanged, 
  *  Facility door / airlock lock requiring a keycard of a minimum security tier.
  */
 UCLASS(Blueprintable)
-class AProjectOrganoidDoorLock : public AProjectOrganoidInteractable
+class PROJECTORGANOID_API AProjectOrganoidDoorLock : public AProjectOrganoidInteractable
 {
 	GENERATED_BODY()
 
@@ -75,4 +75,11 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Door|Power")
 	void BP_OnPowerStateChanged(EProjectOrganoidPowerState NewState);
+
+private:
+	/** Captured once from authored/instance bIsInteractable. Power may restrict, never grant. */
+	void CaptureAuthoredInteractableIfNeeded();
+
+	bool bAuthoredInteractable = true;
+	bool bHasCapturedAuthoredInteractable = false;
 };

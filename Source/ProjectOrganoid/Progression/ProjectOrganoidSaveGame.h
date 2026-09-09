@@ -6,6 +6,8 @@
 #include "GameFramework/SaveGame.h"
 #include "ProjectOrganoidUpgradeTypes.h"
 #include "ProjectOrganoidWeaponModTypes.h"
+#include "ProjectOrganoidBiologicalAdaptationTypes.h"
+#include "ProjectOrganoidWeaponTypes.h"
 #include "ProjectOrganoidStatsTypes.h"
 #include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidSaveGame.generated.h"
@@ -113,6 +115,41 @@ public:
 	/** Installed attachments on the equipped weapon */
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Mods")
 	TArray<FProjectOrganoidSavedWeaponMod> EquippedWeaponMods;
+
+	/**
+	 *  Owned / unlocked mods. Distinct from EquippedWeaponMods.
+	 *  False on old saves — do not wipe ownership when the field is missing.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Mods")
+	bool bHasUnlockedWeaponMods = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Mods")
+	TArray<FSoftObjectPath> UnlockedWeaponMods;
+
+	/**
+	 *  Owned / unlocked Biological Adaptations. Distinct from equipped slot.
+	 *  False on old saves — do not wipe ownership when the field is missing.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Adaptations")
+	bool bHasBiologicalAdaptations = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Adaptations")
+	TArray<FSoftObjectPath> UnlockedAdaptations;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Adaptations")
+	FSoftObjectPath EquippedAdaptation;
+
+	/**
+	 *  Per-weapon loaded magazine snapshots (weapon state only).
+	 *  False on old saves — do not treat missing data as empty magazines.
+	 *  Future holstered weapons append additional entries; do not replace
+	 *  this with a single EquippedMagazineCount.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Ammo")
+	bool bHasWeaponMagazineStates = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Ammo")
+	TArray<FProjectOrganoidWeaponMagazineState> WeaponMagazineStates;
 
 	// --- Inventory ---
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Inventory")

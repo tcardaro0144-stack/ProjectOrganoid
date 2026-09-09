@@ -124,6 +124,7 @@ protected:
 
 	void BindWidgetCallbacks();
 	void SyncSettingsWidgets();
+	void EnsureVisiblePauseLayout();
 
 	UFUNCTION()
 	void HandleResumeClicked();

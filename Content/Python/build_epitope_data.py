@@ -21,6 +21,7 @@ HOST_MESH_PATH = "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"
 
 ITEM_KEYCARD = f"{ITEM_DIR}/DA_Item_AdminKeycard"
 ITEM_SOT = f"{ITEM_DIR}/DA_Item_SOT"
+ITEM_PISTOL_AMMO = f"{ITEM_DIR}/DA_Item_PistolAmmo"
 MISSION_AUDIT = f"{MISSION_DIR}/DA_Mission_TheAudit"
 MISSION_PRODUCTION = f"{MISSION_DIR}/DA_Mission_TheProduction"
 MISSION_HANDOVER = f"{MISSION_DIR}/DA_Mission_TheHandover"
@@ -184,7 +185,20 @@ def build_items():
         set_prop(sot, "MaxStackCount", 99)
         save_asset(sot, ITEM_SOT)
 
-    return keycard, sot
+    pistol_ammo = create_data_asset(ITEM_PISTOL_AMMO, unreal.ProjectOrganoidItemData)
+    if pistol_ammo:
+        set_prop(pistol_ammo, "ItemName", text("Pistol Ammunition"))
+        set_prop(pistol_ammo, "ItemType", resolve_enum("ProjectOrganoidItemType", "Ammo"))
+        set_prop(pistol_ammo, "AmmoType", resolve_enum("ProjectOrganoidAmmoType", "Pistol"))
+        set_prop(pistol_ammo, "GridWidth", 1)
+        set_prop(pistol_ammo, "GridHeight", 1)
+        # PROVISIONAL DESIGN TUNING — not campaign starting-reserve balance.
+        set_prop(pistol_ammo, "ItemWeight", 0.05)
+        set_prop(pistol_ammo, "bCanStack", True)
+        set_prop(pistol_ammo, "MaxStackCount", 30)
+        save_asset(pistol_ammo, ITEM_PISTOL_AMMO)
+
+    return keycard, sot, pistol_ammo
 
 
 # ----------------------------------------------------------------------------------

@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidFocusChanged, APro
  *  Scans for nearby interactables and routes Avery's Interact input.
  */
 UCLASS(ClassGroup = (ProjectOrganoid), meta = (BlueprintSpawnableComponent))
-class UProjectOrganoidInteractionComponent : public UActorComponent
+class PROJECTORGANOID_API UProjectOrganoidInteractionComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

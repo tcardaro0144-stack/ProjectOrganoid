@@ -8,27 +8,68 @@ void UProjectOrganoidObjectiveSubsystem::Initialize(FSubsystemCollectionBase& Co
 {
 	Super::Initialize(Collection);
 
-	if (DefaultMissionAsset.IsNull())
-	{
-		DefaultMissionAsset = TSoftObjectPtr<UProjectOrganoidObjectiveDataAsset>(
-			FSoftObjectPath(TEXT("/Game/Data/Missions/DA_Mission_TheAudit.DA_Mission_TheAudit")));
-	}
-
-	if (!LoadDefaultMission())
-	{
-		SeedDefaultCampaignObjectives();
-	}
+	// Block 1 temporary New Game seed. Do not load DA_Mission_TheAudit (asset stays on disk).
+	SeedOpeningFoundationMission();
 }
 
 bool UProjectOrganoidObjectiveSubsystem::LoadDefaultMission()
 {
-	if (DefaultMissionAsset.IsNull())
-	{
-		return false;
-	}
+	SeedOpeningFoundationMission();
+	return true;
+}
 
-	UProjectOrganoidObjectiveDataAsset* Mission = DefaultMissionAsset.LoadSynchronous();
-	return LoadMission(Mission, true);
+void UProjectOrganoidObjectiveSubsystem::SeedOpeningFoundationMission()
+{
+	Objectives.Reset();
+	EventTriggers.Reset();
+	ActiveMissionObjectiveIds.Reset();
+	PendingNextMissionAsset.Reset();
+	bActiveMissionCompletionNotified = false;
+	CachedJournalStage = 0;
+
+	ActiveMissionId = TEXT("Mission_OpeningFoundation");
+	ActiveMissionTitle = FText::FromString(TEXT("Epitope"));
+
+	FProjectOrganoidObjective ReceptionCheckIn;
+	ReceptionCheckIn.ObjectiveId = TEXT("Obj_ReceptionCheckIn");
+	ReceptionCheckIn.Title = FText::FromString(TEXT("Check in at Reception"));
+	ReceptionCheckIn.Type = EProjectOrganoidObjectiveType::Main;
+	ReceptionCheckIn.State = EProjectOrganoidObjectiveState::Inactive;
+	ReceptionCheckIn.TargetProgress = 1;
+	ReceptionCheckIn.StageIndex = 0;
+	ReceptionCheckIn.bShowInJournal = true;
+	RegisterObjective(ReceptionCheckIn);
+	ActiveMissionObjectiveIds.Add(ReceptionCheckIn.ObjectiveId);
+
+	FProjectOrganoidObjectiveEventTrigger ReceptionUsed;
+	ReceptionUsed.EventId = TEXT("Event_ReceptionTerminalUsed");
+	ReceptionUsed.ObjectiveId = TEXT("Obj_ReceptionCheckIn");
+	ReceptionUsed.Action = EProjectOrganoidObjectiveEventAction::Complete;
+	RegisterEventTrigger(ReceptionUsed);
+
+	FProjectOrganoidObjective SecurityStatus;
+	SecurityStatus.ObjectiveId = TEXT("Obj_SecurityStatus");
+	SecurityStatus.Title = FText::FromString(TEXT("Check the security office"));
+	SecurityStatus.Type = EProjectOrganoidObjectiveType::Main;
+	SecurityStatus.State = EProjectOrganoidObjectiveState::Inactive;
+	SecurityStatus.TargetProgress = 1;
+	SecurityStatus.StageIndex = 0;
+	SecurityStatus.PrerequisiteObjectiveIds.Add(TEXT("Obj_ReceptionCheckIn"));
+	SecurityStatus.bAutoUnlockWhenPrerequisitesMet = true;
+	SecurityStatus.bShowInJournal = true;
+	RegisterObjective(SecurityStatus);
+	ActiveMissionObjectiveIds.Add(SecurityStatus.ObjectiveId);
+
+	FProjectOrganoidObjectiveEventTrigger SecurityUsed;
+	SecurityUsed.EventId = TEXT("Event_SecurityTerminalUsed");
+	SecurityUsed.ObjectiveId = TEXT("Obj_SecurityStatus");
+	SecurityUsed.Action = EProjectOrganoidObjectiveEventAction::Complete;
+	RegisterEventTrigger(SecurityUsed);
+
+	ActivateObjective(TEXT("Obj_ReceptionCheckIn"));
+
+	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
+	BroadcastJournalState();
 }
 
 bool UProjectOrganoidObjectiveSubsystem::LoadMission(UProjectOrganoidObjectiveDataAsset* MissionAsset, bool bClearExisting)

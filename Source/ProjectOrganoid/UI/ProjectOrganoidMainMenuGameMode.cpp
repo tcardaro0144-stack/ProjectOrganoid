@@ -5,12 +5,12 @@
 #include "ProjectOrganoidPlayerController.h"
 #include "ProjectOrganoidFlowManagerSubsystem.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "Kismet/GameplayStatics.h"
 
 AProjectOrganoidMainMenuGameMode::AProjectOrganoidMainMenuGameMode()
 {
 	DefaultPawnClass = ASpectatorPawn::StaticClass();
 	PlayerControllerClass = AProjectOrganoidPlayerController::StaticClass();
-	MainMenuWidgetClass = UProjectOrganoidMainMenuWidget::StaticClass();
 	bStartPlayersAsSpectators = true;
 }
 
@@ -41,6 +41,12 @@ void AProjectOrganoidMainMenuGameMode::PostLogin(APlayerController* NewPlayer)
 	SpawnMainMenuForPlayer(NewPlayer);
 }
 
+void AProjectOrganoidMainMenuGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+	SpawnMainMenuForPlayer(NewPlayer);
+}
+
 void AProjectOrganoidMainMenuGameMode::SpawnMainMenuForPlayer(APlayerController* PlayerController)
 {
 	if (!PlayerController || !PlayerController->IsLocalPlayerController())
@@ -48,25 +54,17 @@ void AProjectOrganoidMainMenuGameMode::SpawnMainMenuForPlayer(APlayerController*
 		return;
 	}
 
-	if (PlayerMenuWidgets.Contains(PlayerController) && PlayerMenuWidgets[PlayerController])
-	{
-		return;
-	}
-
-	// Prefer the PlayerController path (also covers map-name auto-detect / PIE timing).
 	if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(PlayerController))
 	{
-		if (MainMenuWidgetClass && MainMenuWidgetClass != UProjectOrganoidMainMenuWidget::StaticClass())
+		if (!OrganoidPC->ShouldAutoSpawnTitleMainMenu())
 		{
-			OrganoidPC->MainMenuWidgetClass = MainMenuWidgetClass;
+			return;
 		}
 
+		OrganoidPC->SetPauseMenuAllowed(false);
 		if (UProjectOrganoidMainMenuWidget* MenuWidget = OrganoidPC->EnsureTitleMainMenu())
 		{
 			PlayerMenuWidgets.Add(PlayerController, MenuWidget);
 		}
-		return;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("MainMenu: PlayerController is not AProjectOrganoidPlayerController — cannot auto-spawn WBP_MainMenu."));
 }

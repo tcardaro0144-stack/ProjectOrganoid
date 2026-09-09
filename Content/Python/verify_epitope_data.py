@@ -6,6 +6,7 @@ import unreal
 ASSETS = {
     "/Game/Data/Items/DA_Item_AdminKeycard": "ProjectOrganoidItemData",
     "/Game/Data/Items/DA_Item_SOT": "ProjectOrganoidItemData",
+    "/Game/Data/Items/DA_Item_PistolAmmo": "ProjectOrganoidItemData",
     "/Game/Data/Missions/DA_Mission_TheAudit": "ProjectOrganoidObjectiveDataAsset",
     "/Game/Data/Missions/DA_Mission_TheProduction": "ProjectOrganoidObjectiveDataAsset",
     "/Game/Data/Missions/DA_Mission_TheHandover": "ProjectOrganoidObjectiveDataAsset",

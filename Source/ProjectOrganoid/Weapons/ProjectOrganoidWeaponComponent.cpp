@@ -42,6 +42,8 @@ AProjectOrganoidWeapon* UProjectOrganoidWeaponComponent::EquipWeaponClass(TSubcl
 
 	if (EquippedWeapon)
 	{
+		EquippedWeapon->CancelReload();
+		StoreEquippedMagazineState();
 		EquippedWeapon->Destroy();
 		EquippedWeapon = nullptr;
 	}
@@ -63,6 +65,7 @@ AProjectOrganoidWeapon* UProjectOrganoidWeaponComponent::EquipWeaponClass(TSubcl
 
 	EquippedWeapon = NewWeapon;
 	EquippedWeapon->SetWeaponOwnerCharacter(CharacterOwner);
+	RestoreMagazineStateFor(EquippedWeapon);
 
 	USkeletalMeshComponent* CharacterMesh = CharacterOwner ? CharacterOwner->GetMesh() : nullptr;
 	if (CharacterMesh && CharacterMesh->DoesSocketExist(WeaponAttachSocketName))
@@ -83,6 +86,120 @@ AProjectOrganoidWeapon* UProjectOrganoidWeaponComponent::EquipWeaponClass(TSubcl
 bool UProjectOrganoidWeaponComponent::FireEquippedWeapon()
 {
 	return EquippedWeapon ? EquippedWeapon->Fire() : false;
+}
+
+bool UProjectOrganoidWeaponComponent::ReloadEquippedWeapon()
+{
+	return EquippedWeapon ? EquippedWeapon->RequestReload() : false;
+}
+
+void UProjectOrganoidWeaponComponent::CancelReload()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->CancelReload();
+	}
+}
+
+void UProjectOrganoidWeaponComponent::StoreEquippedMagazineState()
+{
+	if (EquippedWeapon)
+	{
+		UpsertMagazineState(EquippedWeapon->CaptureMagazineState());
+	}
+}
+
+void UProjectOrganoidWeaponComponent::RestoreMagazineStateFor(AProjectOrganoidWeapon* Weapon)
+{
+	if (!Weapon)
+	{
+		return;
+	}
+
+	const FSoftClassPath ClassPath(Weapon->GetClass());
+	for (const FProjectOrganoidWeaponMagazineState& State : HolsteredMagazineStates)
+	{
+		if (State.WeaponClass == ClassPath)
+		{
+			Weapon->ApplyMagazineState(State);
+			return;
+		}
+	}
+}
+
+void UProjectOrganoidWeaponComponent::UpsertMagazineState(const FProjectOrganoidWeaponMagazineState& State)
+{
+	if (!State.IsValid())
+	{
+		return;
+	}
+
+	for (FProjectOrganoidWeaponMagazineState& Existing : HolsteredMagazineStates)
+	{
+		if (Existing.WeaponClass == State.WeaponClass)
+		{
+			Existing = State;
+			return;
+		}
+	}
+
+	HolsteredMagazineStates.Add(State);
+}
+
+TArray<FProjectOrganoidWeaponMagazineState> UProjectOrganoidWeaponComponent::CaptureMagazineStates() const
+{
+	TArray<FProjectOrganoidWeaponMagazineState> States = HolsteredMagazineStates;
+	if (EquippedWeapon)
+	{
+		const FProjectOrganoidWeaponMagazineState Live = EquippedWeapon->CaptureMagazineState();
+		bool bReplaced = false;
+		for (FProjectOrganoidWeaponMagazineState& Existing : States)
+		{
+			if (Existing.WeaponClass == Live.WeaponClass)
+			{
+				Existing = Live;
+				bReplaced = true;
+				break;
+			}
+		}
+		if (!bReplaced)
+		{
+			States.Add(Live);
+		}
+	}
+	return States;
+}
+
+void UProjectOrganoidWeaponComponent::ApplyMagazineStates(const TArray<FProjectOrganoidWeaponMagazineState>& States)
+{
+	HolsteredMagazineStates.Reset();
+	for (const FProjectOrganoidWeaponMagazineState& State : States)
+	{
+		UpsertMagazineState(State);
+	}
+
+	if (EquippedWeapon)
+	{
+		RestoreMagazineStateFor(EquippedWeapon);
+	}
+}
+
+int32 UProjectOrganoidWeaponComponent::GetHolsteredMagazineCount(TSubclassOf<AProjectOrganoidWeapon> WeaponClass) const
+{
+	if (!WeaponClass)
+	{
+		return INDEX_NONE;
+	}
+
+	const FSoftClassPath ClassPath(WeaponClass.Get());
+	for (const FProjectOrganoidWeaponMagazineState& State : HolsteredMagazineStates)
+	{
+		if (State.WeaponClass == ClassPath)
+		{
+			return State.LoadedMagazineCount;
+		}
+	}
+	return INDEX_NONE;
 }
 
 bool UProjectOrganoidWeaponComponent::FireOverchargedPulse()

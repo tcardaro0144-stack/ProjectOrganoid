@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "ProjectOrganoidInventoryTypes.h"
 #include "ProjectOrganoidInteractionTypes.h"
+#include "ProjectOrganoidWeaponTypes.h"
 #include "ProjectOrganoidInventoryComponent.generated.h"
 
 class UProjectOrganoidItemData;
@@ -19,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidInventoryWeightCh
  *  unique-slot caps, and stackable ammo / SOT / consumables.
  */
 UCLASS(ClassGroup = (ProjectOrganoid), meta = (BlueprintSpawnableComponent))
-class UProjectOrganoidInventoryComponent : public UActorComponent
+class PROJECTORGANOID_API UProjectOrganoidInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -160,6 +161,22 @@ public:
 	/** Remove up to Count stacked units of the given type. Returns false if not enough. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool ConsumeItemsOfType(EProjectOrganoidItemType ItemType, int32 Count);
+
+	/** Sum StackCount of placements that reference this exact ItemData asset. */
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	int32 CountItem(const UProjectOrganoidItemData* ItemData) const;
+
+	/** Remove Count units of this exact ItemData asset. Fail-closed if short. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool ConsumeItem(UProjectOrganoidItemData* ItemData, int32 Count);
+
+	/** Sum StackCount of Ammo items whose AmmoType matches. Never mixes ammo families. */
+	UFUNCTION(BlueprintPure, Category = "Inventory|Ammo")
+	int32 CountAmmoOfType(EProjectOrganoidAmmoType AmmoType) const;
+
+	/** Remove Count reserve rounds of the matching ammo family. Fail-closed if short. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Ammo")
+	bool ConsumeAmmoOfType(EProjectOrganoidAmmoType AmmoType, int32 Count);
 
 	/** Wipe the grid (used by save restore) */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")

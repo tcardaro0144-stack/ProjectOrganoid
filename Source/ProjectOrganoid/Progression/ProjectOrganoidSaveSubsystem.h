@@ -21,7 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidGameLoaded, const
  *  Checkpoints + objective autosaves write to AutosaveSlotName by default.
  */
 UCLASS()
-class UProjectOrganoidSaveSubsystem : public UGameInstanceSubsystem
+class PROJECTORGANOID_API UProjectOrganoidSaveSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 

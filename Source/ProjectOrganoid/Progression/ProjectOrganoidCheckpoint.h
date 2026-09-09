@@ -14,10 +14,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidCheckpointUsed,
 
 /**
  *  Facility checkpoint — serializes full game state (vitals, inventory, weapon mods,
- *  objectives, stats) when Avery interacts or walks into the volume.
+ *  objectives, stats) when Nathan interacts or walks into the volume.
  */
 UCLASS(Blueprintable)
-class AProjectOrganoidCheckpoint : public AProjectOrganoidInteractable
+class PROJECTORGANOID_API AProjectOrganoidCheckpoint : public AProjectOrganoidInteractable
 {
 	GENERATED_BODY()
 
@@ -55,9 +55,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Save", meta = (ClampMin = "0.0"))
 	float OverlapAutosaveCooldownSeconds = 30.0f;
 
-	/** Heal Avery to MaxHealth when a successful checkpoint save completes */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint")
-	bool bRestoreHealthOnSave = true;
+	/**
+	 * Minimum health floor applied immediately before a checkpoint save is serialized.
+	 * 0.25 = if current health is below 25% of MaxHealth, raise it to exactly 25%.
+	 * Health already at or above the floor is unchanged. This is not +25%, not +25 HP,
+	 * and not full healing. 0 disables the floor. Death/restart does not use this property.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HealthStabilizationFloorPercent = 0.25f;
 
 	UPROPERTY(BlueprintAssignable, Category = "Checkpoint")
 	FOnProjectOrganoidCheckpointUsed OnCheckpointUsed;
@@ -85,4 +90,5 @@ protected:
 		const FHitResult& SweepResult);
 
 	FString ResolveSaveSlot() const;
+	void ApplyHealthStabilizationFloor(AProjectOrganoidCharacter* Character) const;
 };

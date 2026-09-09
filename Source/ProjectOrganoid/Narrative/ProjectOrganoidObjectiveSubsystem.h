@@ -22,7 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidJournalStageChang
  *  and gameplay-event driven task advancement (gates, data pads, hosts, etc.).
  */
 UCLASS()
-class UProjectOrganoidObjectiveSubsystem : public UGameInstanceSubsystem
+class PROJECTORGANOID_API UProjectOrganoidObjectiveSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
@@ -168,6 +168,7 @@ protected:
 	int32 FindObjectiveIndex(FName ObjectiveId) const;
 	void RequestPopup(const FProjectOrganoidObjective& Objective, FName Reason);
 	void SeedDefaultCampaignObjectives();
+	void SeedOpeningFoundationMission();
 	void EvaluateActiveMissionCompletion();
 	void TryLoadNextMission();
 	bool ArePrerequisitesMetForObjective(const FProjectOrganoidObjective& Objective) const;

@@ -388,17 +388,9 @@ def setup_main_menu():
     ensure_directory(MENU_DIR)
     ensure_directory(MAPS_DIR)
 
-    main_wbp = create_or_load_widget_bp("WBP_MainMenu", MENU_DIR, MAIN_MENU_PARENT)
-    if main_wbp and (not getattr(main_wbp.widget_tree, "root_widget", None)):
-        build_main_menu_layout(main_wbp)
-    elif main_wbp:
-        # Rebuild layout if root is missing/empty
-        try:
-            if main_wbp.widget_tree.root_widget is None:
-                build_main_menu_layout(main_wbp)
-        except Exception:
-            build_main_menu_layout(main_wbp)
-    compile_and_save_widget(main_wbp, MAIN_MENU_WBP)
+    if unreal.EditorAssetLibrary.does_asset_exist(MAIN_MENU_WBP):
+        unreal.EditorAssetLibrary.delete_asset(MAIN_MENU_WBP)
+        unreal.log(f"Deleted retired green menu widget: {MAIN_MENU_WBP}")
 
     pause_wbp = create_or_load_widget_bp("WBP_PauseMenu", MENU_DIR, PAUSE_MENU_PARENT)
     if pause_wbp:
@@ -414,7 +406,7 @@ def setup_main_menu():
 
     unreal.log("=== Setup complete ===")
     unreal.log("PIE from Lvl_MainMenu (or restart editor so GameDefaultMap refreshes).")
-    unreal.log("C++ loads WBP_MainMenu / WBP_PauseMenu automatically when present.")
+    unreal.log("WBP_MainMenu is retired. Title travel uses the dark loading flow.")
 
 
 # Allow Execute Python Script and `py` console both

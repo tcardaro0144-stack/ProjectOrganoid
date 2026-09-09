@@ -8,6 +8,9 @@ AProjectOrganoidDefaultWeapon::AProjectOrganoidDefaultWeapon()
 	Penetration = 0.25f;
 	MaxPenetrations = 0;
 	AmmoType = EProjectOrganoidAmmoType::Pistol;
+	MagazineCapacity = 12;
+	CurrentMagazine = 12;
+	ReloadDurationSeconds = 1.6f;
 	FireRate = 4.5f;
 	BallisticsMode = EProjectOrganoidBallisticsMode::Hitscan;
 	HitscanRange = 10000.0f;

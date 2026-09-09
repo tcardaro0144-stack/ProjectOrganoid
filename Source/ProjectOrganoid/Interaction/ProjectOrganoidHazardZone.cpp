@@ -4,8 +4,14 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidHazardInterface.h"
 #include "ProjectOrganoidLevelManagerSubsystem.h"
+#include "ProjectOrganoidPowerSubsystem.h"
+#include "Components/AudioComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
+#include "Sound/SoundBase.h"
+#include "UObject/ConstructorHelpers.h"
 
 AProjectOrganoidHazardZone::AProjectOrganoidHazardZone()
 {
@@ -22,6 +28,34 @@ AProjectOrganoidHazardZone::AProjectOrganoidHazardZone()
 	HazardVolume->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidHazardZone::OnHazardBeginOverlap);
 	HazardVolume->OnComponentEndOverlap.AddDynamic(this, &AProjectOrganoidHazardZone::OnHazardEndOverlap);
 
+	HazardBeacon = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HazardBeacon"));
+	HazardBeacon->SetupAttachment(HazardVolume);
+	HazardBeacon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HazardBeacon->SetRelativeScale3D(FVector(0.35f, 0.35f, 0.35f));
+	HazardBeacon->SetCastShadow(false);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (CubeMesh.Succeeded())
+	{
+		HazardBeacon->SetStaticMesh(CubeMesh.Object);
+	}
+
+	HazardLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("HazardLight"));
+	HazardLight->SetupAttachment(HazardVolume);
+	HazardLight->SetIntensity(900.0f);
+	HazardLight->SetAttenuationRadius(900.0f);
+	HazardLight->SetCastShadows(false);
+
+	HazardAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("HazardAudio"));
+	HazardAudio->SetupAttachment(HazardVolume);
+	HazardAudio->bAutoActivate = false;
+	HazardAudio->bAllowSpatialization = true;
+	HazardAudio->bOverrideAttenuation = true;
+	HazardAudio->AttenuationOverrides.bAttenuate = true;
+	HazardAudio->AttenuationOverrides.FalloffDistance = 2200.0f;
+
+	HazardLoopSound = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/Audio/Ambient/SW_HazardHiss.SW_HazardHiss")));
+
 	ApplyHazardDefaultsForType();
 }
 
@@ -35,7 +69,15 @@ void AProjectOrganoidHazardZone::BeginPlay()
 		{
 			LevelManager->RegisterHazardZone(this);
 		}
+
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->OnSectorPowerChanged.AddDynamic(this, &AProjectOrganoidHazardZone::HandleSectorPowerChanged);
+		}
 	}
+
+	RefreshPowerGating();
+	RefreshPresentation();
 }
 
 void AProjectOrganoidHazardZone::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -46,6 +88,16 @@ void AProjectOrganoidHazardZone::EndPlay(const EEndPlayReason::Type EndPlayReaso
 		{
 			LevelManager->UnregisterHazardZone(this);
 		}
+
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->OnSectorPowerChanged.RemoveDynamic(this, &AProjectOrganoidHazardZone::HandleSectorPowerChanged);
+		}
+	}
+
+	if (HazardAudio)
+	{
+		HazardAudio->Stop();
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -60,31 +112,38 @@ void AProjectOrganoidHazardZone::ApplySubLevelEnvironmentContext(
 	EnvironmentDamageMultiplier = DamageMultiplier;
 	EnvironmentToxicityMultiplier = ToxicityMultiplier;
 
-	if (bIgnoreSubLevelContext)
+	const bool bWasEffective = IsEffectivelyActive();
+
+	if (!bIgnoreSubLevelContext)
 	{
-		return;
+		if (AssociatedSubLevelTag == EProjectOrganoidSubLevelTag::None)
+		{
+			bIsActive = bHazardTypeIsAmbient || ActiveTag == EProjectOrganoidSubLevelTag::None;
+		}
+		else
+		{
+			bIsActive = (AssociatedSubLevelTag == ActiveTag) || bHazardTypeIsAmbient;
+		}
 	}
 
-	if (AssociatedSubLevelTag == EProjectOrganoidSubLevelTag::None)
+	if (bWasEffective != IsEffectivelyActive())
 	{
-		bIsActive = bHazardTypeIsAmbient || ActiveTag == EProjectOrganoidSubLevelTag::None;
+		if (IsEffectivelyActive())
+		{
+			NotifyOccupantsEnter();
+		}
+		else
+		{
+			NotifyOccupantsExit();
+		}
 	}
-	else
-	{
-		bIsActive = (AssociatedSubLevelTag == ActiveTag) || bHazardTypeIsAmbient;
-	}
+
+	RefreshPresentation();
 }
 
 void AProjectOrganoidHazardZone::ClearHazardVolume()
 {
-	TArray<AActor*> Occupants = OccupyingActors.Array();
-	for (AActor* Actor : Occupants)
-	{
-		if (IsValid(Actor) && Actor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
-		{
-			IProjectOrganoidHazardInterface::Execute_OnExitedHazard(Actor, HazardType);
-		}
-	}
+	NotifyOccupantsExit();
 
 	bIsActive = false;
 	OccupyingActors.Reset();
@@ -95,6 +154,8 @@ void AProjectOrganoidHazardZone::ClearHazardVolume()
 		HazardVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		HazardVolume->SetHiddenInGame(true);
 	}
+
+	RefreshPresentation();
 }
 
 void AProjectOrganoidHazardZone::ApplyHazardDefaultsForType()
@@ -105,11 +166,13 @@ void AProjectOrganoidHazardZone::ApplyHazardDefaultsForType()
 		DamagePerSecond = 12.0f;
 		ToxicityPerSecond = 2.0f;
 		HeartRateSpikePerSecond = 6.0f;
+		bRequiresSectorOnline = true;
 		break;
 	case EProjectOrganoidHazardType::LiquidN2Frost:
 		DamagePerSecond = 15.0f;
 		ToxicityPerSecond = 0.0f;
 		HeartRateSpikePerSecond = 8.0f;
+		bIntensifyDuringBlackout = true;
 		break;
 	case EProjectOrganoidHazardType::ToxicGas:
 		DamagePerSecond = 4.0f;
@@ -125,6 +188,7 @@ void AProjectOrganoidHazardZone::ApplyHazardDefaultsForType()
 		DamagePerSecond = 18.0f;
 		ToxicityPerSecond = 0.0f;
 		HeartRateSpikePerSecond = 10.0f;
+		bRequiresSectorOnline = true;
 		break;
 	default:
 		break;
@@ -146,10 +210,12 @@ void AProjectOrganoidHazardZone::OnHazardBeginOverlap(
 
 	OccupyingActors.Add(OtherActor);
 
-	if (bIsActive)
+	if (IsEffectivelyActive())
 	{
-		IProjectOrganoidHazardInterface::Execute_OnEnteredHazard(OtherActor, HazardType, HazardIntensity);
+		IProjectOrganoidHazardInterface::Execute_OnEnteredHazard(OtherActor, HazardType, HazardIntensity * PowerDamageScale);
 	}
+
+	RefreshPresentation();
 }
 
 void AProjectOrganoidHazardZone::OnHazardEndOverlap(
@@ -169,13 +235,15 @@ void AProjectOrganoidHazardZone::OnHazardEndOverlap(
 	{
 		IProjectOrganoidHazardInterface::Execute_OnExitedHazard(OtherActor, HazardType);
 	}
+
+	RefreshPresentation();
 }
 
 void AProjectOrganoidHazardZone::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsActive || OccupyingActors.Num() == 0)
+	if (!IsEffectivelyActive() || OccupyingActors.Num() == 0)
 	{
 		return;
 	}
@@ -196,7 +264,7 @@ void AProjectOrganoidHazardZone::Tick(float DeltaSeconds)
 
 float AProjectOrganoidHazardZone::ComputeTickDamageAmount(float DeltaSeconds) const
 {
-	return DamagePerSecond * EnvironmentDamageMultiplier * HazardIntensity * DeltaSeconds;
+	return DamagePerSecond * EnvironmentDamageMultiplier * HazardIntensity * PowerDamageScale * DeltaSeconds;
 }
 
 void AProjectOrganoidHazardZone::ApplyHazardToActor(AActor* Actor, float DeltaSeconds)
@@ -212,5 +280,153 @@ void AProjectOrganoidHazardZone::ApplyHazardToActor(AActor* Actor, float DeltaSe
 	if (AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(Actor))
 	{
 		OnHazardApplied.Broadcast(Character, HazardType);
+	}
+}
+
+bool AProjectOrganoidHazardZone::IsEffectivelyActive() const
+{
+	return bIsActive && bPowerAllowsOperation;
+}
+
+void AProjectOrganoidHazardZone::HandleSectorPowerChanged(
+	EProjectOrganoidPowerSector Sector,
+	EProjectOrganoidPowerState NewState,
+	EProjectOrganoidPowerState PreviousState)
+{
+	if (Sector != EProjectOrganoidPowerSector::FacilityWide && Sector != PowerSector)
+	{
+		return;
+	}
+
+	(void)NewState;
+	(void)PreviousState;
+	RefreshPowerGating();
+}
+
+void AProjectOrganoidHazardZone::RefreshPowerGating()
+{
+	const bool bWasEffective = IsEffectivelyActive();
+	EProjectOrganoidPowerState State = EProjectOrganoidPowerState::Online;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			State = Power->GetSectorPowerState(PowerSector);
+			if (Power->GetSectorPowerState(EProjectOrganoidPowerSector::FacilityWide) == EProjectOrganoidPowerState::Blackout)
+			{
+				State = EProjectOrganoidPowerState::Blackout;
+			}
+		}
+	}
+
+	bPowerAllowsOperation = !bRequiresSectorOnline || State == EProjectOrganoidPowerState::Online;
+	PowerDamageScale = (bIntensifyDuringBlackout && State == EProjectOrganoidPowerState::Blackout)
+		? BlackoutIntensityScale
+		: 1.0f;
+
+	if (bWasEffective != IsEffectivelyActive())
+	{
+		if (IsEffectivelyActive())
+		{
+			NotifyOccupantsEnter();
+		}
+		else
+		{
+			NotifyOccupantsExit();
+		}
+	}
+
+	RefreshPresentation();
+}
+
+void AProjectOrganoidHazardZone::RefreshPresentation()
+{
+	const bool bShow = IsEffectivelyActive();
+	const FLinearColor Color = ColorForHazardType();
+
+	if (HazardBeacon)
+	{
+		HazardBeacon->SetVisibility(bShowHazardBeacon && bShow);
+		HazardBeacon->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(Color.R, Color.G, Color.B));
+	}
+
+	if (HazardLight)
+	{
+		HazardLight->SetLightColor(Color);
+		HazardLight->SetVisibility(bShow);
+		HazardLight->SetIntensity(bShow ? 900.0f : 0.0f);
+	}
+
+	if (HazardAudio)
+	{
+		if (USoundBase* Loop = HazardLoopSound.LoadSynchronous())
+		{
+			if (HazardAudio->GetSound() != Loop)
+			{
+				HazardAudio->SetSound(Loop);
+			}
+		}
+
+		HazardAudio->SetVolumeMultiplier(HazardLoopVolume);
+
+		// Local telegraph only. Playing whenever the volume is powered made
+		// SW_HazardHiss (dark ventilation bed, 2200uu falloff) audible
+		// across Public Admin as a recurring occupancy leak.
+		const bool bShouldPlayAudio = bShow && OccupyingActors.Num() > 0;
+		if (bShouldPlayAudio)
+		{
+			if (!HazardAudio->IsPlaying())
+			{
+				HazardAudio->Play();
+			}
+		}
+		else if (HazardAudio->IsPlaying())
+		{
+			HazardAudio->FadeOut(0.35f, 0.0f);
+		}
+	}
+}
+
+void AProjectOrganoidHazardZone::NotifyOccupantsEnter()
+{
+	TArray<AActor*> Occupants = OccupyingActors.Array();
+	for (AActor* Actor : Occupants)
+	{
+		if (IsValid(Actor) && Actor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
+		{
+			IProjectOrganoidHazardInterface::Execute_OnEnteredHazard(Actor, HazardType, HazardIntensity * PowerDamageScale);
+		}
+	}
+}
+
+void AProjectOrganoidHazardZone::NotifyOccupantsExit()
+{
+	TArray<AActor*> Occupants = OccupyingActors.Array();
+	for (AActor* Actor : Occupants)
+	{
+		if (IsValid(Actor) && Actor->GetClass()->ImplementsInterface(UProjectOrganoidHazardInterface::StaticClass()))
+		{
+			IProjectOrganoidHazardInterface::Execute_OnExitedHazard(Actor, HazardType);
+		}
+	}
+}
+
+FLinearColor AProjectOrganoidHazardZone::ColorForHazardType() const
+{
+	switch (HazardType)
+	{
+	case EProjectOrganoidHazardType::UVCRadiation:
+		return FLinearColor(0.55f, 0.15f, 1.0f);
+	case EProjectOrganoidHazardType::LiquidN2Frost:
+		return FLinearColor(0.35f, 0.85f, 1.0f);
+	case EProjectOrganoidHazardType::ToxicGas:
+		return FLinearColor(0.25f, 0.9f, 0.2f);
+	case EProjectOrganoidHazardType::Biohazard:
+		return FLinearColor(0.95f, 0.85f, 0.1f);
+	case EProjectOrganoidHazardType::ExtremeHeat:
+		return FLinearColor(1.0f, 0.28f, 0.05f);
+	default:
+		return FLinearColor(0.8f, 0.8f, 0.8f);
 	}
 }

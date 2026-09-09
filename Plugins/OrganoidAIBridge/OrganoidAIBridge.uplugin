@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 20,
+	"VersionName": "0.5.8",
+	"FriendlyName": "Organoid AI Bridge",
+	"Description": "Localhost-only Unreal Editor/PIE inspection bridge. Read-only by default. Mutations require a change_id plus dual approval. No Python eval. No shell.",
+	"Category": "Editor",
+	"CreatedBy": "Project Organoid",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EnabledByDefault": false,
+	"CanContainContent": false,
+	"IsBetaVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "OrganoidAIBridge",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		}
+	]
+}

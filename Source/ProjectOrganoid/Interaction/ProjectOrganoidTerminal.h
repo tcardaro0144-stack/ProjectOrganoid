@@ -48,6 +48,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Power")
 	bool bDisableDuringBlackout = true;
 
+	/** Successful hack pushes this sector to PowerStateOnSuccess */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Power")
+	bool bApplyPowerChangeOnSuccess = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Power", meta = (EditCondition = "bApplyPowerChangeOnSuccess"))
+	EProjectOrganoidPowerState PowerStateOnSuccess = EProjectOrganoidPowerState::Online;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Hacking")
 	FProjectOrganoidHackingSessionConfig HackingConfig;
 

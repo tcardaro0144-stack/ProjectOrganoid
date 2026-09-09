@@ -25,7 +25,15 @@
 #
 # Re-runnable: every generated actor is destroyed and rebuilt on each run.
 
+import importlib.util
+import os
+
 import unreal
+
+_audio_path = os.path.join(unreal.Paths.project_dir(), "Content/Python/build_epitope_audio.py")
+_audio_spec = importlib.util.spec_from_file_location("build_epitope_audio", _audio_path)
+build_epitope_audio = importlib.util.module_from_spec(_audio_spec)
+_audio_spec.loader.exec_module(build_epitope_audio)
 
 
 PARTITION_DIR = "/Game/Maps/Epitope"
@@ -37,6 +45,14 @@ ITEM_KEYCARD_PATH = "/Game/Data/Items/DA_Item_AdminKeycard"
 ITEM_SOT_PATH = "/Game/Data/Items/DA_Item_SOT"
 DIALOGUE_SURVIVOR_PATH = "/Game/Data/Dialogue/DA_Dialogue_IncineratorSurvivor"
 HOST_MESH_PATH = "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"
+WHITE_NOISE = "/Engine/EngineSounds/WhiteNoise.WhiteNoise"
+ROOM_TONE_PATH = "/Game/Audio/Ambient/SW_FacilityBed.SW_FacilityBed"
+HAZARD_LOOP_PATH = "/Game/Audio/Ambient/SW_HazardHiss.SW_HazardHiss"
+REVERB_BUNKER = "/Engine/EngineSounds/ReverbSettings/BunkerHall.BunkerHall"
+REVERB_HALL = "/Engine/EngineSounds/ReverbSettings/Hallway.Hallway"
+REVERB_ICE = "/Engine/EngineSounds/ReverbSettings/IceCanyon.IceCanyon"
+REVERB_SEWER = "/Engine/EngineSounds/ReverbSettings/SewerPipe.SewerPipe"
+REVERB_CAVE = "/Engine/EngineSounds/ReverbSettings/Cave.Cave"
 
 CUBE_MESH = "/Engine/BasicShapes/Cube.Cube"
 HOST_BASE_CLASS = "/Script/ProjectOrganoid.ProjectOrganoidHostBase"
@@ -204,7 +220,7 @@ def wall_along_x(y, x0, x1, z, name, openings=()):
         )
 
 
-def build_shell(index):
+def build_shell(index, sector):
     """Perimeter plus the interior walls that carve the six spaces."""
     z = floor_z(index)
     door_y = tower_door_y(index)
@@ -229,17 +245,16 @@ def build_shell(index):
     wall_along_y(-1000.0, 400.0, 2900.0, z, "Wall_Divider_North")
     wall_along_y(-1000.0, -2900.0, -400.0, z, "Wall_Divider_South")
 
-    # One light per room so PIE is readable without the spine key light.
+    # Sector lights die or dim with the power grid.
     for room_key in ROOMS:
-        location = spot(room_key, 0.5, 0.5, index, WALL_HEIGHT - 40.0)
-        light_class = getattr(unreal, "PointLight", None) or getattr(unreal, "PointLightActor", None)
-        light = actors().spawn_actor_from_class(light_class, location) if light_class else None
-        if light:
-            light.set_actor_label(f"Light_{room_key}")
-            component = light.get_component_by_class(unreal.LightComponent)
-            if component:
-                component.set_intensity(4500.0)
-                component.set_attenuation_radius(2200.0)
+        place_facility_light(
+            spot(room_key, 0.5, 0.5, index, WALL_HEIGHT - 40.0),
+            f"Light_{room_key}",
+            sector,
+            "Sector",
+        )
+
+    place_emergency_ring(index, sector)
 
 
 def spot(room_key, fx=0.5, fy=0.5, index=0, dz=0.0):
@@ -297,8 +312,21 @@ def place_data_pad(location, label, entry_id, title, body, author, objective_eve
     return pad
 
 
+def load_optional_asset(path):
+    if not path or path.startswith("/Engine/"):
+        return None
+    if not unreal.EditorAssetLibrary.does_asset_exist(path):
+        return None
+    try:
+        return unreal.EditorAssetLibrary.load_asset(path)
+    except Exception:
+        report(f"could not load {path}")
+        return None
+
+
 def place_hazard(location, label, hazard_type, extent, region_tag, dps=8.0,
-                 toxicity=5.0, intensity=1.0):
+                 toxicity=5.0, intensity=1.0, sector=None, requires_online=None,
+                 intensify_blackout=None):
     zone = spawn_organoid("ProjectOrganoidHazardZone", location, label)
     if not zone:
         return None
@@ -308,12 +336,23 @@ def place_hazard(location, label, hazard_type, extent, region_tag, dps=8.0,
     set_prop(zone, "DamagePerSecond", dps)
     set_prop(zone, "ToxicityPerSecond", toxicity)
     set_prop(zone, "HazardIntensity", intensity)
+    if sector:
+        set_enum(zone, "PowerSector", "ProjectOrganoidPowerSector", sector)
+    if requires_online is None:
+        requires_online = hazard_type in ("UVCRadiation", "ExtremeHeat")
+    if intensify_blackout is None:
+        intensify_blackout = hazard_type == "LiquidN2Frost"
+    set_prop(zone, "bRequiresSectorOnline", requires_online)
+    set_prop(zone, "bIntensifyDuringBlackout", intensify_blackout)
+    loop = load_optional_asset(HAZARD_LOOP_PATH) or load_optional_asset(WHITE_NOISE)
+    if loop:
+        set_prop(zone, "HazardLoopSound", loop)
     resize_box(zone, "HazardVolume", extent)
     return zone
 
 
 def place_ambience(location, label, zone_id, display, extent, priority=0,
-                   occlusion=1.0, room_tone_volume=0.35):
+                   occlusion=1.0, room_tone_volume=0.35, reverb_path=REVERB_BUNKER):
     zone = spawn_organoid("ProjectOrganoidAmbienceZone", location, label)
     if not zone:
         return None
@@ -323,8 +362,45 @@ def place_ambience(location, label, zone_id, display, extent, priority=0,
     set_prop(zone, "Priority", priority)
     set_prop(zone, "OcclusionStrengthBias", occlusion)
     set_prop(zone, "RoomToneVolume", room_tone_volume)
+    tone = load_optional_asset(ROOM_TONE_PATH) or load_optional_asset(WHITE_NOISE)
+    if tone:
+        set_prop(zone, "RoomToneSound", tone)
+    reverb = load_optional_asset(reverb_path)
+    if reverb:
+        set_prop(zone, "ZoneReverb", reverb)
     resize_box(zone, "ZoneVolume", extent)
     return zone
+
+
+def place_facility_light(location, label, sector, role="Sector"):
+    light = spawn_organoid("ProjectOrganoidFacilityLight", location, label)
+    if not light:
+        return None
+    set_enum(light, "PowerSector", "ProjectOrganoidPowerSector", sector)
+    set_enum(light, "LightRole", "ProjectOrganoidFacilityLightRole", role)
+    return light
+
+
+def place_emergency_ring(index, sector):
+    place_facility_light(spot("corridor", 0.25, 0.5, index, WALL_HEIGHT - 40.0),
+                         "EmergencyLight_CorridorWest", sector, "Emergency")
+    place_facility_light(spot("corridor", 0.75, 0.5, index, WALL_HEIGHT - 40.0),
+                         "EmergencyLight_CorridorEast", sector, "Emergency")
+    place_facility_light(spot("entry", 0.5, 0.18, index, WALL_HEIGHT - 40.0),
+                         "EmergencyLight_Entry", sector, "Emergency")
+
+
+def place_power_panel(location, label, sector, restored="Emergency", event_id=None,
+                      prompt="Engage Backup Power"):
+    panel = spawn_organoid("ProjectOrganoidPowerPanel", location, label)
+    if not panel:
+        return None
+    set_enum(panel, "PowerSector", "ProjectOrganoidPowerSector", sector)
+    set_enum(panel, "RestoredState", "ProjectOrganoidPowerState", restored)
+    set_prop(panel, "InteractionPrompt", to_text(prompt))
+    if event_id:
+        set_prop(panel, "SuccessObjectiveEventId", event_id)
+    return panel
 
 
 def place_checkpoint(location, label, checkpoint_id, display, on_overlap=True):
@@ -339,7 +415,8 @@ def place_checkpoint(location, label, checkpoint_id, display, on_overlap=True):
 
 
 def place_terminal(location, label, terminal_id, sector, mini_game="NodeMatch",
-                   blackout_disables=True, single_use=True, password=None):
+                   blackout_disables=True, single_use=True, password=None,
+                   power_on_success=None):
     terminal = spawn_organoid("ProjectOrganoidTerminal", location, label)
     if not terminal:
         return None
@@ -348,6 +425,9 @@ def place_terminal(location, label, terminal_id, sector, mini_game="NodeMatch",
     set_enum(terminal, "PowerSector", "ProjectOrganoidPowerSector", sector)
     set_prop(terminal, "bDisableDuringBlackout", blackout_disables)
     set_prop(terminal, "bSingleUse", single_use)
+    if power_on_success:
+        set_prop(terminal, "bApplyPowerChangeOnSuccess", True)
+        set_enum(terminal, "PowerStateOnSuccess", "ProjectOrganoidPowerState", power_on_success)
 
     try:
         config = unreal.ProjectOrganoidHackingSessionConfig()
@@ -462,11 +542,12 @@ def populate_admin(i):
     """Onboarding. Every verb taught with no lethal pressure and no hosts."""
     place_ambience(spot("corridor", 0.5, 0.5, i, 200.0), "Ambience_ReceptionAtrium",
                    "Admin_Atrium", "Reception Atrium",
-                   unreal.Vector(2000.0, 500.0, 300.0), priority=1, occlusion=0.6)
+                   unreal.Vector(2000.0, 500.0, 300.0), priority=1, occlusion=0.6,
+                   reverb_path=REVERB_BUNKER)
     place_ambience(spot("nw", 0.5, 0.5, i, 200.0), "Ambience_HepaPlenum",
                    "Admin_Plenum", "HEPA Plenum",
                    unreal.Vector(950.0, 1250.0, 300.0), priority=2, occlusion=1.6,
-                   room_tone_volume=0.12)
+                   room_tone_volume=0.12, reverb_path=REVERB_BUNKER)
 
     place_checkpoint(spot("corridor", 0.35, 0.5, i, 60.0), "Checkpoint_ReceptionAtrium",
                      "Checkpoint_Admin_Atrium", "Reception Atrium")
@@ -474,7 +555,7 @@ def populate_admin(i):
     # Decon corridor: first hazard, telegraphed and survivable.
     place_hazard(spot("ne", 0.5, 0.4, i, 200.0), "Hazard_DeconUVC", "UVCRadiation",
                  unreal.Vector(900.0, 700.0, 250.0), "SubLevel1_Admin",
-                 dps=6.0, toxicity=2.0)
+                 dps=6.0, toxicity=2.0, sector="Admin")
 
     # Tier 1 door out of the vestibule, opened by the keycard hidden in the plenum.
     door = spawn_organoid("ProjectOrganoidDoorLock",
@@ -524,13 +605,19 @@ def populate_neuro(i):
     """First combat region. Hosts, toxicity pressure, and weak-point targeting."""
     place_ambience(spot("corridor", 0.5, 0.5, i, 200.0), "Ambience_GowningCorridor",
                    "Neuro_Gowning", "Gowning Corridor",
-                   unreal.Vector(2000.0, 500.0, 300.0), priority=1)
+                   unreal.Vector(2000.0, 500.0, 300.0), priority=1,
+                   reverb_path=REVERB_HALL)
     place_checkpoint(spot("entry", 0.5, 0.5, i, 60.0), "Checkpoint_NeuroAirlock",
                      "Checkpoint_Neuro_Airlock", "Gowning Airlock")
 
     place_hazard(spot("sw", 0.5, 0.5, i, 200.0), "Hazard_ScrubberLeak", "ToxicGas",
                  unreal.Vector(900.0, 1250.0, 250.0), "SubLevel2_NeuroGenetics",
-                 dps=7.0, toxicity=11.0, intensity=1.2)
+                 dps=7.0, toxicity=11.0, intensity=1.2, sector="NeuroGenetics")
+
+    place_power_panel(spot("se", 0.25, 0.25, i, 100.0), "PowerPanel_NeuroBackup",
+                      "NeuroGenetics", restored="Online",
+                      event_id="Event_NeuroPowerRestored",
+                      prompt="Restore Lab Power")
 
     # Matrix hall carries the region's scan density.
     for n, fx in enumerate((0.25, 0.5, 0.75)):
@@ -588,13 +675,18 @@ def populate_cryo(i):
     place_ambience(spot("corridor", 0.5, 0.5, i, 200.0), "Ambience_CryoPitCatwalk",
                    "Cryo_Catwalk", "Catwalk Over Cryo Pit",
                    unreal.Vector(2000.0, 500.0, 300.0), priority=1,
-                   occlusion=1.8, room_tone_volume=0.18)
+                   occlusion=1.8, room_tone_volume=0.18, reverb_path=REVERB_ICE)
     place_checkpoint(spot("entry", 0.5, 0.5, i, 60.0), "Checkpoint_FreightAirlock",
                      "Checkpoint_Cryo_Airlock", "Freight Airlock")
 
     place_hazard(spot("nw", 0.5, 0.5, i, 200.0), "Hazard_LN2Rupture", "LiquidN2Frost",
                  unreal.Vector(950.0, 1250.0, 250.0), "SubLevel3_Cryo",
-                 dps=14.0, toxicity=0.0, intensity=1.3)
+                 dps=14.0, toxicity=0.0, intensity=1.3, sector="Cryo")
+
+    place_power_panel(spot("entry", 0.35, 0.35, i, 100.0), "PowerPanel_CryoBackup",
+                      "Cryo", restored="Emergency",
+                      event_id="Event_CryoBackupEngaged",
+                      prompt="Engage Cryo Backup")
 
     # Freezer aisles punish running blind through the fog.
     for n, fy in enumerate((0.3, 0.5, 0.7)):
@@ -608,7 +700,8 @@ def populate_cryo(i):
     # Manifest office stays dark until Cryo sector power is restored.
     place_terminal(spot("sw", 0.5, 0.5, i, 100.0), "Terminal_CryoManifest",
                    "Terminal_CryoManifest", "Cryo", mini_game="PasswordDecrypt",
-                   blackout_disables=True, password="LOTLIST")
+                   blackout_disables=True, password="LOTLIST",
+                   power_on_success="Online")
 
     place_scannable(
         spot("se", 0.5, 0.5, i, 120.0), "Scannable_ThawRestraints",
@@ -641,7 +734,8 @@ def populate_compute(i):
     """The puzzle region. Hacking and power routing carry the tension."""
     place_ambience(spot("corridor", 0.5, 0.5, i, 200.0), "Ambience_Crawlspace",
                    "Compute_Crawlspace", "Maintenance Crawlspace",
-                   unreal.Vector(2000.0, 500.0, 300.0), priority=1, occlusion=1.4)
+                   unreal.Vector(2000.0, 500.0, 300.0), priority=1, occlusion=1.4,
+                   reverb_path=REVERB_SEWER)
     place_checkpoint(spot("sw", 0.25, 0.5, i, 60.0), "Checkpoint_InterfaceChamber",
                      "Checkpoint_Compute_Interface", "Core Interface Chamber")
 
@@ -658,14 +752,19 @@ def populate_compute(i):
 
     # Terminal chain: each hack wakes more of the facility.
     for n, fy in enumerate((0.3, 0.5, 0.7)):
+        power_change = None
+        if n == 0:
+            power_change = "Emergency"
+        elif n == 2:
+            power_change = "Online"
         place_terminal(spot("sw", 0.6, fy, i, 100.0), f"Terminal_CoreInterface_{n + 1}",
                        f"Terminal_ComputeCore_{n + 1}", "Compute",
                        mini_game="NodeMatch" if n % 2 == 0 else "PasswordDecrypt",
-                       password="SUBSTRATE")
+                       password="SUBSTRATE", power_on_success=power_change)
 
     place_hazard(spot("nw", 0.5, 0.5, i, 200.0), "Hazard_CoolantLeak", "ToxicGas",
                  unreal.Vector(950.0, 1250.0, 250.0), "SubLevel4_Compute",
-                 dps=4.0, toxicity=7.0, intensity=0.8)
+                 dps=4.0, toxicity=7.0, intensity=0.8, sector="Compute")
 
     for n, fx in enumerate((0.3, 0.7)):
         place_scannable(
@@ -696,20 +795,22 @@ def populate_reactor(i):
     """Finale. Every system at maximum simultaneously."""
     place_ambience(spot("corridor", 0.5, 0.5, i, 200.0), "Ambience_CoolantBasin",
                    "Reactor_Basin", "Coolant Basin Rim",
-                   unreal.Vector(2000.0, 500.0, 300.0), priority=1, room_tone_volume=0.5)
+                   unreal.Vector(2000.0, 500.0, 300.0), priority=1, room_tone_volume=0.5,
+                   reverb_path=REVERB_CAVE)
     place_checkpoint(spot("corridor", 0.75, 0.5, i, 60.0), "Checkpoint_BasinRim",
                      "Checkpoint_Reactor_Basin", "Coolant Basin Rim")
 
     place_hazard(spot("ne", 0.5, 0.35, i, 200.0), "Hazard_IncubatorUVC", "UVCRadiation",
                  unreal.Vector(950.0, 900.0, 250.0), "SubLevel5_Reactor",
-                 dps=11.0, toxicity=4.0, intensity=1.2)
+                 dps=11.0, toxicity=4.0, intensity=1.2, sector="Reactor")
     place_hazard(spot("nw", 0.5, 0.5, i, 200.0), "Hazard_DecayGardens", "ToxicGas",
                  unreal.Vector(950.0, 1250.0, 250.0), "SubLevel5_Reactor",
-                 dps=9.0, toxicity=13.0, intensity=1.3)
+                 dps=9.0, toxicity=13.0, intensity=1.3, sector="Reactor")
 
     control = place_terminal(spot("sw", 0.5, 0.5, i, 100.0), "Terminal_ControlSpine",
                              "Terminal_ReactorControlSpine", "Reactor",
-                             mini_game="PasswordDecrypt", password="EPITAPH", single_use=False)
+                             mini_game="PasswordDecrypt", password="EPITAPH", single_use=False,
+                             power_on_success="Online")
     if control:
         set_prop(control, "SuccessObjectiveEventId", "Event_ReactorControlUsed")
 
@@ -759,6 +860,8 @@ def clear_generated(keep_labels=()):
         class_name = actor.get_class().get_name()
         is_generated = (
             isinstance(actor, unreal.StaticMeshActor)
+            or isinstance(actor, getattr(unreal, "PointLight", type(None)))
+            or isinstance(actor, getattr(unreal, "PointLightActor", type(None)))
             or "ProjectOrganoid" in class_name
             or "Host" in actor.get_actor_label()
         )
@@ -784,7 +887,7 @@ def build_region(region, index):
         f"{region['key']}_FloorPlate",
     )
 
-    build_shell(index)
+    build_shell(index, region["key"])
     region["populate"](index)
 
     levels().save_current_level()
@@ -843,6 +946,13 @@ def move_player_start():
 def build_epitope_rooms():
     report("=== Epitope room blockout ===")
     ensure_host_blueprint()
+
+    imported = build_epitope_audio.ensure_ambient_audio()
+    global ROOM_TONE_PATH, HAZARD_LOOP_PATH
+    if imported.get("SW_FacilityBed"):
+        ROOM_TONE_PATH = imported["SW_FacilityBed"]
+    if imported.get("SW_HazardHiss"):
+        HAZARD_LOOP_PATH = imported["SW_HazardHiss"]
 
     built = 0
     for index, region in enumerate(REGIONS):

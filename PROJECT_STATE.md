@@ -84,12 +84,12 @@ Per `PROJECT_ORGANOID_MASTER_AI_HANDOFF.md`, six creative decisions are required
 
 1. **Idle tableau vs. immediately aggressive** — **DECIDED: Idle tableau.** Host is visible/discoverable before combat triggers (proximity or gunfire), not hostile on sight. Rationale: matches canon's "show biological evidence before fully explaining it" and "transformed personnel should read as former Epitope people, not generic zombies" — the quiet-first beat is where that lands. Also matches "prefer fewer, more threatening, meaningfully placed threats over horde density."
 2. **Before or after Block 3 ammo pickup** — **DECIDED: Before, for all difficulties.** Player sees the idle Host before picking up Block 3 ammo, on Story/Easy/Normal/Hard/Nightmare alike. (Tom initially proposed splitting this by difficulty — Story/Easy sees it *after* ammo, higher difficulties *before* — but on reflection chose to keep the encounter's narrative sequencing consistent across all difficulties, matching the existing canon philosophy that "major authored appearances should stay broadly consistent across difficulties so narrative pacing holds" [written about the first pursuer specifically, but the underlying principle applies here too]. Difficulty should continue to only affect tunables — health, melee damage, aggression, stagger recovery, resource generosity — not which story beat comes first. This was a deliberate, considered choice, not an oversight — worth remembering if a future session revisits it.)
-3. **Exact spawn transform** — NOT YET DECIDED. Next up. Now that #1 and #2 are locked (idle, pre-ammo), needs a real Admin-map coordinate; handoff flags the current staging coordinate as "too tight."
-4. **Whether a new objective appears** — NOT YET DECIDED. Depends on #1/#3.
-5. **Host display name / log line** — NOT YET DECIDED. Idle tableau opens the door to something more specific/personal than a generic security-employee label.
-6. **Unique visual beyond blockout mesh** — NOT YET DECIDED. Lowest priority; requires separate creative approval per handoff; fine to defer.
+3. **Exact spawn transform** — **DECIDED: location `(2820, -600, 100)`, rotation `(0, 135, 0)`, scale `(1, 1, 1)`.** Direct read-only Admin survey on 2026-09-09 confirmed the original staging point `(2680, -470, 100)` was too crowded. Candidate `(2780, -520, 100)` overlapped the Security terminal, Research Wing keycard, and Trauma Stabilizer interaction volumes. Candidate `(2680, -620, 100)` was blocking-clear but still overlapped the keycard interaction sphere. The locked point overlaps only `Admin_FloorPlate` (expected floor contact), avoids all competing interaction volumes, and remains visually associated with the Security chair/workstation. Yaw 135 faces the idle Host back toward the chair/terminal tableau.
+4. **Whether a new objective appears** — **DECIDED: no new objective.** The encounter remains an emergent continuation after Security Status. This preserves the idle reveal, avoids prematurely announcing combat, and does not imply that killing is the only valid response.
+5. **Host display name / log line** — **DECIDED: player-facing identity `Epitope Security Officer`; technical actor label `Host_Admin_SecurityOfficer`; no explanatory lore log in Block 4.** This identifies the former employee role without inventing a biography, exposing `HostBase` as player-facing taxonomy, or prematurely explaining the transformation.
+6. **Unique visual beyond blockout mesh** — **DECIDED: defer unique visual art for the functional Block 4 implementation.** Use the existing HostBase blockout for implementation and gameplay verification, but record a required later visual pass so blockout art cannot silently become final. No badge/material/equipment cue is authorized in this scope without a later asset survey and creative approval.
 
-**Once all six are decided**, this becomes a concrete, Tom-approved implementation scope for Block 4 — the actual next thing to hand to the harness/Qwen for building, per the handoff's "Qwen proposes → Tom approves → Qwen implements → Playtest Bot verifies" process. Do not implement any part of Block 4 before all six are locked and Tom has explicitly signed off on the full scope.
+**All six dependency-ordered creative decisions are now locked.** **FULL SCOPE APPROVED BY TOM on 2026-09-09.** Use the direct bridge workflow (not the unverified Ollama harness): establish a filtered pre-Block-4 Git baseline → inspect existing Host activation code → implement → compile as required → dual-approved Admin mutation → Playtest Bot verification → targeted Admin save → update this document.
 
 ---
 
@@ -187,6 +187,35 @@ A replacement read-only acceptance build of `Tools\harness_automation.py` was cr
 - No Unreal asset or map mutation was authorized or performed during harness acceptance.
 - Stop further harness/model tuning for the current milestone. Resume game development through the direct bridge workflow.
 
+### Git checkpoint
+
+- Commit `609ba5c` on local `main`: `Checkpoint read-only harness and consolidated project state`.
+- The commit contains exactly `PROJECT_STATE.md`, `Tools/Modelfile`, and `Tools/harness_automation.py`.
+- Post-commit targeted status for those three paths was clean.
+- The infrastructure/harness phase is closed for the current milestone. Future current-state updates continue in this root `PROJECT_STATE.md`; do not create separate Gemini/V3 state handoffs.
+
 ### Git safety discovery
 
-`git status --short` revealed a heavily dirty working tree containing extensive historical modified and untracked game code, maps, assets, plugin files, tests, scripts, and duplicate handoff copies. These changes predate or extend far beyond the harness acceptance task and must be preserved. **Do not run `git add .`, broad cleanup, reset, checkout, clean, or a blanket commit.** Any infrastructure checkpoint must stage only explicitly reviewed files.
+`git status --short` revealed a heavily dirty working tree containing extensive historical modified and untracked game code, maps, assets, plugin files, tests, scripts, and duplicate handoff copies. These changes predate or extend far beyond the harness acceptance task and must be preserved. **Do not run `git add .`, broad cleanup, reset, checkout, clean, or a blanket commit.** Any checkpoint must stage only explicitly reviewed files.
+
+---
+
+## Opening Block 4 — Full Scope Approval Record (2026-09-09)
+
+**Status: APPROVED / LOCKED by Tom.** Tom explicitly stated: **“I approve the recommended Block 4 scope.”**
+
+Approved implementation guardrails, in addition to the six locked creative decisions above:
+
+- Exactly one existing `AProjectOrganoidHostBase` with the existing Host AI controller; not a boss, pursuer, horde, or new taxonomy.
+- Technical actor label `Host_Admin_SecurityOfficer`; player-facing identity `Epitope Security Officer` only where existing contextual UI/inspection systems naturally require a name. No always-visible nameplate and no explanatory lore log.
+- Initial location `(2820, -600, 100)`, rotation `(0, 135, 0)`, scale `(1, 1, 1)`.
+- Host remains Idle for the first visible tableau and while the player collects ammunition at a safe distance. Aiming alone must not activate it. Activation comes from gunfire/noise or a deliberate close approach. Exact proximity behavior must be derived from existing Host code and verified in PIE rather than invented blindly.
+- Baseline test tunables: Health `100`, melee damage `15`, no rage, no bio-shield. These are **PROVISIONAL PLAYTEST TUNABLES**, not permanent canon.
+- No new objective, cinematic, biological-targeting tutorial, science explanation, Research Station beat, Neuro unlock, or pursuer behavior.
+- Existing checkpoint/death behavior, keycard, pistol ammunition, and Trauma Stabilizer remain unchanged.
+- Existing HostBase blockout art is acceptable for mechanical implementation and verification only. Block 4 must remain **PRESENTATION INCOMPLETE** until a later approved visual pass makes the former security-employee identity legible. No improvised visual/lore asset is authorized in this scope.
+- Add a fail-closed Admin-specific spawn action if the generic action cannot enforce exact class, level, unique label, transform, properties, and preflight.
+- Add `OpeningBlock4_Functional`; update prior zero-Host assertions only to the new authorized exactly-one-host world state, without weakening unrelated protections.
+- Compile with Unreal closed if C++ changes are required; use direct bridge dual approval for mutation; run targeted Block 4 and opening regressions; save Admin only after verification; never save Neuro Recast dirt.
+- Before any Block 4 source or asset change, create a carefully filtered pre-Block-4 Git baseline of the accumulated existing implementation so rollback and new-diff isolation are possible.
+

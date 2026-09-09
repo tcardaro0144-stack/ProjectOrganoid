@@ -38,6 +38,18 @@ void AProjectOrganoidItemPickup::RefreshPrompt()
 
 bool AProjectOrganoidItemPickup::CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const
 {
+	// Temporary opening-progression infrastructure. Not final architecture.
+	// Discriminator matches the authored Research Wing card only:
+	// KeyItem + Level2_Lab + no generic keycard objective broadcast.
+	// Later opening/campaign progression must replace this with an explicit unlock.
+	if (ItemData
+		&& ItemData->ItemType == EProjectOrganoidItemType::KeyItem
+		&& ItemData->SecurityTier == EProjectOrganoidSecurityTier::Level2_Lab
+		&& !ItemData->bBroadcastGenericKeycardObjectiveEvent)
+	{
+		return false;
+	}
+
 	return Super::CanInteract_Implementation(Interactor) && ItemData != nullptr && Quantity > 0;
 }
 
@@ -93,7 +105,9 @@ void AProjectOrganoidItemPickup::NotifyPickupEvents()
 	}
 
 	Objectives->TriggerEvent(TEXT("Event_ItemPickedUp"));
-	if (ItemData && ItemData->ItemType == EProjectOrganoidItemType::KeyItem)
+	if (ItemData
+		&& ItemData->ItemType == EProjectOrganoidItemType::KeyItem
+		&& ItemData->bBroadcastGenericKeycardObjectiveEvent)
 	{
 		Objectives->TriggerEvent(TEXT("Event_KeycardPickedUp"));
 	}

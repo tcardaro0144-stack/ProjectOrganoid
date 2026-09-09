@@ -8,12 +8,15 @@
 #include "ProjectOrganoidWeaponTypes.h"
 #include "Engine/TimerHandle.h"
 #include "ProjectOrganoidPerceptionTypes.h"
+#include "ProjectOrganoidHostCombatTypes.h"
 #include "ProjectOrganoidHostBase.generated.h"
 
 class USphereComponent;
 class UProjectOrganoidPerceptionComponent;
 class UProjectOrganoidHitReactionComponent;
 class AActor;
+class AProjectOrganoidCharacter;
+class AProjectOrganoidHostAIController;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHostDamaged, const FProjectOrganoidBallisticHit&, HitInfo, AActor*, DamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidHostStateChanged, FName, StateName);
@@ -25,7 +28,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidHostNoiseHeard, A
  *  and AI sight + hearing for footstep / gunfire noise.
  */
 UCLASS(Abstract, Blueprintable)
-class AProjectOrganoidHostBase : public ACharacter, public IProjectOrganoidDamageable
+class PROJECTORGANOID_API AProjectOrganoidHostBase : public ACharacter, public IProjectOrganoidDamageable
 {
 	GENERATED_BODY()
 
@@ -34,6 +37,7 @@ public:
 	AProjectOrganoidHostBase();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// -------------------------------------------------------------------------
@@ -165,6 +169,65 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Host|AI")
 	bool HasSightOnPlayer() const;
 
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	AActor* GetCurrentSightTarget() const;
+
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	FVector GetLastKnownPlayerLocation() const { return LastKnownPlayerLocation; }
+
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	bool HasLastKnownPlayerLocation() const { return bHasLastKnownPlayerLocation; }
+
+	void RememberPerceivedPlayerLocation(const FVector& WorldLocation);
+	void BroadcastCombatState(EProjectOrganoidHostCombatState NewState);
+	void BindHostPerceptionToController();
+
+	UFUNCTION(BlueprintPure, Category = "Host|AI")
+	EProjectOrganoidHostCombatState GetCombatState() const;
+
+	UFUNCTION(BlueprintPure, Category = "Host|Combat")
+	bool CanAttemptMelee() const;
+
+	UFUNCTION(BlueprintPure, Category = "Host|Combat")
+	bool IsTargetInMeleeRange(const AActor* Target, float ExtraRange = 0.0f) const;
+
+	UFUNCTION(BlueprintPure, Category = "Host|Combat")
+	bool HasValidMeleeLineOfSight(const AActor* Target) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Host|Combat")
+	bool TryBeginMeleeAttack(AProjectOrganoidCharacter* Target);
+
+	UFUNCTION(BlueprintCallable, Category = "Host|Combat")
+	void CancelMeleeAttack();
+
+	UFUNCTION(BlueprintPure, Category = "Host|Combat")
+	bool IsMeleeWindupActive() const { return bMeleeWindupActive; }
+
+	UFUNCTION(BlueprintPure, Category = "Host|Combat")
+	bool DidLastMeleeCommitDamage() const { return bLastMeleeCommitDealtDamage; }
+
+	// -------------------------------------------------------------------------
+	// Melee (provisional, designer-tunable)
+	// -------------------------------------------------------------------------
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Combat", meta = (ClampMin = "50.0"))
+	float MeleeAttackRange = 200.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Combat", meta = (ClampMin = "1.0"))
+	float MeleeCommitRangeSlack = 1.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Combat", meta = (ClampMin = "0.05"))
+	float MeleeWindupSeconds = 0.50f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Combat", meta = (ClampMin = "0.1"))
+	float MeleeCooldownSeconds = 1.60f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Combat", meta = (ClampMin = "1.0"))
+	float MeleeDamage = 15.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Combat", meta = (ClampMin = "10.0"))
+	float MeleeSweepRadius = 48.0f;
+
 	// -------------------------------------------------------------------------
 	// Events
 	// -------------------------------------------------------------------------
@@ -187,6 +250,10 @@ public:
 
 	virtual EProjectOrganoidWeakPointType ResolveWeakPoint_Implementation(const FHitResult& Hit) const override;
 	virtual void ApplyOrganoidHit_Implementation(const FProjectOrganoidBallisticHit& HitInfo, AActor* DamageCauser) override;
+
+	/** Direct hit application for automation. Same path as IProjectOrganoidDamageable. */
+	UFUNCTION(BlueprintCallable, Category = "Host|Combat")
+	void ApplyResolvedOrganoidHit(const FProjectOrganoidBallisticHit& HitInfo, AActor* DamageCauser);
 
 	UFUNCTION(BlueprintPure, Category = "Host|Vitals")
 	float GetHealthPercent() const { return MaxHealth > 0.0f ? Health / MaxHealth : 0.0f; }
@@ -213,14 +280,45 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Host|Mutation")
 	bool IsEnraged() const { return bIsEnraged; }
 
+	/**
+	 *  Temporary locomotor reduction for Biological Adaptations (Neural Slow).
+	 *  Does not stagger, strip bio-shield, destroy weak points, or change AI.
+	 *  Duration is wall-clock. SpeedMultiplier 0.6 = 40% reduction.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Host|Biological")
+	bool ApplyBiologicalLocomotorSlow(float SpeedMultiplier, float DurationSeconds);
+
+	UFUNCTION(BlueprintPure, Category = "Host|Biological")
+	bool IsBiologicalLocomotorSlowActive() const { return bBiologicalLocomotorSlowActive; }
+
+	UFUNCTION(BlueprintPure, Category = "Host|Biological")
+	float GetBiologicalLocomotorSlowMultiplier() const { return BiologicalLocomotorSlowMultiplier; }
+
 protected:
 
 	float CachedWalkSpeed = 350.0f;
 
 	FTimerHandle LocomotorSlowTimer;
 	FTimerHandle OpticalBlindTimer;
+	bool bBiologicalLocomotorSlowActive = false;
+	float BiologicalLocomotorSlowMultiplier = 1.0f;
+	double BiologicalLocomotorSlowExpireRealTime = 0.0;
 	FTimerHandle StaggerTimer;
 	FTimerHandle BioShieldTimer;
+	FTimerHandle MeleeWindupTimer;
+	FTimerHandle MeleeCooldownTimer;
+
+	FVector LastKnownPlayerLocation = FVector::ZeroVector;
+	bool bHasLastKnownPlayerLocation = false;
+	bool bMeleeWindupActive = false;
+	bool bMeleeOnCooldown = false;
+	bool bLastMeleeCommitDealtDamage = false;
+	TWeakObjectPtr<AProjectOrganoidCharacter> MeleeTarget;
+
+	void EnsureHostAIController();
+	void NotifyAIPreempt();
+	void CommitMeleeAttack();
+	AProjectOrganoidCharacter* ResolveMeleeSweepTarget() const;
 
 	void ConfigureWeakPointHitbox(USphereComponent* Hitbox, FName Tag, float Radius, FVector RelativeLocation);
 	void SyncHostPerception();
@@ -234,6 +332,7 @@ protected:
 	void SetDismembered(bool bNewDismembered);
 	void SetIncapacitated(bool bNewIncapacitated);
 	void RestoreLocomotorSpeed();
+	void ClearBiologicalLocomotorSlow();
 	void RestoreOpticalSight();
 	void ClearStagger();
 	void ExpireBioShield();

@@ -11,6 +11,7 @@ class USkeletalMeshComponent;
 class AProjectOrganoidProjectile;
 class AProjectOrganoidCharacter;
 class UProjectOrganoidWeaponModComponent;
+class UProjectOrganoidInventoryComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeaponFired, const FProjectOrganoidBallisticHit&, PrimaryHit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeakPointReaction, const FProjectOrganoidBallisticHit&, HitInfo);
@@ -20,7 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeakPointReaction,
  *  with PE Tactical weak-point multipliers and reaction triggers.
  */
 UCLASS(Abstract, Blueprintable)
-class AProjectOrganoidWeapon : public AActor
+class PROJECTORGANOID_API AProjectOrganoidWeapon : public AActor
 {
 	GENERATED_BODY()
 
@@ -29,6 +30,7 @@ public:
 	AProjectOrganoidWeapon();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Visual mesh (optional — assign in Blueprint) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -50,9 +52,27 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Ballistics", meta = (ClampMin = "0"))
 	int32 MaxPenetrations = 0;
 
-	/** Ammo family required to fire */
+	/** Ammo family required to fire / reload from inventory reserve */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Ballistics")
 	EProjectOrganoidAmmoType AmmoType = EProjectOrganoidAmmoType::Pistol;
+
+	/**
+	 *  Loaded magazine capacity. PROVISIONAL DESIGN TUNING on the default pistol (12).
+	 *  Loaded rounds are instance state, never inventory cells.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Ammo", meta = (ClampMin = "1"))
+	int32 MagazineCapacity = 12;
+
+	/** Rounds currently in the magazine. Spawn initializes to MagazineCapacity. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Ammo")
+	int32 CurrentMagazine = 12;
+
+	/**
+	 *  Real-time seconds to complete a reload. Not dilated by Tactical Mode.
+	 *  PROVISIONAL DESIGN TUNING on the default pistol (1.6).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Ammo", meta = (ClampMin = "0.05"))
+	float ReloadDurationSeconds = 1.6f;
 
 	/** Shots per second */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Ballistics", meta = (ClampMin = "0.1"))
@@ -115,9 +135,53 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|AI", meta = (ClampMin = "100.0"))
 	float GunfireNoiseMaxRange = 3500.0f;
 
-	/** Attempt to fire; respects fire-rate cooldown */
+	/** Attempt to fire; respects fire-rate, magazine, and reload lock */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool Fire();
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetCurrentMagazine() const { return CurrentMagazine; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetMagazineCapacity() const { return MagazineCapacity; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetMagazineDeficit() const { return FMath::Max(0, MagazineCapacity - CurrentMagazine); }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	bool IsReloading() const { return bIsReloading; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	float GetLastFireTimeSeconds() const { return LastFireTimeSeconds; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetGunfireReportCount() const { return GunfireReportCount; }
+
+	/** Clamp-set loaded count. Does not touch inventory reserve. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	void SetCurrentMagazine(int32 NewCount);
+
+	/** Snapshot this instance's loaded magazine for holster / save (not reserve). */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo|Save")
+	FProjectOrganoidWeaponMagazineState CaptureMagazineState() const;
+
+	/** Apply a snapshot to this live instance after it exists. Ignores reserve. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo|Save")
+	void ApplyMagazineState(const FProjectOrganoidWeaponMagazineState& State);
+
+	/**
+	 *  Start reload if magazine is not full and matching reserve exists.
+	 *  Transfer happens once on completion: min(deficit, matching reserve).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	bool RequestReload();
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	bool CanReload() const;
+
+	/** Abort an in-progress reload without transferring reserve. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	void CancelReload();
 
 	/** Secondary overcharged pulse — strip bio-shields + clear toxic hazard volumes */
 	UFUNCTION(BlueprintCallable, Category = "Weapon|AltFire")
@@ -169,6 +233,10 @@ protected:
 	float LastFireTimeSeconds = -BIG_NUMBER;
 	float LastPulseFireTimeSeconds = -BIG_NUMBER;
 
+	bool bIsReloading = false;
+	double ReloadFinishRealTimeSeconds = 0.0;
+	mutable int32 GunfireReportCount = 0;
+
 	bool FireHitscan();
 	bool FireProjectile();
 	void ReportGunfireNoise() const;
@@ -177,4 +245,6 @@ protected:
 	void GetMuzzleTransform(FTransform& OutTransform) const;
 	void GetAimVectors(FVector& OutStart, FVector& OutDirection) const;
 	bool IsOwnerInTacticalMode() const;
+	UProjectOrganoidInventoryComponent* GetOwnerInventory() const;
+	void FinishReload();
 };

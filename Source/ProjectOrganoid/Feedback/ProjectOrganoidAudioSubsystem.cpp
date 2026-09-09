@@ -337,6 +337,12 @@ void UProjectOrganoidAudioSubsystem::ReportSpatialNoise(
 	}
 
 	UAISense_Hearing::ReportNoiseEvent(World, Location, Loudness, NoiseInstigator, MaxRange, NoiseTag);
+	UE_LOG(LogTemp, Warning, TEXT("OrganoidSpatialNoise t=%.3f tag=%s loc=(%.0f,%.0f) instigator=%s"),
+		World->GetTimeSeconds(),
+		*NoiseTag.ToString(),
+		Location.X,
+		Location.Y,
+		NoiseInstigator ? *NoiseInstigator->GetActorNameOrLabel() : TEXT("none"));
 }
 
 void UProjectOrganoidAudioSubsystem::SetToxicGasDistortion(float Intensity)

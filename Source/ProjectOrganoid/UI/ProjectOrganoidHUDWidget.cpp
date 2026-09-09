@@ -5,12 +5,106 @@
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidPhotoScanComponent.h"
 #include "ProjectOrganoidGameplayHUDController.h"
+#include "ProjectOrganoidInventoryComponent.h"
+#include "ProjectOrganoidItemData.h"
+#include "ProjectOrganoidWeapon.h"
+#include "ProjectOrganoidWeaponComponent.h"
+#include "ProjectOrganoidBiologicalAdaptationComponent.h"
+#include "ProjectOrganoidBiologicalAdaptationTypes.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
 void UProjectOrganoidHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	EnsureMinimalResourcePresentation();
 	BindToObjectiveSubsystem();
+}
+
+void UProjectOrganoidHUDWidget::EnsureMinimalResourcePresentation()
+{
+	if (!WidgetTree)
+	{
+		return;
+	}
+
+	UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(GetRootWidget());
+	if (!RootCanvas)
+	{
+		RootCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootCanvas"));
+		WidgetTree->RootWidget = RootCanvas;
+	}
+
+	if (!AmmoReadoutText)
+	{
+		AmmoReadoutText = WidgetTree->FindWidget<UTextBlock>(TEXT("AmmoReadoutText"));
+	}
+	if (!AmmoReadoutText)
+	{
+		AmmoReadoutText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("AmmoReadoutText"));
+		if (UCanvasPanelSlot* AmmoSlot = RootCanvas->AddChildToCanvas(AmmoReadoutText))
+		{
+			AmmoSlot->SetAnchors(FAnchors(1.0f, 1.0f, 1.0f, 1.0f));
+			AmmoSlot->SetAlignment(FVector2D(1.0f, 1.0f));
+			AmmoSlot->SetAutoSize(true);
+			AmmoSlot->SetOffsets(FMargin(0.0f, 0.0f, 36.0f, 28.0f));
+			AmmoSlot->SetZOrder(20);
+		}
+		AmmoReadoutText->SetColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.9f, 0.95f, 0.95f)));
+	}
+
+	if (!ResourceNotificationText)
+	{
+		ResourceNotificationText = WidgetTree->FindWidget<UTextBlock>(TEXT("ResourceNotificationText"));
+	}
+	if (!ResourceNotificationText)
+	{
+		ResourceNotificationText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ResourceNotificationText"));
+		if (UCanvasPanelSlot* NotifySlot = RootCanvas->AddChildToCanvas(ResourceNotificationText))
+		{
+			NotifySlot->SetAnchors(FAnchors(0.5f, 0.0f, 0.5f, 0.0f));
+			NotifySlot->SetAlignment(FVector2D(0.5f, 0.0f));
+			NotifySlot->SetAutoSize(true);
+			NotifySlot->SetOffsets(FMargin(0.0f, 72.0f, 0.0f, 0.0f));
+			NotifySlot->SetZOrder(21);
+		}
+		ResourceNotificationText->SetColorAndOpacity(FSlateColor(FLinearColor(0.92f, 0.94f, 0.88f, 0.95f)));
+		ResourceNotificationText->SetJustification(ETextJustify::Center);
+		ResourceNotificationText->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UProjectOrganoidHUDWidget::NotifyResourceAcquired(UProjectOrganoidItemData* ItemData, int32 Quantity)
+{
+	if (!ItemData || Quantity <= 0)
+	{
+		return;
+	}
+
+	if (BoundCharacter)
+	{
+		LastResourceNotification = FText::FromString(BoundCharacter->GetLastResourceFeedback());
+	}
+
+	if (LastResourceNotification.IsEmpty())
+	{
+		FString Name = ItemData->ItemName.ToString();
+		if (Name.IsEmpty())
+		{
+			Name = ItemData->GetName();
+		}
+		LastResourceNotification = FText::FromString(FString::Printf(TEXT("%s acquired."), *Name));
+	}
+
+	if (ResourceNotificationText)
+	{
+		ResourceNotificationText->SetText(LastResourceNotification);
+		ResourceNotificationText->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	ResourceNotificationSecondsRemaining = 4.0f;
 }
 
 void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCharacter)
@@ -30,6 +124,7 @@ void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCha
 
 	BoundCharacter->OnTacticalModeChanged.AddDynamic(this, &UProjectOrganoidHUDWidget::HandleTacticalModeChanged);
 	UpdateVitalsFromCharacter();
+	UpdateAmmoFromCharacter();
 	BindToObjectiveSubsystem();
 	BindPhotoScanEvents();
 
@@ -124,6 +219,61 @@ void UProjectOrganoidHUDWidget::UpdateVitalsFromCharacter()
 	SetToxicityPercent(BoundCharacter->GetToxicity());
 	SetHealth(BoundCharacter->GetHealth());
 	SetPEEnergy(BoundCharacter->GetPEEnergy(), BoundCharacter->GetMaxPEEnergy());
+	UpdateAdaptationFromCharacter();
+}
+
+void UProjectOrganoidHUDWidget::UpdateAdaptationFromCharacter()
+{
+	if (!BoundCharacter)
+	{
+		SetEquippedAdaptation(FText::FromString(TEXT("None")), 0.0f, 0.0f, 0.0f, false, TEXT("Unequipped"));
+		return;
+	}
+
+	UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = BoundCharacter->GetBiologicalAdaptationComponent();
+	UProjectOrganoidBiologicalAdaptationData* Equipped = AdaptComp ? AdaptComp->GetEquippedAdaptation() : nullptr;
+	if (!Equipped)
+	{
+		SetEquippedAdaptation(FText::FromString(TEXT("None")), 0.0f, 0.0f, 0.0f, false, TEXT("Unequipped"));
+		return;
+	}
+
+	const FName Unavailable = AdaptComp->GetUnavailableReason();
+	SetEquippedAdaptation(
+		Equipped->DisplayName,
+		Equipped->PECost,
+		AdaptComp->GetCooldownRemaining(),
+		AdaptComp->GetCooldownDuration(),
+		Unavailable.IsNone(),
+		Unavailable);
+}
+
+void UProjectOrganoidHUDWidget::UpdateAmmoFromCharacter()
+{
+	if (!BoundCharacter)
+	{
+		SetWeaponAmmo(0, 0, 0);
+		return;
+	}
+
+	AProjectOrganoidWeapon* Weapon = BoundCharacter->GetWeaponComponent()
+		? BoundCharacter->GetWeaponComponent()->GetEquippedWeapon()
+		: nullptr;
+	UProjectOrganoidInventoryComponent* Inventory = BoundCharacter->GetInventoryComponent();
+
+	const int32 Current = Weapon ? Weapon->GetCurrentMagazine() : 0;
+	const int32 Capacity = Weapon ? Weapon->GetMagazineCapacity() : 0;
+	const int32 Reserve = (Weapon && Inventory)
+		? Inventory->CountAmmoOfType(Weapon->AmmoType)
+		: 0;
+	SetWeaponAmmo(Current, Reserve, Capacity);
+
+	LastAmmoText = FText::FromString(FString::Printf(TEXT("%d  |  Reserve %d"), Current, Reserve));
+	if (AmmoReadoutText)
+	{
+		AmmoReadoutText->SetText(LastAmmoText);
+		AmmoReadoutText->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
 }
 
 void UProjectOrganoidHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -133,6 +283,16 @@ void UProjectOrganoidHUDWidget::NativeTick(const FGeometry& MyGeometry, float In
 	if (BoundCharacter)
 	{
 		UpdateVitalsFromCharacter();
+		UpdateAmmoFromCharacter();
+	}
+
+	if (ResourceNotificationSecondsRemaining > 0.0f)
+	{
+		ResourceNotificationSecondsRemaining = FMath::Max(0.0f, ResourceNotificationSecondsRemaining - InDeltaTime);
+		if (ResourceNotificationSecondsRemaining <= 0.0f && ResourceNotificationText)
+		{
+			ResourceNotificationText->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 }
 

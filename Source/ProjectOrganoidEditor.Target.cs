@@ -11,5 +11,6 @@ public class ProjectOrganoidEditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
 		ExtraModuleNames.Add("ProjectOrganoid");
+		ExtraModuleNames.Add("ProjectOrganoidPlaytest");
 	}
 }

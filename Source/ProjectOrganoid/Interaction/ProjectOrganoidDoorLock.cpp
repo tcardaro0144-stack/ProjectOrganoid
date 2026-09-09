@@ -19,9 +19,19 @@ AProjectOrganoidDoorLock::AProjectOrganoidDoorLock()
 	DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
+void AProjectOrganoidDoorLock::CaptureAuthoredInteractableIfNeeded()
+{
+	if (!bHasCapturedAuthoredInteractable)
+	{
+		bAuthoredInteractable = bIsInteractable;
+		bHasCapturedAuthoredInteractable = true;
+	}
+}
+
 void AProjectOrganoidDoorLock::BeginPlay()
 {
 	Super::BeginPlay();
+	CaptureAuthoredInteractableIfNeeded();
 
 	if (UWorld* World = GetWorld())
 	{
@@ -123,9 +133,12 @@ void AProjectOrganoidDoorLock::SetOpen(bool bNewOpen)
 
 void AProjectOrganoidDoorLock::HandlePowerStateChanged(EProjectOrganoidPowerState NewState, EProjectOrganoidPowerState PreviousState)
 {
+	CaptureAuthoredInteractableIfNeeded();
+
 	if (bDisableInteractDuringBlackout)
 	{
-		bIsInteractable = NewState != EProjectOrganoidPowerState::Blackout;
+		const bool bPowerAllowsInteract = NewState != EProjectOrganoidPowerState::Blackout;
+		bIsInteractable = bAuthoredInteractable && bPowerAllowsInteract;
 	}
 
 	BP_OnPowerStateChanged(NewState);

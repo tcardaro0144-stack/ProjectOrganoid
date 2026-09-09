@@ -4,7 +4,9 @@
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidSettingsSubsystem.h"
 #include "ProjectOrganoidFlowManagerSubsystem.h"
+#include "ProjectOrganoidPlayerController.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -13,59 +15,21 @@
 #include "Components/SizeBox.h"
 #include "Components/Slider.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "Engine/Texture2D.h"
+#include "ImageUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Misc/PackageName.h"
+#include "Misc/Paths.h"
+#include "Styling/CoreStyle.h"
+#include "Styling/SlateTypes.h"
 
 namespace ProjectOrganoidMenuUI
 {
-	static constexpr float MenuButtonWidth = 300.0f;
-	static constexpr float MenuButtonHeight = 80.0f;
-	static const FName NewGameButtonName(TEXT("NewGameButton"));
-	static const FName RuntimeBackdropName(TEXT("RuntimeMenuDarkImage"));
-	static const FName LegacyBackdropName(TEXT("RuntimeMenuBackdrop"));
-	static const FName RuntimeSizeBoxName(TEXT("NewGameButton_FixedSizeBox"));
-	static const FName RuntimeLabelName(TEXT("NewGameButton_Label"));
-	static const FName DesignerMenuBoxName(TEXT("MenuBox"));
-
-	static void CollapseOtherCanvasChildren(UCanvasPanel* Canvas, UWidget* KeepA, UWidget* KeepB)
-	{
-		if (!Canvas)
-		{
-			return;
-		}
-		const TArray<UPanelSlot*>& Slots = Canvas->GetSlots();
-		for (UPanelSlot* PanelSlot : Slots)
-		{
-			if (!PanelSlot || !PanelSlot->Content)
-			{
-				continue;
-			}
-			UWidget* Child = PanelSlot->Content;
-			if (Child == KeepA || Child == KeepB)
-			{
-				continue;
-			}
-			Child->SetVisibility(ESlateVisibility::Collapsed);
-		}
-	}
-
-	static void PinCenteredFixedSlot(UCanvasPanelSlot* Slot, float Width, float Height, float ZOrder)
-	{
-		if (!Slot)
-		{
-			return;
-		}
-		Slot->SetAnchors(FAnchors(0.5f, 0.5f, 0.5f, 0.5f));
-		Slot->SetAlignment(FVector2D(0.5f, 0.5f));
-		Slot->SetAutoSize(false);
-		// Left/Top = position relative to center; Right/Bottom = size for point anchors.
-		Slot->SetOffsets(FMargin(
-			-Width * 0.5f,
-			-Height * 0.5f,
-			Width,
-			Height));
-		Slot->SetZOrder(ZOrder);
-	}
+	static constexpr float MenuButtonWidth = 320.0f;
+	static constexpr float MenuButtonHeight = 56.0f;
 
 	static const TArray<FString> GraphicsQualityLabels = {
 		TEXT("Low"), TEXT("Medium"), TEXT("High"), TEXT("Epic"), TEXT("Cinematic")
@@ -76,6 +40,89 @@ namespace ProjectOrganoidMenuUI
 		const int32 Index = GraphicsQualityLabels.IndexOfByKey(Label);
 		return static_cast<EProjectOrganoidGraphicsQuality>(FMath::Clamp(Index, 0, 4));
 	}
+
+	static FSlateBrush MakeSolidBrush(const FLinearColor& Color)
+	{
+		FSlateBrush Brush;
+		Brush.DrawAs = ESlateBrushDrawType::Image;
+		Brush.TintColor = FSlateColor(Color);
+		Brush.ImageSize = FVector2D(32.0f, 32.0f);
+		return Brush;
+	}
+
+	static FButtonStyle MakeDarkButtonStyle()
+	{
+		FButtonStyle Style;
+		Style.SetNormal(MakeSolidBrush(FLinearColor(0.10f, 0.11f, 0.13f, 1.0f)));
+		Style.SetHovered(MakeSolidBrush(FLinearColor(0.04f, 0.20f, 0.22f, 1.0f)));
+		Style.SetPressed(MakeSolidBrush(FLinearColor(0.03f, 0.10f, 0.12f, 1.0f)));
+		Style.SetDisabled(MakeSolidBrush(FLinearColor(0.05f, 0.05f, 0.06f, 1.0f)));
+		Style.NormalPadding = FMargin(12.0f, 8.0f);
+		Style.PressedPadding = FMargin(12.0f, 8.0f);
+		return Style;
+	}
+
+	static UImage* EnsureFullScreenImage(UWidgetTree* Tree, UCanvasPanel* Canvas, const FName Name, int32 ZOrder)
+	{
+		UImage* Image = Tree->FindWidget<UImage>(Name);
+		if (!Image)
+		{
+			Image = Tree->ConstructWidget<UImage>(UImage::StaticClass(), Name);
+			if (UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(Image))
+			{
+				CanvasSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+				CanvasSlot->SetOffsets(FMargin(0.0f));
+				CanvasSlot->SetZOrder(static_cast<float>(ZOrder));
+			}
+		}
+		Image->SetVisibility(ESlateVisibility::HitTestInvisible);
+		return Image;
+	}
+
+	static UButton* MakeFixedMenuButton(
+		UWidgetTree* Tree,
+		UVerticalBox* Parent,
+		const FName ButtonName,
+		const FName LabelName,
+		const FText& Label,
+		EHorizontalAlignment ButtonAlign = HAlign_Center)
+	{
+		USizeBox* SizeBox = Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), *(ButtonName.ToString() + TEXT("_SizeBox")));
+		SizeBox->SetWidthOverride(MenuButtonWidth);
+		SizeBox->SetHeightOverride(MenuButtonHeight);
+		SizeBox->SetMinDesiredWidth(MenuButtonWidth);
+		SizeBox->SetMinDesiredHeight(MenuButtonHeight);
+		SizeBox->SetMaxDesiredWidth(MenuButtonWidth);
+		SizeBox->SetMaxDesiredHeight(MenuButtonHeight);
+
+		UButton* Button = Tree->ConstructWidget<UButton>(UButton::StaticClass(), ButtonName);
+		Button->SetStyle(MakeDarkButtonStyle());
+		Button->SetColorAndOpacity(FLinearColor::White);
+
+		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), LabelName);
+		Text->SetText(Label);
+		Text->SetJustification(ETextJustify::Center);
+		Text->SetColorAndOpacity(FSlateColor(FLinearColor(0.88f, 0.90f, 0.92f, 1.0f)));
+		Button->SetContent(Text);
+		SizeBox->SetContent(Button);
+
+		if (UVerticalBoxSlot* BoxSlot = Parent->AddChildToVerticalBox(SizeBox))
+		{
+			BoxSlot->SetHorizontalAlignment(ButtonAlign);
+			BoxSlot->SetPadding(FMargin(0.0f, 8.0f));
+		}
+		return Button;
+	}
+}
+
+TSharedRef<SWidget> UProjectOrganoidMainMenuWidget::RebuildWidget()
+{
+	if (!WidgetTree)
+	{
+		WidgetTree = NewObject<UWidgetTree>(this, TEXT("WidgetTree"), RF_Transient);
+	}
+	EnsureVisibleMenuLayout();
+	return Super::RebuildWidget();
 }
 
 void UProjectOrganoidMainMenuWidget::NativeConstruct()
@@ -91,8 +138,7 @@ void UProjectOrganoidMainMenuWidget::EnsureVisibleMenuLayout()
 {
 	if (!WidgetTree)
 	{
-		UE_LOG(LogTemp, Error, TEXT("MainMenu: WidgetTree is null — cannot build visible menu."));
-		return;
+		WidgetTree = NewObject<UWidgetTree>(this, TEXT("WidgetTree"), RF_Transient);
 	}
 
 	UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(GetRootWidget());
@@ -102,157 +148,267 @@ void UProjectOrganoidMainMenuWidget::EnsureVisibleMenuLayout()
 		WidgetTree->RootWidget = RootCanvas;
 	}
 
-	// Collapse designer MenuBox / legacy green-era backdrop so they cannot overpaint.
-	if (UWidget* DesignerMenu = WidgetTree->FindWidget(ProjectOrganoidMenuUI::DesignerMenuBoxName))
+	UImage* Vista = ProjectOrganoidMenuUI::EnsureFullScreenImage(
+		WidgetTree, RootCanvas, TEXT("RuntimeMenuVista"), 0);
+	if (UTexture2D* BackdropTex = ResolveBackdropTexture())
 	{
-		DesignerMenu->SetVisibility(ESlateVisibility::Collapsed);
+		Vista->SetBrushFromTexture(BackdropTex, true);
 	}
-	if (UWidget* LegacyBackdrop = WidgetTree->FindWidget(ProjectOrganoidMenuUI::LegacyBackdropName))
+	else
 	{
-		LegacyBackdrop->SetVisibility(ESlateVisibility::Collapsed);
-		LegacyBackdrop->RemoveFromParent();
+		Vista->SetBrush(ProjectOrganoidMenuUI::MakeSolidBrush(FLinearColor(0.02f, 0.03f, 0.04f, 1.0f)));
 	}
 
-	// Dark full-screen Image (not a Border, not green) — never hosts the button.
-	UImage* Backdrop = WidgetTree->FindWidget<UImage>(ProjectOrganoidMenuUI::RuntimeBackdropName);
-	if (!Backdrop)
+	UImage* Vignette = ProjectOrganoidMenuUI::EnsureFullScreenImage(
+		WidgetTree, RootCanvas, TEXT("RuntimeMenuVignette"), 1);
+	Vignette->SetBrush(ProjectOrganoidMenuUI::MakeSolidBrush(FLinearColor(0.0f, 0.0f, 0.0f, 0.26f)));
+
+	UImage* HazardBar = WidgetTree->FindWidget<UImage>(TEXT("RuntimeHazardBar"));
+	if (!HazardBar)
 	{
-		Backdrop = WidgetTree->ConstructWidget<UImage>(
-			UImage::StaticClass(),
-			ProjectOrganoidMenuUI::RuntimeBackdropName);
-	}
-	if (UPanelWidget* BackdropParent = Backdrop->GetParent())
-	{
-		if (BackdropParent != RootCanvas)
+		HazardBar = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("RuntimeHazardBar"));
+		if (UCanvasPanelSlot* BarSlot = RootCanvas->AddChildToCanvas(HazardBar))
 		{
-			BackdropParent->RemoveChild(Backdrop);
+			BarSlot->SetAnchors(FAnchors(0.0f, 1.0f, 1.0f, 1.0f));
+			BarSlot->SetAlignment(FVector2D(0.0f, 1.0f));
+			BarSlot->SetOffsets(FMargin(0.0f, -8.0f, 0.0f, 8.0f));
+			BarSlot->SetZOrder(2);
 		}
 	}
-	UCanvasPanelSlot* BackdropSlot = Cast<UCanvasPanelSlot>(Backdrop->Slot);
-	if (!BackdropSlot)
-	{
-		BackdropSlot = RootCanvas->AddChildToCanvas(Backdrop);
-	}
-	if (BackdropSlot)
-	{
-		BackdropSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
-		BackdropSlot->SetAlignment(FVector2D(0.0f, 0.0f));
-		BackdropSlot->SetAutoSize(false);
-		BackdropSlot->SetOffsets(FMargin(0.0f));
-		BackdropSlot->SetZOrder(0.0f);
-	}
-	{
-		FSlateBrush DarkBrush;
-		DarkBrush.DrawAs = ESlateBrushDrawType::Image;
-		DarkBrush.TintColor = FSlateColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.92f));
-		DarkBrush.ImageSize = FVector2D(32.0f, 32.0f);
-		Backdrop->SetBrush(DarkBrush);
-	}
-	Backdrop->SetColorAndOpacity(FLinearColor::White);
-	Backdrop->SetVisibility(ESlateVisibility::HitTestInvisible);
+	HazardBar->SetBrush(ProjectOrganoidMenuUI::MakeSolidBrush(FLinearColor(0.92f, 0.62f, 0.04f, 0.92f)));
+	HazardBar->SetVisibility(ESlateVisibility::HitTestInvisible);
 
-	// Resolve / create NewGameButton (the only green control).
-	UButton* PlayButton = NewGameButton.Get();
-	if (!PlayButton)
+	UBorder* Plate = WidgetTree->FindWidget<UBorder>(TEXT("RuntimeMenuPlate"));
+	if (!Plate)
 	{
-		PlayButton = WidgetTree->FindWidget<UButton>(ProjectOrganoidMenuUI::NewGameButtonName);
-	}
-	if (!PlayButton)
-	{
-		PlayButton = WidgetTree->ConstructWidget<UButton>(
-			UButton::StaticClass(),
-			ProjectOrganoidMenuUI::NewGameButtonName);
-	}
-	NewGameButton = PlayButton;
-
-	// Style after parenting so a stretched slot cannot paint green full-screen first.
-	PlayButton->SetColorAndOpacity(FLinearColor::White);
-	PlayButton->SetVisibility(ESlateVisibility::Visible);
-
-	if (!PlayButton->GetContent())
-	{
-		UTextBlock* Label = WidgetTree->FindWidget<UTextBlock>(ProjectOrganoidMenuUI::RuntimeLabelName);
-		if (!Label)
+		Plate = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RuntimeMenuPlate"));
+		if (UCanvasPanelSlot* PlateSlot = RootCanvas->AddChildToCanvas(Plate))
 		{
-			Label = WidgetTree->ConstructWidget<UTextBlock>(
-				UTextBlock::StaticClass(),
-				ProjectOrganoidMenuUI::RuntimeLabelName);
-		}
-		Label->SetText(FText::FromString(TEXT("NEW GAME")));
-		Label->SetJustification(ETextJustify::Center);
-		Label->SetColorAndOpacity(FSlateColor(FLinearColor::White));
-		PlayButton->SetContent(Label);
-	}
-
-	USizeBox* FixedSizeBox = WidgetTree->FindWidget<USizeBox>(ProjectOrganoidMenuUI::RuntimeSizeBoxName);
-	if (!FixedSizeBox)
-	{
-		FixedSizeBox = WidgetTree->ConstructWidget<USizeBox>(
-			USizeBox::StaticClass(),
-			ProjectOrganoidMenuUI::RuntimeSizeBoxName);
-	}
-
-	if (UPanelWidget* ButtonParent = PlayButton->GetParent())
-	{
-		if (ButtonParent != FixedSizeBox)
-		{
-			ButtonParent->RemoveChild(PlayButton);
+			PlateSlot->SetAnchors(FAnchors(0.08f, 0.5f, 0.08f, 0.5f));
+			PlateSlot->SetAlignment(FVector2D(0.0f, 0.5f));
+			PlateSlot->SetAutoSize(true);
+			PlateSlot->SetZOrder(10);
 		}
 	}
-	if (UPanelWidget* SizeBoxParent = FixedSizeBox->GetParent())
+	Plate->SetBrushColor(FLinearColor(0.015f, 0.025f, 0.03f, 0.72f));
+	Plate->SetPadding(FMargin(40.0f, 36.0f));
+	Plate->SetVisibility(ESlateVisibility::Visible);
+
+	UImage* Accent = WidgetTree->FindWidget<UImage>(TEXT("RuntimeMenuAccent"));
+	if (!Accent)
 	{
-		if (SizeBoxParent != RootCanvas)
+		Accent = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("RuntimeMenuAccent"));
+		if (UCanvasPanelSlot* AccentSlot = RootCanvas->AddChildToCanvas(Accent))
 		{
-			SizeBoxParent->RemoveChild(FixedSizeBox);
+			AccentSlot->SetAnchors(FAnchors(0.08f, 0.5f, 0.08f, 0.5f));
+			AccentSlot->SetAlignment(FVector2D(1.0f, 0.5f));
+			AccentSlot->SetSize(FVector2D(4.0f, 420.0f));
+			AccentSlot->SetZOrder(11);
+		}
+	}
+	Accent->SetBrush(ProjectOrganoidMenuUI::MakeSolidBrush(FLinearColor(0.10f, 0.68f, 0.66f, 0.88f)));
+	Accent->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+	UVerticalBox* MenuBox = WidgetTree->FindWidget<UVerticalBox>(TEXT("RuntimeMenuBox"));
+	if (!MenuBox)
+	{
+		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RuntimeMenuBox"));
+		Plate->SetContent(MenuBox);
+	}
+
+	if (!WidgetTree->FindWidget(TEXT("LockdownBanner")))
+	{
+		UTextBlock* Banner = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("LockdownBanner"));
+		Banner->SetText(FText::FromString(TEXT("BSL-4  //  SITE LOCKDOWN")));
+		Banner->SetJustification(ETextJustify::Left);
+		Banner->SetColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.42f, 0.12f, 1.0f)));
+		if (UVerticalBoxSlot* BannerSlot = MenuBox->AddChildToVerticalBox(Banner))
+		{
+			BannerSlot->SetHorizontalAlignment(HAlign_Left);
+			BannerSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 16.0f));
 		}
 	}
 
-	FixedSizeBox->ClearWidthOverride();
-	FixedSizeBox->ClearHeightOverride();
-	FixedSizeBox->SetWidthOverride(ProjectOrganoidMenuUI::MenuButtonWidth);
-	FixedSizeBox->SetHeightOverride(ProjectOrganoidMenuUI::MenuButtonHeight);
-	FixedSizeBox->SetMinDesiredWidth(ProjectOrganoidMenuUI::MenuButtonWidth);
-	FixedSizeBox->SetMinDesiredHeight(ProjectOrganoidMenuUI::MenuButtonHeight);
-	FixedSizeBox->SetMaxDesiredWidth(ProjectOrganoidMenuUI::MenuButtonWidth);
-	FixedSizeBox->SetMaxDesiredHeight(ProjectOrganoidMenuUI::MenuButtonHeight);
-	FixedSizeBox->SetContent(PlayButton);
-	FixedSizeBox->SetVisibility(ESlateVisibility::Visible);
-
-	UCanvasPanelSlot* ButtonSlot = Cast<UCanvasPanelSlot>(FixedSizeBox->Slot);
-	if (!ButtonSlot || ButtonSlot->Parent != RootCanvas)
+	if (!TitleText)
 	{
-		if (FixedSizeBox->GetParent())
-		{
-			FixedSizeBox->RemoveFromParent();
-		}
-		ButtonSlot = RootCanvas->AddChildToCanvas(FixedSizeBox);
+		TitleText = WidgetTree->FindWidget<UTextBlock>(TEXT("TitleText"));
 	}
-	ProjectOrganoidMenuUI::PinCenteredFixedSlot(
-		ButtonSlot,
-		ProjectOrganoidMenuUI::MenuButtonWidth,
-		ProjectOrganoidMenuUI::MenuButtonHeight,
-		10.0f);
+	if (!TitleText)
+	{
+		TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
+		TitleText->SetText(FText::FromString(TEXT("PROJECT ORGANOID")));
+		TitleText->SetJustification(ETextJustify::Left);
+		TitleText->SetColorAndOpacity(FSlateColor(FLinearColor(0.92f, 0.95f, 0.97f, 1.0f)));
+		TitleText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 36));
+		if (UVerticalBoxSlot* TitleSlot = MenuBox->AddChildToVerticalBox(TitleText))
+		{
+			TitleSlot->SetHorizontalAlignment(HAlign_Left);
+			TitleSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 6.0f));
+		}
+	}
 
-	// Green only on the sized button — never on the backdrop.
-	PlayButton->SetBackgroundColor(FLinearColor(0.12f, 0.55f, 0.32f, 1.0f));
+	if (!WidgetTree->FindWidget(TEXT("SubtitleText")))
+	{
+		UTextBlock* Subtitle = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SubtitleText"));
+		Subtitle->SetText(FText::FromString(TEXT("Epitope Subterranean Complex")));
+		Subtitle->SetJustification(ETextJustify::Left);
+		Subtitle->SetColorAndOpacity(FSlateColor(FLinearColor(0.55f, 0.72f, 0.74f, 1.0f)));
+		if (UVerticalBoxSlot* SubSlot = MenuBox->AddChildToVerticalBox(Subtitle))
+		{
+			SubSlot->SetHorizontalAlignment(HAlign_Left);
+			SubSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 28.0f));
+		}
+	}
 
-	// UUserWidget defaults to non-focusable, which makes FInputModeUIOnly warn and
-	// drop focus. SObjectWidget queries this live, so setting it here is honoured.
+	if (!NewGameButton)
+	{
+		NewGameButton = WidgetTree->FindWidget<UButton>(TEXT("NewGameButton"));
+	}
+	if (!NewGameButton)
+	{
+		NewGameButton = ProjectOrganoidMenuUI::MakeFixedMenuButton(
+			WidgetTree,
+			MenuBox,
+			TEXT("NewGameButton"),
+			TEXT("NewGameButton_Label"),
+			FText::FromString(TEXT("NEW GAME")),
+			HAlign_Left);
+	}
+
+	if (!QuitButton)
+	{
+		QuitButton = WidgetTree->FindWidget<UButton>(TEXT("QuitButton"));
+	}
+	if (!QuitButton)
+	{
+		QuitButton = ProjectOrganoidMenuUI::MakeFixedMenuButton(
+			WidgetTree,
+			MenuBox,
+			TEXT("QuitButton"),
+			TEXT("QuitButton_Label"),
+			FText::FromString(TEXT("QUIT")),
+			HAlign_Left);
+	}
+
+	if (!WidgetTree->FindWidget(TEXT("AuditorFooter")))
+	{
+		UTextBlock* Footer = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("AuditorFooter"));
+		Footer->SetText(FText::FromString(TEXT("AVERY VANCE  —  BIO-HAZARD AUDITOR")));
+		Footer->SetJustification(ETextJustify::Left);
+		Footer->SetColorAndOpacity(FSlateColor(FLinearColor(0.45f, 0.48f, 0.50f, 1.0f)));
+		if (UVerticalBoxSlot* FootSlot = MenuBox->AddChildToVerticalBox(Footer))
+		{
+			FootSlot->SetHorizontalAlignment(HAlign_Left);
+			FootSlot->SetPadding(FMargin(0.0f, 28.0f, 0.0f, 0.0f));
+		}
+	}
+
+	SetColorAndOpacity(FLinearColor::White);
+	SetForegroundColor(FSlateColor(FLinearColor::White));
 	SetIsFocusable(true);
-
-	ProjectOrganoidMenuUI::CollapseOtherCanvasChildren(RootCanvas, Backdrop, FixedSizeBox);
-
+	SetIsEnabled(true);
 	SetVisibility(ESlateVisibility::Visible);
 	InvalidateLayoutAndVolatility();
-	ForceLayoutPrepass();
 
-	const FVector2D Desired = FixedSizeBox->GetDesiredSize();
-	UE_LOG(LogTemp, Log,
-		TEXT("MainMenu: LAYOUT_v2 dark image backdrop + NewGame only (slot %.0fx%.0f, desired %.0fx%.0f)."),
-		ProjectOrganoidMenuUI::MenuButtonWidth,
-		ProjectOrganoidMenuUI::MenuButtonHeight,
-		Desired.X,
-		Desired.Y);
+	UE_LOG(LogTemp, Log, TEXT("MainMenu: C++ atmospheric title layout ready (vista=%s)."),
+		RuntimeBackdropTexture ? TEXT("yes") : TEXT("procedural/fallback"));
+}
+
+UTexture2D* UProjectOrganoidMainMenuWidget::ResolveBackdropTexture()
+{
+	if (RuntimeBackdropTexture)
+	{
+		return RuntimeBackdropTexture;
+	}
+
+	// Loose PNG first — never opens a .uasset the editor might have locked.
+	const FString PngPath = FPaths::ProjectContentDir() / TEXT("UI/Menus/T_TitleVista.png");
+	if (FPaths::FileExists(PngPath))
+	{
+		RuntimeBackdropTexture = FImageUtils::ImportFileAsTexture2D(PngPath);
+		if (RuntimeBackdropTexture)
+		{
+			RuntimeBackdropTexture->NeverStream = true;
+			return RuntimeBackdropTexture;
+		}
+	}
+
+	if (FPackageName::DoesPackageExist(TEXT("/Game/UI/Menus/T_TitleVista")))
+	{
+		if (UTexture2D* Imported = LoadObject<UTexture2D>(
+			nullptr,
+			TEXT("/Game/UI/Menus/T_TitleVista.T_TitleVista"),
+			nullptr,
+			LOAD_NoWarn | LOAD_Quiet))
+		{
+			RuntimeBackdropTexture = Imported;
+			return RuntimeBackdropTexture;
+		}
+	}
+
+	RuntimeBackdropTexture = CreateProceduralBackdropTexture();
+	return RuntimeBackdropTexture;
+}
+
+UTexture2D* UProjectOrganoidMainMenuWidget::CreateProceduralBackdropTexture()
+{
+	const int32 Width = 1024;
+	const int32 Height = 576;
+	TArray64<uint8> Bytes;
+	Bytes.SetNumUninitialized(static_cast<int64>(Width) * Height * 4);
+	FColor* Pixels = reinterpret_cast<FColor*>(Bytes.GetData());
+
+	for (int32 Y = 0; Y < Height; ++Y)
+	{
+		const float V = static_cast<float>(Y) / static_cast<float>(Height - 1);
+		for (int32 X = 0; X < Width; ++X)
+		{
+			const float U = static_cast<float>(X) / static_cast<float>(Width - 1);
+			FLinearColor Color = FMath::Lerp(
+				FLinearColor(0.015f, 0.04f, 0.055f),
+				FLinearColor(0.02f, 0.012f, 0.018f),
+				V);
+
+			const float CyanGlow = FMath::Exp(-(((U - 0.18f) * (U - 0.18f)) + ((V - 0.22f) * (V - 0.22f))) * 7.0f);
+			Color += FLinearColor(0.02f, 0.16f, 0.18f) * CyanGlow * 0.4f;
+
+			const float AmberWash = FMath::Max(0.0f, V - 0.62f);
+			Color += FLinearColor(0.22f, 0.08f, 0.02f) * AmberWash * 0.55f;
+
+			if ((Y % 4) == 0)
+			{
+				Color *= 0.84f;
+			}
+			if ((X % 64) == 0 || (Y % 64) == 0)
+			{
+				Color += FLinearColor(0.015f, 0.04f, 0.045f);
+			}
+
+			const float Dx = U - 0.5f;
+			const float Dy = V - 0.5f;
+			const float Vignette = FMath::Clamp(1.0f - ((Dx * Dx) + (Dy * Dy)) * 1.55f, 0.22f, 1.0f);
+			Color *= Vignette;
+			Pixels[Y * Width + X] = Color.ToFColor(true);
+		}
+	}
+
+	UTexture2D* Texture = UTexture2D::CreateTransient(
+		Width,
+		Height,
+		PF_B8G8R8A8,
+		NAME_None,
+		Bytes);
+	if (!Texture)
+	{
+		return nullptr;
+	}
+
+	Texture->SRGB = true;
+	Texture->Filter = TF_Bilinear;
+	Texture->AddressX = TA_Clamp;
+	Texture->AddressY = TA_Clamp;
+	Texture->NeverStream = true;
+	return Texture;
 }
 
 UWidget* UProjectOrganoidMainMenuWidget::GetDefaultFocusWidget()
@@ -386,11 +542,27 @@ void UProjectOrganoidMainMenuWidget::HandleGraphicsQualityChanged(FString Select
 	SetGraphicsQuality(ProjectOrganoidMenuUI::QualityFromLabel(SelectedItem));
 }
 
+void UProjectOrganoidMainMenuWidget::DismissFromViewport()
+{
+	SetVisibility(ESlateVisibility::Collapsed);
+	SetIsEnabled(false);
+	RemoveFromParent();
+}
+
 void UProjectOrganoidMainMenuWidget::StartNewGame()
 {
 	if (UProjectOrganoidSaveSubsystem* SaveSubsystem = GetSaveSubsystem())
 	{
 		SaveSubsystem->ClearPendingLoad();
+	}
+
+	if (AProjectOrganoidPlayerController* OrganoidPC = Cast<AProjectOrganoidPlayerController>(GetOwningPlayer()))
+	{
+		OrganoidPC->DismissTitleMainMenu();
+	}
+	else
+	{
+		DismissFromViewport();
 	}
 
 	if (UGameInstance* GI = GetGameInstance())

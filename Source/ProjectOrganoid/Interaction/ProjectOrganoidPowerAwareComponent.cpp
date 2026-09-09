@@ -77,6 +77,10 @@ void UProjectOrganoidPowerAwareComponent::ApplyPowerState(EProjectOrganoidPowerS
 	{
 		ApplyEmergencyLighting(NewState);
 	}
+	if (bIsSectorLight)
+	{
+		ApplySectorLighting(NewState);
+	}
 	if (bIsSecurityCamera)
 	{
 		ApplySecurityCamera(NewState);
@@ -190,6 +194,33 @@ void UProjectOrganoidPowerAwareComponent::ApplyLaserGrid(EProjectOrganoidPowerSt
 			{
 				Primitive->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			}
+		}
+	}
+}
+
+void UProjectOrganoidPowerAwareComponent::ApplySectorLighting(EProjectOrganoidPowerState State)
+{
+	for (ULightComponent* Light : CachedLights)
+	{
+		if (!Light)
+		{
+			continue;
+		}
+
+		switch (State)
+		{
+		case EProjectOrganoidPowerState::Online:
+			Light->SetVisibility(true);
+			Light->SetIntensity(NormalLightIntensity);
+			break;
+		case EProjectOrganoidPowerState::Emergency:
+			Light->SetVisibility(true);
+			Light->SetIntensity(NormalLightIntensity * SectorEmergencyDimScale);
+			break;
+		case EProjectOrganoidPowerState::Blackout:
+			Light->SetVisibility(false);
+			Light->SetIntensity(0.0f);
+			break;
 		}
 	}
 }

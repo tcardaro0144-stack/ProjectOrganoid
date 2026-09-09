@@ -10,6 +10,7 @@
 class UUserWidget;
 class UProjectOrganoidLoadingScreenWidget;
 class AProjectOrganoidGameMode;
+class UWorld;
 
 UENUM(BlueprintType)
 enum class EProjectOrganoidFlowState : uint8
@@ -79,6 +80,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Flow")
 	void NotifyGameplayMapReady(AProjectOrganoidGameMode* GameMode);
 
+	/** Strip title chrome, possess Avery, and switch to GameOnly. Idempotent. */
+	UFUNCTION(BlueprintCallable, Category = "Flow")
+	void ApplyGameplayHandoff(bool bHideLoadingNow = false);
+
 	/**
 	 *  Debug jump between Epitope regions, with a loading screen. Epitope is one continuous
 	 *  facility — normal play reaches every region on foot and must never call this.
@@ -101,8 +106,13 @@ protected:
 	float LoadingStartTime = 0.0f;
 	FTimerHandle HideLoadingHandle;
 
+	FDelegateHandle PostLoadMapHandle;
+
 	void SetFlowState(EProjectOrganoidFlowState NewState);
 	void ShowLoadingScreen(const FText& InitialStatus);
 	void HideLoadingScreen();
 	void TravelToGameplayLevel(FName LevelName);
+	void PrepareForTravel();
+	void HandlePostLoadMap(UWorld* LoadedWorld);
+	void DismissLeftoverTitleWidgets();
 };

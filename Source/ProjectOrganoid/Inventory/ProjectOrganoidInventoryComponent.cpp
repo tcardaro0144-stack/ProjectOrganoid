@@ -664,6 +664,117 @@ bool UProjectOrganoidInventoryComponent::ConsumeItemsOfType(EProjectOrganoidItem
 	return Remaining <= 0;
 }
 
+int32 UProjectOrganoidInventoryComponent::CountItem(const UProjectOrganoidItemData* ItemData) const
+{
+	if (!ItemData)
+	{
+		return 0;
+	}
+
+	int32 Count = 0;
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (Placed.IsValid() && Placed.ItemData == ItemData)
+		{
+			Count += Placed.StackCount;
+		}
+	}
+	return Count;
+}
+
+bool UProjectOrganoidInventoryComponent::ConsumeItem(UProjectOrganoidItemData* ItemData, int32 Count)
+{
+	if (Count <= 0)
+	{
+		return true;
+	}
+
+	if (!ItemData || CountItem(ItemData) < Count)
+	{
+		return false;
+	}
+
+	int32 Remaining = Count;
+	for (int32 Index = PlacedItems.Num() - 1; Index >= 0 && Remaining > 0; --Index)
+	{
+		FProjectOrganoidPlacedItem& Placed = PlacedItems[Index];
+		if (!Placed.IsValid() || Placed.ItemData != ItemData)
+		{
+			continue;
+		}
+
+		const int32 Take = FMath::Min(Placed.StackCount, Remaining);
+		Placed.StackCount -= Take;
+		Remaining -= Take;
+		if (Placed.StackCount <= 0)
+		{
+			PlacedItems.RemoveAt(Index);
+		}
+	}
+
+	RebuildOccupancy();
+	NotifyInventoryChanged();
+	return Remaining <= 0;
+}
+
+int32 UProjectOrganoidInventoryComponent::CountAmmoOfType(EProjectOrganoidAmmoType AmmoType) const
+{
+	if (AmmoType == EProjectOrganoidAmmoType::None)
+	{
+		return 0;
+	}
+
+	int32 Count = 0;
+	for (const FProjectOrganoidPlacedItem& Placed : PlacedItems)
+	{
+		if (!Placed.IsValid()
+			|| Placed.ItemData->ItemType != EProjectOrganoidItemType::Ammo
+			|| Placed.ItemData->AmmoType != AmmoType)
+		{
+			continue;
+		}
+		Count += Placed.StackCount;
+	}
+	return Count;
+}
+
+bool UProjectOrganoidInventoryComponent::ConsumeAmmoOfType(EProjectOrganoidAmmoType AmmoType, int32 Count)
+{
+	if (Count <= 0)
+	{
+		return true;
+	}
+
+	if (AmmoType == EProjectOrganoidAmmoType::None || CountAmmoOfType(AmmoType) < Count)
+	{
+		return false;
+	}
+
+	int32 Remaining = Count;
+	for (int32 Index = PlacedItems.Num() - 1; Index >= 0 && Remaining > 0; --Index)
+	{
+		FProjectOrganoidPlacedItem& Placed = PlacedItems[Index];
+		if (!Placed.IsValid()
+			|| Placed.ItemData->ItemType != EProjectOrganoidItemType::Ammo
+			|| Placed.ItemData->AmmoType != AmmoType)
+		{
+			continue;
+		}
+
+		const int32 Take = FMath::Min(Placed.StackCount, Remaining);
+		Placed.StackCount -= Take;
+		Remaining -= Take;
+		if (Placed.StackCount <= 0)
+		{
+			PlacedItems.RemoveAt(Index);
+		}
+	}
+
+	RebuildOccupancy();
+	NotifyInventoryChanged();
+	return Remaining <= 0;
+}
+
 void UProjectOrganoidInventoryComponent::ClearAllItems()
 {
 	PlacedItems.Reset();

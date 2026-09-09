@@ -26,6 +26,14 @@ enum class EProjectOrganoidPowerState : uint8
 	Blackout UMETA(DisplayName = "Blackout")
 };
 
+/** How a placed facility light responds to its sector */
+UENUM(BlueprintType)
+enum class EProjectOrganoidFacilityLightRole : uint8
+{
+	Sector UMETA(DisplayName = "Sector Light"),
+	Emergency UMETA(DisplayName = "Emergency Light")
+};
+
 USTRUCT(BlueprintType)
 struct FProjectOrganoidSectorPowerStatus
 {

@@ -234,6 +234,7 @@ void UProjectOrganoidGameplayHUDController::HandleItemPickedUp(UProjectOrganoidI
 	if (UProjectOrganoidHUDWidget* HUD = BoundHUD.Get())
 	{
 		HUD->OnInventoryItemAcquired(ItemData, Quantity);
+		HUD->NotifyResourceAcquired(ItemData, Quantity);
 	}
 	PushInventoryToHUD();
 }

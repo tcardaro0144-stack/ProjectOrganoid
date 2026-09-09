@@ -4,6 +4,9 @@ globs: Source/ProjectOrganoid/**/*.{h,cpp}
 alwaysApply: false
 ---
 
+**SUPERSEDED FOR GAME-DESIGN AUTHORITY BY PROJECT ORGANOID — RESTORED CANON v1.0**  
+See `PROJECT_ORGANOID_CANON.md`. Include order, UPROPERTY categories, and TObjectPtr guidance remain valid implementation conventions. Tactical Mode Constants below (0.2 dilation, 800uu sphere, PE Energy) are **current code defaults**, not locked canon.
+
 # UE5 C++ Gameplay Conventions
 
 ## Headers & Includes
