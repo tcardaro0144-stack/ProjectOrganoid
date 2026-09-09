@@ -219,3 +219,21 @@ Approved implementation guardrails, in addition to the six locked creative decis
 - Compile with Unreal closed if C++ changes are required; use direct bridge dual approval for mutation; run targeted Block 4 and opening regressions; save Admin only after verification; never save Neuro Recast dirt.
 - Before any Block 4 source or asset change, create a carefully filtered pre-Block-4 Git baseline of the accumulated existing implementation so rollback and new-diff isolation are possible.
 
+---
+
+## Pre-Block-4 Git Baseline Record (2026-09-09)
+
+**Status: COMPLETE / CLEAN ROLLBACK POINT.**
+
+- Consolidated harness/state checkpoint: commit `609ba5c` (`Checkpoint read-only harness and consolidated project state`).
+- Accumulated game implementation snapshot: commit `6af16a4` (`Snapshot accumulated pre-Block-4 project state`).
+- Annotated rollback tag: `pre-block4-baseline-2026-09-09`, pointing exactly to `6af16a4`.
+- Snapshot contents: 259 files changed; 164 added, 91 modified, 4 deleted; 67,886 insertions and 552 deletions.
+- Expected deletions only: superseded `Content/UI/Menus/WBP_MainMenu.uasset` plus three generated tracked `.pyc` files.
+- `.gitignore` now excludes `__pycache__/` and `*.py[cod]`.
+- Nine duplicate Gemini/state-transfer files were moved—not deleted—to `%USERPROFILE%\Documents\ProjectOrganoid_Handoff_Archive_2026-09-09_PreBlock4`. Root `PROJECT_STATE.md`, canon, technical master handoff, real `server.py`, and real `harness_automation.py` remain in the repository.
+- No staged file was 90 MB or larger; no archived handoff/cache file was added; no unresolved merge markers were found.
+- Six pre-existing nonfunctional whitespace warnings were accepted for the preservation snapshot rather than rewriting historical files.
+- Post-commit `git status --short`: no output. Working tree clean.
+
+This tag is the mandatory rollback boundary for Opening Block 4. All subsequent source, test, plugin, map, and documentation changes must be attributable to the approved Block 4 scope.
