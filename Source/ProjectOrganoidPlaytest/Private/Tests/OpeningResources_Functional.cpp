@@ -39,6 +39,7 @@ namespace
 	constexpr TCHAR TraumaPath[] = TEXT("/Game/Data/Items/DA_Item_TraumaStabilizer.DA_Item_TraumaStabilizer");
 	constexpr TCHAR AmmoPickupLabel[] = TEXT("Pickup_Block3_PistolAmmo");
 	constexpr TCHAR TraumaPickupLabel[] = TEXT("Pickup_Block3_TraumaStabilizer");
+	constexpr TCHAR AdminHostLabel[] = TEXT("Host_Admin_SecurityOfficer");
 	constexpr TCHAR RwPickupLabel[] = TEXT("Pickup_ResearchWingKeycard");
 	constexpr TCHAR SecurityLabel[] = TEXT("Admin_Terminal_Security");
 	constexpr TCHAR HologramLabel[] = TEXT("Admin_FacilityHologram");
@@ -48,7 +49,7 @@ namespace
 	constexpr float SetupDistance = 100.0f;
 	const FVector AmmoLocation(2560.0f, -340.0f, 80.0f);
 	const FVector TraumaLocation(2760.0f, -300.0f, 80.0f);
-	const FVector HostStaging(2680.0f, -470.0f, 100.0f);
+	const FVector HostStaging(2820.0f, -600.0f, 100.0f);
 	const FVector RwLocation(2580.0f, -560.0f, 80.0f);
 
 	bool PackageIsDirty(const TCHAR* Path)
@@ -282,6 +283,12 @@ namespace
 				}
 			}
 			return Count;
+		}
+
+		AProjectOrganoidHostBase* FindAdminHost(UWorld* World) const
+		{
+			return Cast<AProjectOrganoidHostBase>(
+				OrganoidPlaytestActions::FindUniqueByLabel(World, AdminHostLabel));
 		}
 
 		int32 CountSequenceActors(UWorld* World) const
@@ -559,9 +566,20 @@ namespace
 				TEXT("0"),
 				Inventory && Trauma ? FString::FromInt(Inventory->CountItem(Trauma)) : TEXT("missing"),
 				TEXT("inventory"));
-			AssertTrue(Record, TEXT("fresh.zero_admin_hosts"),
-				CountHostsInPackage(World, TEXT("SL_Epitope_Admin")) == 0,
-				TEXT("0"), FString::FromInt(CountHostsInPackage(World, TEXT("SL_Epitope_Admin"))), TEXT("Admin"));
+			const int32 AdminHostCount = CountHostsInPackage(World, TEXT("SL_Epitope_Admin"));
+			AProjectOrganoidHostBase* AdminHost = FindAdminHost(World);
+			AssertTrue(Record, TEXT("fresh.authorized_admin_host_count"),
+				AdminHostCount == 1, TEXT("1"), FString::FromInt(AdminHostCount), TEXT("Admin"));
+			AssertTrue(Record, TEXT("fresh.authorized_admin_host_identity"),
+				AdminHost
+					&& OrganoidPlaytestActions::ActorPackage(AdminHost).Contains(TEXT("SL_Epitope_Admin"))
+					&& AdminHost->bRequiresEncounterActivation
+					&& !AdminHost->bAllowPhaseShiftMutations
+					&& !AdminHost->IsEncounterActivated()
+					&& AdminHost->GetCombatState() == EProjectOrganoidHostCombatState::Idle,
+				TEXT("one dormant authorized Host_Admin_SecurityOfficer"),
+				AdminHost ? OrganoidPlaytestActions::ActorPackage(AdminHost) : TEXT("missing or duplicate label"),
+				AdminHostLabel);
 			AssertOpeningObjectivesUnchanged(Record, Character, TEXT("fresh"));
 			if (bAnyAssertFailed)
 			{
@@ -977,9 +995,23 @@ namespace
 			UWorld* World,
 			AProjectOrganoidCharacter* Character)
 		{
-			AssertTrue(Record, TEXT("admin.zero_opening_hosts"),
-				CountHostsInPackage(World, TEXT("SL_Epitope_Admin")) == 0,
-				TEXT("0"), FString::FromInt(CountHostsInPackage(World, TEXT("SL_Epitope_Admin"))), TEXT("Admin"));
+			const int32 AdminHostCount = CountHostsInPackage(World, TEXT("SL_Epitope_Admin"));
+			AProjectOrganoidHostBase* AdminHost = FindAdminHost(World);
+			AssertTrue(Record, TEXT("admin.authorized_opening_host_count"),
+				AdminHostCount == 1, TEXT("1"), FString::FromInt(AdminHostCount), TEXT("Admin"));
+			AssertTrue(Record, TEXT("admin.resource_path_keeps_host_dormant"),
+				AdminHost
+					&& AdminHost->bRequiresEncounterActivation
+					&& !AdminHost->bAllowPhaseShiftMutations
+					&& !AdminHost->IsEncounterActivated()
+					&& AdminHost->GetCombatState() == EProjectOrganoidHostCombatState::Idle,
+				TEXT("authorized Host remains dormant Idle through resources/security"),
+				AdminHost
+					? FString::Printf(TEXT("activated=%s state=%s"),
+						AdminHost->IsEncounterActivated() ? TEXT("true") : TEXT("false"),
+						*UEnum::GetValueAsString(AdminHost->GetCombatState()))
+					: TEXT("missing or duplicate label"),
+				AdminHostLabel);
 			AssertTrue(Record, TEXT("no_cinematic_sequencer"),
 				CountSequenceActors(World) == 0,
 				TEXT("0"), FString::FromInt(CountSequenceActors(World)), TEXT("world"));

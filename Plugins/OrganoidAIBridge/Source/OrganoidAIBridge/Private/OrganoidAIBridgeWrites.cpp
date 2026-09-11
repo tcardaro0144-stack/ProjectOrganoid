@@ -12,11 +12,14 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "CollisionQueryParams.h"
+#include "CollisionShape.h"
 #include "Engine/CollisionProfile.h"
 #include "Editor.h"
 #include "EditorLevelUtils.h"
 #include "Engine/Level.h"
 #include "Engine/LevelStreaming.h"
+#include "Engine/OverlapResult.h"
 #include "Subsystems/EditorActorSubsystem.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -46,6 +49,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "NavMesh/NavMeshBoundsVolume.h"
+#include "NavigationData.h"
 #include "NavigationSystem.h"
 #include "Builders/CubeBuilder.h"
 #include "ActorFactories/ActorFactory.h"
@@ -123,6 +127,9 @@ namespace
 		TEXT("set_admin_doorlock_interactable"),
 		TEXT("spawn_admin_block2_dressing"),
 		TEXT("spawn_admin_block3_resources"),
+		TEXT("spawn_admin_block4_security_officer"),
+		TEXT("spawn_admin_block4_navmesh_bounds"),
+		TEXT("save_admin_block4_navmesh_prerequisite"),
 	};
 
 	const TSet<FString> HighRiskActions = {
@@ -151,6 +158,9 @@ namespace
 		TEXT("set_admin_doorlock_interactable"),
 		TEXT("spawn_admin_block2_dressing"),
 		TEXT("spawn_admin_block3_resources"),
+		TEXT("spawn_admin_block4_security_officer"),
+		TEXT("spawn_admin_block4_navmesh_bounds"),
+		TEXT("save_admin_block4_navmesh_prerequisite"),
 	};
 
 	const TSet<FString> SpawnPropertyAllowlist = {
@@ -3069,6 +3079,8 @@ namespace
 #include "OrganoidAIBridgeTraversal.inl"
 #include "OrganoidAIBridgeOpeningBlock2.inl"
 #include "OrganoidAIBridgeOpeningBlock3.inl"
+#include "OrganoidAIBridgeOpeningBlock4.inl"
+#include "OrganoidAIBridgeOpeningBlock4NavMesh.inl"
 
 	FString PreflightSpawnBlueprintActor(
 		const TSharedPtr<FJsonObject>& Args,
@@ -3649,6 +3661,18 @@ namespace
 		{
 			PreflightError = PreflightSpawnAdminBlock3Resources(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("spawn_admin_block4_security_officer"))
+		{
+			PreflightError = PreflightSpawnAdminBlock4SecurityOfficer(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_admin_block4_navmesh_bounds"))
+		{
+			PreflightError = PreflightSpawnAdminBlock4NavMeshBounds(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("save_admin_block4_navmesh_prerequisite"))
+		{
+			PreflightError = PreflightSaveAdminBlock4NavMeshPrerequisite(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("move_actor_to_level"))
 		{
 			PreflightError = PreflightMoveActorToLevel(Args, Before, Proposed);
@@ -3699,7 +3723,10 @@ namespace
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
 			|| Action == TEXT("set_admin_doorlock_interactable")
 			|| Action == TEXT("spawn_admin_block2_dressing")
-			|| Action == TEXT("spawn_admin_block3_resources"))
+			|| Action == TEXT("spawn_admin_block3_resources")
+			|| Action == TEXT("spawn_admin_block4_security_officer")
+			|| Action == TEXT("spawn_admin_block4_navmesh_bounds")
+			|| Action == TEXT("save_admin_block4_navmesh_prerequisite"))
 		{
 			Package = AdminPackage;
 		}
@@ -4832,7 +4859,10 @@ namespace
 				|| Change->Action == TEXT("trim_spine_landing_admin")
 				|| Change->Action == TEXT("set_admin_doorlock_interactable")
 				|| Change->Action == TEXT("spawn_admin_block2_dressing")
-				|| Change->Action == TEXT("spawn_admin_block3_resources");
+				|| Change->Action == TEXT("spawn_admin_block3_resources")
+				|| Change->Action == TEXT("spawn_admin_block4_security_officer")
+				|| Change->Action == TEXT("spawn_admin_block4_navmesh_bounds")
+				|| Change->Action == TEXT("save_admin_block4_navmesh_prerequisite");
 			const bool bEpitopeOrAdminSession = PackagesEqual(SessionPackage, AdminPackage)
 				|| PackagesEqual(SessionPackage, EpitopePackage);
 			const bool bNeuroSession = PackagesEqual(SessionPackage, NeuroPackage)
@@ -4967,6 +4997,18 @@ namespace
 		{
 			return ExecuteSpawnAdminBlock3Resources(*Change);
 		}
+		if (Change->Action == TEXT("spawn_admin_block4_security_officer"))
+		{
+			return ExecuteSpawnAdminBlock4SecurityOfficer(*Change);
+		}
+		if (Change->Action == TEXT("spawn_admin_block4_navmesh_bounds"))
+		{
+			return ExecuteSpawnAdminBlock4NavMeshBounds(*Change);
+		}
+		if (Change->Action == TEXT("save_admin_block4_navmesh_prerequisite"))
+		{
+			return ExecuteSaveAdminBlock4NavMeshPrerequisite(*Change);
+		}
 		if (Change->Action == TEXT("set_s20_light_intensity"))
 		{
 			return ExecuteSetS20LightIntensity(*Change);
@@ -4997,6 +5039,11 @@ namespace OrganoidAIBridgeWrites
 			|| NormalizedCommand == TEXT("get_change")
 			|| NormalizedCommand == TEXT("list_changes")
 			|| NormalizedCommand == TEXT("execute_write");
+	}
+
+	TSharedRef<FJsonObject> InspectAdminBlock4NavMesh(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectAdminBlock4NavMesh(Args);
 	}
 
 	TSharedRef<FJsonObject> Dispatch(

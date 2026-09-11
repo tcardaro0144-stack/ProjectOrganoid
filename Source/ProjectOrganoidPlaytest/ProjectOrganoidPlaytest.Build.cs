@@ -5,6 +5,7 @@ public class ProjectOrganoidPlaytest : ModuleRules
 	public ProjectOrganoidPlaytest(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		bUseUnity = false;
 
 		PublicDependencyModuleNames.AddRange(new string[]
 		{

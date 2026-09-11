@@ -150,9 +150,42 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation")
 	bool bDestroyWeakPointOnCriticalHit = true;
 
+	/** Per-instance opt-out for authored Hosts that must never rage or raise a bio-shield. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Mutation")
+	bool bAllowPhaseShiftMutations = true;
+
 	/** Extra hearing range while enraged (applied to HostPerception) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AI", meta = (ClampMin = "0.0"))
 	float RageHearingBonus = 600.0f;
+
+	// -------------------------------------------------------------------------
+	// Authored encounter activation
+	// -------------------------------------------------------------------------
+
+	/** Opt-in gate. False preserves the legacy Host behavior. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Activation")
+	bool bRequiresEncounterActivation = false;
+
+	/** A currently perceived player at or inside this 2D range permanently activates the Host. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Activation", meta = (ClampMin = "50.0", EditCondition = "bRequiresEncounterActivation"))
+	float ProximityActivationRange = 200.0f;
+
+	/** Runtime state. Activation is intentionally one-way for the lifetime of this Host. */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category = "Host|Activation")
+	bool bEncounterActivated = false;
+
+	UFUNCTION(BlueprintPure, Category = "Host|Activation")
+	bool IsEncounterActivated() const { return !bRequiresEncounterActivation || bEncounterActivated; }
+
+	/** Permanently opens the authored activation gate. Returns true only on the transition. */
+	UFUNCTION(BlueprintCallable, Category = "Host|Activation")
+	bool ActivateEncounter();
+
+	/** Activates only for a player-controlled Project Organoid character inside the configured range. */
+	bool TryActivateEncounterFromProximity(const AActor* Target);
+
+	/** Gunfire and explicitly tagged generic noise activate; locomotion footsteps do not. */
+	bool IsEncounterActivationNoise(EProjectOrganoidHearingStimulusKind Kind) const;
 
 	UFUNCTION(BlueprintPure, Category = "Host|AI")
 	FVector GetLastHeardNoiseLocation() const;

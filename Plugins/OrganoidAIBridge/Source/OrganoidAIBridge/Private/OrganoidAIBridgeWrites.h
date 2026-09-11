@@ -14,4 +14,6 @@ namespace OrganoidAIBridgeWrites
 		const TSharedPtr<FJsonObject>& Args,
 		const TSharedPtr<FJsonObject>& Session,
 		FOrganoidAIBridgeLogSink* LogSink);
+
+	TSharedRef<FJsonObject> InspectAdminBlock4NavMesh(const TSharedPtr<FJsonObject>& Args);
 }

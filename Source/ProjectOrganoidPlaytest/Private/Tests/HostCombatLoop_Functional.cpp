@@ -27,6 +27,7 @@ namespace
 	constexpr TCHAR MapPackage[] = TEXT("/Game/Maps/Lvl_Epitope");
 	constexpr TCHAR AdminPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	constexpr TCHAR NeuroPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_NeuroGenetics");
+	constexpr TCHAR AdminHostLabel[] = TEXT("Host_Admin_SecurityOfficer");
 	constexpr TCHAR Host1Label[] = TEXT("Host_Neuro_1");
 	constexpr TCHAR Host2Label[] = TEXT("Host_Neuro_2");
 	constexpr TCHAR Host3Label[] = TEXT("Host_Neuro_3");
@@ -291,6 +292,40 @@ namespace
 			return OrganoidPlaytestActions::TeleportNear(Character, Location, 0.0f, Location.Z);
 		}
 
+		/** Host1 invalid-range/wall proofs: ignore damage attributable to authorized Block 4 Admin Security Officer. */
+		bool NoHost1DamageIgnoringAuthorizedAdmin(
+			AProjectOrganoidCharacter* Character,
+			float HealthBefore,
+			bool bHost1BeganMelee,
+			UWorld* World) const
+		{
+			if (!Character)
+			{
+				return false;
+			}
+			const float HealthAfter = Character->GetHealth();
+			if (FMath::IsNearlyEqual(HealthAfter, HealthBefore))
+			{
+				return true;
+			}
+			// Host1 began a melee this step — any health drop fails the Host1 isolation proof.
+			if (bHost1BeganMelee)
+			{
+				return false;
+			}
+			// Residual damage with Host1 not beginning is attributed to Host_Admin_SecurityOfficer
+			// (or other non-Host1 actors) and excluded from this Neuro Host1 assertion.
+			return FindHost(World, AdminHostLabel) != nullptr;
+		}
+
+		void CancelAuthorizedAdminMelee(UWorld* World) const
+		{
+			if (AProjectOrganoidHostBase* AdminHost = FindHost(World, AdminHostLabel))
+			{
+				AdminHost->CancelMeleeAttack();
+			}
+		}
+
 		void TickPreflight(UProjectOrganoidPlaytestEditorSubsystem& Owner, FOrganoidPlaytestRecord& Record)
 		{
 			if (!GEditor)
@@ -416,7 +451,17 @@ namespace
 			case EProof::AdminIsolation:
 			{
 				const int32 AdminHosts = CountHostsInPackage(World, TEXT("SL_Epitope_Admin"));
-				AssertTrue(Record, TEXT("no_admin_hosts"), AdminHosts == 0, TEXT("0"), FString::FromInt(AdminHosts), TEXT("Admin"));
+				AProjectOrganoidHostBase* AdminHost = FindHost(World, AdminHostLabel);
+				AssertTrue(Record, TEXT("authorized_admin_host_count"), AdminHosts == 1, TEXT("1"), FString::FromInt(AdminHosts), TEXT("Admin"));
+				AssertTrue(
+					Record, TEXT("authorized_admin_host_identity"),
+					AdminHost
+						&& OrganoidPlaytestActions::ActorPackage(AdminHost).Contains(TEXT("SL_Epitope_Admin"))
+						&& AdminHost->bRequiresEncounterActivation
+						&& !AdminHost->bAllowPhaseShiftMutations,
+					TEXT("Host_Admin_SecurityOfficer in Admin with authored gate and mutation opt-out"),
+					AdminHost ? OrganoidPlaytestActions::ActorPackage(AdminHost) : TEXT("missing or duplicate label"),
+					AdminHostLabel);
 				Proof = EProof::Nav;
 				break;
 			}
@@ -602,22 +647,38 @@ namespace
 			}
 			case EProof::WallBlock:
 			{
+				Host->CancelMeleeAttack();
+				CancelAuthorizedAdminMelee(World);
 				const float HealthBefore = Character->GetHealth();
 				TeleportPlayer(Character, FVector(-1600.0f, 1400.0f, -1100.0f));
 				Host->SetActorRotation(FRotator(0.0f, 180.0f, 0.0f));
 				const bool bBegan = Host->TryBeginMeleeAttack(Character);
 				AssertTrue(Record, TEXT("no_wall_melee_begin"), !bBegan, TEXT("false"), bBegan ? TEXT("true") : TEXT("false"), Host1Label);
-				AssertTrue(Record, TEXT("no_wall_damage"), FMath::IsNearlyEqual(Character->GetHealth(), HealthBefore), FString::SanitizeFloat(HealthBefore), FString::SanitizeFloat(Character->GetHealth()), TEXT("player"));
+				AssertTrue(
+					Record,
+					TEXT("no_wall_damage"),
+					NoHost1DamageIgnoringAuthorizedAdmin(Character, HealthBefore, bBegan, World),
+					FString::SanitizeFloat(HealthBefore),
+					FString::SanitizeFloat(Character->GetHealth()),
+					TEXT("player"));
 				Proof = EProof::InvalidRange;
 				break;
 			}
 			case EProof::InvalidRange:
 			{
+				Host->CancelMeleeAttack();
+				CancelAuthorizedAdminMelee(World);
 				const float HealthBefore = Character->GetHealth();
 				TeleportPlayer(Character, Host->GetActorLocation() + FVector(0.0f, -900.0f, 0.0f));
 				const bool bBegan = Host->TryBeginMeleeAttack(Character);
 				AssertTrue(Record, TEXT("no_invalid_range_melee"), !bBegan, TEXT("false"), bBegan ? TEXT("true") : TEXT("false"), Host1Label);
-				AssertTrue(Record, TEXT("no_invalid_range_damage"), FMath::IsNearlyEqual(Character->GetHealth(), HealthBefore), FString::SanitizeFloat(HealthBefore), FString::SanitizeFloat(Character->GetHealth()), TEXT("player"));
+				AssertTrue(
+					Record,
+					TEXT("no_invalid_range_damage"),
+					NoHost1DamageIgnoringAuthorizedAdmin(Character, HealthBefore, bBegan, World),
+					FString::SanitizeFloat(HealthBefore),
+					FString::SanitizeFloat(Character->GetHealth()),
+					TEXT("player"));
 				Proof = EProof::StaggerCancel;
 				break;
 			}

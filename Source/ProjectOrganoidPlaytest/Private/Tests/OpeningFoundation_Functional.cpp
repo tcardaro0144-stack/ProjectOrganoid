@@ -39,8 +39,10 @@ namespace
 	constexpr TCHAR PickupLabel[] = TEXT("Pickup_ResearchWingKeycard");
 	constexpr TCHAR GateLabel[] = TEXT("Gate_ResearchWing");
 	constexpr TCHAR SaveSlot[] = TEXT("OrganoidOpeningFoundationTest");
+	constexpr TCHAR AuthorizedAdminHostLabel[] = TEXT("Host_Admin_SecurityOfficer");
 	const FVector OpeningLocation(200.0f, 0.0f, 118.0f);
 	const FVector OldTransitFallback(5000.0f, -900.0f, 220.0f);
+	const FVector AuthorizedAdminHostLocation(2820.0f, -600.0f, 100.0f);
 
 	bool PackageIsDirty(const TCHAR* Path)
 	{
@@ -684,10 +686,29 @@ namespace
 			UWorld* World)
 		{
 			const int32 Hosts = CountHostsInPackage(World, TEXT("SL_Epitope_Admin"));
-			AssertTrue(Record, TEXT("admin.zero_opening_hosts"),
-				Hosts == 0,
-				TEXT("0"),
-				FString::FromInt(Hosts),
+			AProjectOrganoidHostBase* Authorized = Cast<AProjectOrganoidHostBase>(
+				OrganoidPlaytestActions::FindUniqueByLabel(World, AuthorizedAdminHostLabel));
+			const bool bZeroOk = Hosts == 0 && Authorized == nullptr;
+			const FVector Loc = Authorized ? Authorized->GetActorLocation() : FVector::ZeroVector;
+			const bool bOneAuthorizedOk = Hosts == 1
+				&& Authorized != nullptr
+				&& OrganoidPlaytestActions::ActorPackage(Authorized).Contains(TEXT("SL_Epitope_Admin"))
+				&& OrganoidPlaytestActions::ActorLabel(Authorized) == AuthorizedAdminHostLabel
+				&& Authorized->GetClass()
+				&& Authorized->GetClass()->GetName().Contains(TEXT("BP_OrganoidHost"))
+				&& FVector::Dist2D(Loc, AuthorizedAdminHostLocation) <= 2.0f
+				&& FMath::Abs(Loc.Z - AuthorizedAdminHostLocation.Z) <= 20.0f;
+			AssertTrue(
+				Record,
+				TEXT("admin.opening_hosts_authorized_only"),
+				bZeroOk || bOneAuthorizedOk,
+				TEXT("0 or exactly one Host_Admin_SecurityOfficer at authored Block 4 transform"),
+				FString::Printf(
+					TEXT("count=%d label=%s class=%s loc=%s"),
+					Hosts,
+					Authorized ? *OrganoidPlaytestActions::ActorLabel(Authorized) : TEXT("none"),
+					(Authorized && Authorized->GetClass()) ? *Authorized->GetClass()->GetName() : TEXT("n/a"),
+					Authorized ? *Loc.ToCompactString() : TEXT("n/a")),
 				TEXT("Admin"));
 			if (bAnyAssertFailed)
 			{

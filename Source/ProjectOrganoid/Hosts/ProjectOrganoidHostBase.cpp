@@ -92,6 +92,7 @@ void AProjectOrganoidHostBase::BeginPlay()
 	Health = MaxHealth;
 	CachedWalkSpeed = DefaultWalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
+	bEncounterActivated = !bRequiresEncounterActivation;
 
 	SyncHostPerception();
 	EnsureHostAIController();
@@ -136,6 +137,46 @@ void AProjectOrganoidHostBase::SyncHostPerception()
 
 	HostPerception->SetHearingRangeBonus(bIsEnraged ? RageHearingBonus : 0.0f);
 	HostPerception->ConfigureHostSenses();
+}
+
+bool AProjectOrganoidHostBase::ActivateEncounter()
+{
+	if (IsEncounterActivated())
+	{
+		return false;
+	}
+
+	bEncounterActivated = true;
+	OnHostStateChanged.Broadcast(TEXT("EncounterActivated"));
+	return true;
+}
+
+bool AProjectOrganoidHostBase::TryActivateEncounterFromProximity(const AActor* Target)
+{
+	if (IsEncounterActivated())
+	{
+		return false;
+	}
+
+	const AProjectOrganoidCharacter* Player = Cast<AProjectOrganoidCharacter>(Target);
+	if (!Player || !Player->IsPlayerControlled())
+	{
+		return false;
+	}
+
+	const FVector Delta = Player->GetActorLocation() - GetActorLocation();
+	if (Delta.SizeSquared2D() > FMath::Square(FMath::Max(0.0f, ProximityActivationRange)))
+	{
+		return false;
+	}
+
+	return ActivateEncounter();
+}
+
+bool AProjectOrganoidHostBase::IsEncounterActivationNoise(EProjectOrganoidHearingStimulusKind Kind) const
+{
+	return Kind == EProjectOrganoidHearingStimulusKind::Gunfire
+		|| Kind == EProjectOrganoidHearingStimulusKind::GenericNoise;
 }
 
 FVector AProjectOrganoidHostBase::GetLastHeardNoiseLocation() const
@@ -271,6 +312,15 @@ void AProjectOrganoidHostBase::HandleHearingStimulus(
 	FVector StimulusLocation,
 	float Strength)
 {
+	if (!IsEncounterActivated())
+	{
+		if (!IsEncounterActivationNoise(Kind))
+		{
+			return;
+		}
+		ActivateEncounter();
+	}
+
 	OnNoiseHeard.Broadcast(NoiseInstigator, NoiseTag);
 
 	FName StateName = TEXT("HeardNoise");
@@ -303,6 +353,11 @@ void AProjectOrganoidHostBase::HandleHearingStimulus(
 
 void AProjectOrganoidHostBase::HandleSightStimulus(AActor* Target, bool bSensed, FVector StimulusLocation)
 {
+	if (!IsEncounterActivated())
+	{
+		return;
+	}
+
 	if (bSensed)
 	{
 		RememberPerceivedPlayerLocation(Target ? Target->GetActorLocation() : StimulusLocation);
@@ -312,7 +367,12 @@ void AProjectOrganoidHostBase::HandleSightStimulus(AActor* Target, bool bSensed,
 
 bool AProjectOrganoidHostBase::CanAttemptMelee() const
 {
-	return !bIsDead && !bIsIncapacitated && !bIsStaggered && !bMeleeWindupActive && !bMeleeOnCooldown;
+	return IsEncounterActivated()
+		&& !bIsDead
+		&& !bIsIncapacitated
+		&& !bIsStaggered
+		&& !bMeleeWindupActive
+		&& !bMeleeOnCooldown;
 }
 
 bool AProjectOrganoidHostBase::IsTargetInMeleeRange(const AActor* Target, float ExtraRange) const
@@ -521,6 +581,11 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 		return;
 	}
 
+	if (HitInfo.FinalDamage > 0.0f)
+	{
+		ActivateEncounter();
+	}
+
 	if (HitReaction)
 	{
 		HitReaction->ProcessBallisticHit(HitInfo, DamageCauser);
@@ -632,6 +697,11 @@ void AProjectOrganoidHostBase::DestroyWeakPoint(EProjectOrganoidWeakPointType We
 
 void AProjectOrganoidHostBase::EvaluatePhaseShiftMutation(EProjectOrganoidWeakPointType DestroyedWeakPoint)
 {
+	if (!bAllowPhaseShiftMutations)
+	{
+		return;
+	}
+
 	// Optical destruction → emergency bio-shield
 	if (DestroyedWeakPoint == EProjectOrganoidWeakPointType::OpticalNodes)
 	{
@@ -660,7 +730,7 @@ void AProjectOrganoidHostBase::EvaluatePhaseShiftMutation(EProjectOrganoidWeakPo
 
 void AProjectOrganoidHostBase::EnterRageState()
 {
-	if (bIsEnraged || bIsDead || bIsIncapacitated)
+	if (!bAllowPhaseShiftMutations || bIsEnraged || bIsDead || bIsIncapacitated)
 	{
 		return;
 	}
@@ -674,7 +744,7 @@ void AProjectOrganoidHostBase::EnterRageState()
 
 void AProjectOrganoidHostBase::ActivateBioShield()
 {
-	if (bIsDead || bIsIncapacitated)
+	if (!bAllowPhaseShiftMutations || bIsDead || bIsIncapacitated)
 	{
 		return;
 	}

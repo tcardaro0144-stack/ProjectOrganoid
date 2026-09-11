@@ -110,6 +110,14 @@ void AProjectOrganoidHostAIController::HandleHostPreempt()
 
 void AProjectOrganoidHostAIController::RequestInvestigateAt(const FVector& WorldLocation)
 {
+	if (const AProjectOrganoidHostBase* Host = GetHost())
+	{
+		if (!Host->IsEncounterActivated())
+		{
+			return;
+		}
+	}
+
 	if (CombatState == EProjectOrganoidHostCombatState::Dead
 		|| CombatState == EProjectOrganoidHostCombatState::Pursue
 		|| CombatState == EProjectOrganoidHostCombatState::Attack)
@@ -312,6 +320,24 @@ void AProjectOrganoidHostAIController::Think()
 		return;
 	}
 
+	AProjectOrganoidCharacter* SeenPlayer = GetPerceivedPlayer();
+	if (!Host->IsEncounterActivated())
+	{
+		if (SeenPlayer && !Host->bIsBlinded)
+		{
+			Host->TryActivateEncounterFromProximity(SeenPlayer);
+		}
+
+		if (!Host->IsEncounterActivated())
+		{
+			if (CombatState != EProjectOrganoidHostCombatState::Idle || bHasMoveTarget)
+			{
+				EnterIdle();
+			}
+			return;
+		}
+	}
+
 	if (Host->bIsStaggered)
 	{
 		Host->CancelMeleeAttack();
@@ -319,7 +345,6 @@ void AProjectOrganoidHostAIController::Think()
 		return;
 	}
 
-	AProjectOrganoidCharacter* SeenPlayer = GetPerceivedPlayer();
 	if (SeenPlayer && !Host->bIsBlinded)
 	{
 		LastKnownLocation = SeenPlayer->GetActorLocation();

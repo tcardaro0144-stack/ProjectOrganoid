@@ -44,6 +44,7 @@ namespace
 	constexpr TCHAR HologramBpPackage[] = TEXT("/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminFacilityHologram");
 	constexpr TCHAR ItemPath[] = TEXT("/Game/Data/Items/DA_Item_ResearchWingKeycard.DA_Item_ResearchWingKeycard");
 	constexpr TCHAR PickupLabel[] = TEXT("Pickup_ResearchWingKeycard");
+	constexpr TCHAR AdminHostLabel[] = TEXT("Host_Admin_SecurityOfficer");
 	constexpr TCHAR ReceptionLabel[] = TEXT("Admin_Terminal_Reception");
 	constexpr TCHAR SecurityLabel[] = TEXT("Admin_Terminal_Security");
 	constexpr TCHAR DoorLockLabel[] = TEXT("DoorLock_VestibuleToAtrium");
@@ -1071,9 +1072,30 @@ namespace
 			UWorld* World,
 			AProjectOrganoidCharacter* Character)
 		{
-			AssertTrue(Record, TEXT("admin.zero_opening_hosts"),
-				CountHostsInPackage(World, TEXT("SL_Epitope_Admin")) == 0,
-				TEXT("0"), FString::FromInt(CountHostsInPackage(World, TEXT("SL_Epitope_Admin"))), TEXT("Admin"));
+			const int32 AdminHostCount = CountHostsInPackage(World, TEXT("SL_Epitope_Admin"));
+			AProjectOrganoidHostBase* AdminHost = Cast<AProjectOrganoidHostBase>(
+				OrganoidPlaytestActions::FindUniqueByLabel(World, AdminHostLabel));
+			AssertTrue(Record, TEXT("admin.authorized_opening_host_count"),
+				AdminHostCount == 1,
+				TEXT("1"), FString::FromInt(AdminHostCount), TEXT("Admin"));
+			AssertTrue(Record, TEXT("admin.authorized_opening_host_identity"),
+				AdminHost
+					&& OrganoidPlaytestActions::ActorPackage(AdminHost).Contains(TEXT("SL_Epitope_Admin"))
+					&& AdminHost->bRequiresEncounterActivation
+					&& !AdminHost->bAllowPhaseShiftMutations,
+				TEXT("Host_Admin_SecurityOfficer with authored gate and mutation opt-out"),
+				AdminHost ? OrganoidPlaytestActions::ActorPackage(AdminHost) : TEXT("missing or duplicate label"),
+				AdminHostLabel);
+			AssertTrue(Record, TEXT("admin.security_path_keeps_host_dormant"),
+				AdminHost && !AdminHost->IsEncounterActivated()
+					&& AdminHost->GetCombatState() == EProjectOrganoidHostCombatState::Idle,
+				TEXT("dormant Idle"),
+				AdminHost
+					? FString::Printf(TEXT("activated=%s state=%s"),
+						AdminHost->IsEncounterActivated() ? TEXT("true") : TEXT("false"),
+						*UEnum::GetValueAsString(AdminHost->GetCombatState()))
+					: TEXT("missing"),
+				AdminHostLabel);
 			AssertTrue(Record, TEXT("no_cinematic_sequencer"),
 				CountSequenceActors(World) == 0,
 				TEXT("0"), FString::FromInt(CountSequenceActors(World)), TEXT("world"));

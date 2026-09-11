@@ -501,6 +501,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_admin_doorlock_interactable")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block2_dressing")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block3_resources")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_security_officer")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_navmesh_bounds")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_admin_block4_navmesh_prerequisite")));
 		Data->SetArrayField(TEXT("native_game_thread_actions"), NativeActions);
 		Data->SetStringField(TEXT("map_save"), TEXT("use save_maps; save_asset rejects map packages"));
 		Data->SetBoolField(TEXT("save_maps_admin_only_requires_epitope_persistent"), false);
@@ -519,6 +522,7 @@ namespace
 		Data->SetBoolField(TEXT("get_actor_property"), true);
 		Data->SetBoolField(TEXT("get_light_component"), true);
 		Data->SetBoolField(TEXT("inspect_playing_audio"), true);
+		Data->SetBoolField(TEXT("inspect_admin_block4_navmesh"), true);
 		TArray<TSharedPtr<FJsonValue>> PlaytestCommands;
 		PlaytestCommands.Add(MakeShared<FJsonValueString>(TEXT("list_playtests")));
 		PlaytestCommands.Add(MakeShared<FJsonValueString>(TEXT("run_playtest")));
@@ -549,6 +553,8 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_research_wing_keycard")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block2_dressing")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block3_resources")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_security_officer")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_navmesh_bounds")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_admin_doorlock_interactable")));
 		Data->SetArrayField(TEXT("spawn_actions"), SpawnActions);
 		return Ok(Data);
@@ -1701,6 +1707,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 	{
 		return CmdInspectPlayingAudio(Args);
 	}
+	if (Normalized == TEXT("inspect_admin_block4_navmesh"))
+	{
+		return OrganoidAIBridgeWrites::InspectAdminBlock4NavMesh(Args);
+	}
 
 	if (OrganoidAIBridgePlaytest::IsPlaytestCommand(Normalized))
 	{
@@ -1742,7 +1752,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("spawn_neuro_research_station")
 		|| Normalized == TEXT("spawn_admin_research_wing_connector")
 		|| Normalized == TEXT("spawn_admin_research_wing_keycard")
-		|| Normalized == TEXT("trim_spine_landing_admin"))
+		|| Normalized == TEXT("trim_spine_landing_admin")
+		|| Normalized == TEXT("spawn_admin_block4_security_officer")
+		|| Normalized == TEXT("spawn_admin_block4_navmesh_bounds")
+		|| Normalized == TEXT("save_admin_block4_navmesh_prerequisite"))
 	{
 		return Fail(
 			TEXT("needs_prepare"),
