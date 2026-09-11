@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-09 (Block 4 compile fix remains durable. SEPARATE TRACK: deep harness tool-selection bug diagnosis this session — likely root cause found in `unreal_list_actors_near`'s description string, NOT a model-size limitation. Fix identified but not yet applied/tested — see Session Log. Session paused at 90% context.)_
+_Last updated: 2026-09-11 (Block 4 VERIFIED at `8e681e1`. Appended Post-Block 4 Next Beat Decision Lock Prep — DRAFT awaiting Tom approval. No implementation.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -1180,4 +1180,70 @@ Neuro's older spawn path only checks coarse `GetActorBounds` magnitude. The Admi
 
 ### Final disposition
 
-**READY FOR FOCUSED COMMIT** after explicit-path staging of attributable Block 4 / bridge / playtest / Admin umap / PROJECT_STATE paths. Do not stage `Tools/harness_automation.py`, `Tools/unreal_mcp/server.py`, or root `Block4-Bridge-Hardened.py` unless separately authorized.
+**COMMITTED** as local `main` `8e681e1` — `Opening Block 4: Admin nav bounds + Security Officer (dormant) - verified` (16 files). Left unstaged by design: `Tools/harness_automation.py`, `Tools/unreal_mcp/server.py`, `Block4-Bridge-Hardened.py`.
+
+---
+
+## Session Log — 2026-09-11 (Post–Block 4: recommended next order)
+
+### Authority
+
+- Opening campaign Blocks **1–4** are the only numbered opening blocks in repo docs. **There is no Opening Block 5.**
+- Tom asked for a recommended next path that keeps `PROJECT_STATE.md` current and follows all governing docs so the initial plan remains implementable end-to-end.
+
+### Governing documents (must follow; do not invent scope)
+
+1. `PROJECT_ORGANOID_CANON.md` — game-design authority (Restored Canon v1.0)
+2. `Tools/unreal_mcp/PROJECT_ORGANOID_MASTER_AI_HANDOFF.md` — process, inventory, save policy, contradictions, next boundary
+3. Root `PROJECT_STATE.md` — live session truth (append; do not rewrite history)
+4. `.cursorrules` / `.cursor/rules/*` — naming + Organoid editor automation / dual-approval
+5. Approved Block 4 scope already locked in this file (presentation still **INCOMPLETE** by decision)
+
+### Recommended next order (not yet authorized to implement Neuro / presentation assets)
+
+1. **Doc sync (no Unreal mutation)** — Update handoff + this file so Opening Block 4 is **VERIFIED IMPLEMENTATION** at `8e681e1`, not “PROPOSED / awaiting approval.” Keep presentation-incomplete and Neuro Candidate B “do not implement until design locked” intact.
+2. **Live New Game / smoke of Blocks 1–4** — Confirm player path: vestibule → Reception → Security → Block 3 pickups → dormant Security Officer → activate → kill → RW keycard still available; dirty packages stay clean / no unauthorized saves.
+3. **Design lock with Tom** before any new durable beat — Decide what happens after Host death (objective? Research Wing door? stay in Admin for presentation?). Only then draft a Block-style scope sheet for dual-approved implementation.
+4. **Deferred tracks (do not start as default next)** — Security Officer presentation/visual pass (needs asset survey + creative approval); Neuro Candidate B / Research Station campaign intro (design not locked); Cryo/Compute/Reactor; harness leftovers (`Tools/*` unstaged) unless Tom prioritizes tooling.
+
+### Stop rules for any follow-on Cursor session
+
+- Fail-closed on `ok:false`; Admin-only saves unless Tom authorizes another package; distinct dual approvals; no broad `git add`; evidence appended here; use only this workspace.
+
+---
+
+## Post-Block 4 Next Beat — Decision Lock Prep (Recommended)
+
+**Status:** DRAFT for Tom creative approval — **not locked**. Doc-only. No spawns, saves, map/source implementation authorized by this sheet.
+**HEAD context:** local `main` `8e681e1` (Opening Block 4 verified). No Opening “Block 5” name.
+**Authority cited:** `PROJECT_STATE.md` Block 4 locks; `Tools/unreal_mcp/PROJECT_ORGANOID_MASTER_AI_HANDOFF.md` (objectives, after-victory constraints, Candidate B, sector status). Canon file is design authority; do not invent lore beyond what those sources allow.
+
+### Decision table
+
+| # | Choice | Options | Recommended | Reason (cite, do not invent) |
+|---|---|---|---|---|
+| 1 | After `Host_Admin_SecurityOfficer` death: new objective or none? | **A.** No new objective — player stays in exploration loop. **B.** New objective e.g. “Investigate Research Wing” appears. | **A — No new objective** | Matches locked Block 4 decision #4 (“no new objective”; encounter is emergent after `Obj_SecurityStatus`). Handoff Block 4 plan: “No new main objective required unless Tom wants one”; after victory “**no** Neuro unlock change; **no** Research Station intro.” Keep Host beat self-contained until Research Wing / keycard decisions are separately locked. |
+| 2 | Research Wing keycard/door: next required beat or stay optional? | **A.** Optional — door open / keycard optional for later. **B.** Required — door locked, keycard required to proceed; becomes next required beat. | **B — Required, after Choice 3 is locked** | Keycard already exists from Opening Block 2 (`Pickup_ResearchWingKeycard` / held path). Making RW the next *required* beat is a **new** post–Block 4 scope choice (handoff after-victory text currently says no Neuro unlock change — that was Block 4 boundary, not a permanent ban on a later RW beat). **Gate:** do not implement RW-as-required until Choice 3 (Admin presentation now vs later) is locked, so presentation work does not silently become a blocker mid-RW. |
+| 3 | Admin presentation / visual pass before leaving Admin, or later? | **A.** Now — unique Security Officer visuals (+ any Admin polish) before leaving Admin. **B.** Later — keep Admin blockout (**PRESENTATION INCOMPLETE**); continue campaign blockout; do visual passes together later. | **B — Later** | Locked Block 4 decision #6 + full-scope approval: defer unique visual art; Block 4 remains **PRESENTATION INCOMPLETE** until a later approved visual pass + asset survey. No improvised badge/material/lore assets now. |
+| 4 | Neuro Candidate B / Research Station intro: still blocked? | **A.** Blocked until separate design finish. **B.** Allow intro as next beat. | **A — Still blocked** | Handoff / canon practical rule: do **not** implement Neuro Candidate B / first meaningful Research Station campaign intro until Tom finishes that campaign design. Station actor placement may exist; campaign meaning is **not locked**. This was the planning drift to stop. |
+| 5 | Cryo / Compute / Reactor beats: when? | (Timing only — no options to implement now.) | **After** Research Wing keycard required-beat is locked **and** implemented as blockout | Handoff: Cryo / Compute / Reactor campaign beats are **UNRESOLVED**; maps are blockout/scaffolding. Do not start those sectors now. |
+
+### Sequencing implication (if Tom approves the recommendations as a set)
+
+1. Lock Choice **3 = Later** (presentation deferred).
+2. Lock Choice **1 = A** (no new Host-death objective).
+3. Lock Choice **2 = B** (Research Wing becomes next **required** beat as blockout — still **no** Candidate B / Research Station campaign intro).
+4. Choice **4** stays **A** (blocked) through that RW blockout beat.
+5. Choice **5** stays deferred until RW required-beat is done.
+
+### Explicitly out of scope until Tom approves implementation
+
+- Security Officer unique visual / presentation assets
+- Neuro Candidate B / Research Station campaign intro
+- Cryo / Compute / Reactor campaign beats
+- Harness / MCP tool-selection / write-approval wiring
+- Any new “Block 5” name
+
+### Waiting on
+
+Tom’s explicit creative approval (accept recommended set, or rewrite any row). **No implementation until that approval.**
