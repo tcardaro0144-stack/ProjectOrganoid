@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-12 (Neuro arrival / scientific environment blockout saved. 9/9 regressions PASS. Lvl_Epitope clean.)_
+_Last updated: 2026-09-12 (Neuro Ch #3 Phase 2 COMPLETE — SE-pocket containment/research-failure blockout saved Neuro-only. 9/9 PASS. Not committed.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -1743,3 +1743,143 @@ Ch #3 containment evidence; Ch #4 campaign Hosts; Ch #5 Candidate B restore; tar
 ### Waiting on
 
 Tom: commit or next beat (containment/research-failure evidence is Ch #3 — still **not** authorized).
+
+---
+
+## Neuro Containment / Research-Failure Evidence — Inventory (2026-09-12)
+
+**Phase 1 only.** No spawn / save / map mutation. HEAD `6004468`. Live editor: `Lvl_Epitope`, Admin+Neuro loaded, `dirty_count=0`. Bridge read-only.
+
+### 1. Canon — what Ch #3 means
+
+From `Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md`. **No coordinates, prop list, pad titles, or “broken glass / warning stripe” spec.**
+
+Quoted / paraphrased without invention:
+
+- Intended Neuro chapter shape (design target, **not** an implementation order): Arrival → establish scientific environment → **evidence of containment/research failure** → transformed personnel → discover systems/power compromised → … (`§ Intended Neuro chapter shape`).
+- Early-campaign escalate (also not a locked room order) includes **containment irregularities** then **biological evidence** before first transformed personnel (`§ Core identity`). Ch #3 sits **before** Ch #4 Hosts-as-campaign and **before** Ch #5 power compromised (Candidate B **LOCKED** at `9eade68`; not this pass).
+- Nathan can recognize **containment failure** as an operational abnormality without knowing the scientific cause (`§ Nathan and the science`; `§ Locked identity`).
+- **Show biological evidence before fully explaining it.** Early language stays cautious (*“Something's changing the way their nervous systems work”*). Critical Neuro revelation must be understandable on the **main path**; optional pads may deepen. Do **not** hide the central plot only inside optional datapads (`§ Nathan and the science`).
+- Neuro revelation (later, not Ch #3) is only: nervous systems reorganized/adapted in connection with Epitope neural research. **Do not** answer Node Zero, vaccine, Sterling, who/what controls it (`§ NeuroGenetics narrative function`). **LOCKED 6 BLOCKED.**
+- Existing Avery/Sterling-era Neuro datapads / survivor / Python builders are **historical/stale — not canonized** (same section). Those three Neuro actors were **removed** at `6004468`.
+- Exact Neuro room order and required vs optional discoveries remain **TBD** (`§ TBD`).
+- **LOCKED 1B:** logs and containment *evidence* stay readable on emergency / backup. Do not brick research logs for the restore puzzle.
+
+**Gap:** canon does not name a containment unit, warning sign, log title, author, or room. Do not invent a mechanism, Sterling-signed objection, or “specimens are staff” plot from the deleted stale pads.
+
+### 2. Existing Neuro “evidence” (live, 2026-09-12)
+
+| What | Present? | Role vs Ch #3 |
+|---|---|---|
+| Authored campaign containment-breach **visual** (unit, stripes, lockdown sign, broken glass) | **NONE** (`Warning_NeuroContainment`, `Neuro_ContainmentUnit`, `BrokenGlass_Neuro`, `Sign_Lockdown_Neuro` miss) | Missing |
+| Neuro DataPads (research-failure logs) | **NONE** (stale `DataPad_EthicsObjection` / `DataPad_SpecimenBadge` gone) | Missing |
+| `DataPad_NeuroContainment` / `DataPad_NeuroResearchFailure` | Miss | Not created |
+| `Scannable_OrganoidMatrix_1/2/3` | Yes — Neuro @ `(-2425/-1950/-1475, 1900, -1080)` | Lab-science chassis. Display “Organoid Matrix Lattice 1”. Avery-era Python body (*nutrient feed cut, growth did not flatten*) is **stale copy — do not canonize**. Not Ch #3 containment evidence. Do not rewrite this pass unless Tom asks. |
+| `Hazard_ScrubberLeak` | Yes — `(-1950, -1650, -1000)`, `HazardType=ToxicGas` (enum 3), DPS 7, Tox 11, active | **Gameplay hazard**, not authored campaign evidence. Keep. Do not treat as Ch #3 complete. |
+| `CorridorTraps_GowningRing` | Yes — `(-1145, 0, -1060)` | Trap volume, not evidence. Keep. |
+| SE lab dress (`Neuro_Lab_Bench_*` / desks / microscope) | Yes — arrival Ch #1–2 | Scientific environment. **Keep.** Evidence should not restack Hosts or station. |
+| Admin pads `DataPad_LockdownAuthorization` / `ShiftRoster` / `VisitorLog` | Yes — **Admin** Z≈90 | Opening investigation only. Avery-era visitor log. **Do not move to Neuro.** |
+
+Hosts 1–3, Research Station, PowerPanel remain. Ch #4 / 5B / 2B not this beat.
+
+### 3. Evidence systems (reuse, do not invent a new framework)
+
+| System | Class | How it works |
+|---|---|---|
+| Data pad | `AProjectOrganoidDataPad` (`/Script/ProjectOrganoid.ProjectOrganoidDataPad`) | Placeable C++ (no BP required). Interact “Read Data Pad” → `UProjectOrganoidLogComponent::CollectLogEntry`. Fields: `LogEntry` (`EntryId`, `Title`, `Body`, `Author`, `Category`). Defaults: Untitled / “Corrupted entry.” / Unknown. `bBroadcastGenericDataPadEvent` can fire `Event_DataPadRead` — **set false** for Ch #3 so we do not advance stale missions. Admin examples exist; Neuro Python `place_data_pad` spawned this class. |
+| Scannable | `AProjectOrganoidScannableActor` | PhotoScan / Bio-Scan lore. Matrices already use this. Optional deepen, not a substitute for main-path evidence. |
+| Terminal reward log | `AProjectOrganoidTerminal::RewardLogEntry` | Admin terminals. Not Neuro Ch #3. |
+| Hazard zone | `AProjectOrganoidHazardZone` | Damage/toxicity. Not a log. |
+
+No dedicated “Research Log” class beyond DataPad + LogEntry.
+
+### 4. Gaps vs Ch #3
+
+1. No **visible** containment-failure blockout on Neuro.
+2. No **new** research-failure pads (stale ones correctly removed).
+3. Matrices/hazard are adjacent systems, not the campaign beat.
+4. Canon gives no place. Phase 2 must **not** drop props at random.
+
+### 5. Phase 2 location options (pick before spawn)
+
+**A — SE lab pocket (recommended default).** Near arrival dress: benches `(200/-100/500, -1850/-2000)`, desks `(550/250, -1400/-1450)`, station `(800, -1600)`. South of Gowning Airlock `(1950, 0, -1140)`, Hosts stay north (`Y>1000`). Main-path after Ch #1–2. Fits “not only optional pads.”
+
+**B — NW matrix hall.** Next to `Scannable_OrganoidMatrix_*` @ Y≈1900. Existing science racks; closer to `Host_Neuro_1/3`. Reads more optional / nearer Ch #4 space.
+
+Do **not** place at `Hazard_ScrubberLeak` as the only beat (hazard ≠ authored evidence). Do not restore Sterling pads.
+
+**If Tom picks A or B:** Phase 2 would add (blockout only, presentation INCOMPLETE): 1 containment-unit cube + stripe cubes; 2 DataPads with **placeholder** cautious failure text (no Node Zero / vaccine / Sterling / mechanism); `bBroadcastGenericDataPadEvent=false`. Neuro-only `save_maps`. New fixed-spec bridge action required (no Neuro DataPad spawn exists yet; `spawn_neuro_arrival_lab_dressing` is still **unstaged**).
+
+### Waiting on
+
+Tom: pick **A** or **B** (or rewrite). **No spawn/save until that go.**
+
+---
+
+## Neuro Containment / Research-Failure Evidence — Phase 2 COMPLETE (2026-09-12)
+
+**LOCKED location:** Option **A** — SE lab pocket south of Gowning Airlock, on the main path after desks/benches, away from the 3 system Hosts. Presentation **INCOMPLETE**. Power **Emergency** unchanged (lock **1B**). No Ch #4 Hosts campaign, no Ch #5 restore, no 3C targeting-why, no 5B station intro, no 4B pursuer, no Node Zero / vaccine / Sterling.
+
+### Containment visual (Neuro only, Engine BasicShapes, collision off)
+
+| Label | Location | Notes |
+|---|---|---|
+| `Neuro_Ch3_ContainmentUnit` | `(350, -1680, -1140)` | Cube cabinet, open/broken state |
+| `Neuro_Ch3_ContainmentHatch` | `(430, -1660, -1100)` | Thin cube, rot Z −35° |
+| `Neuro_Ch3_Stripe_1` | `(350, -1580, -1196)` | Floor warning stripe |
+| `Neuro_Ch3_Stripe_2` | `(350, -1780, -1196)` | Floor warning stripe |
+| `Neuro_Ch3_Stripe_3` | `(250, -1680, -1196)` | Floor warning stripe, yaw 90° |
+| `Neuro_Ch3_LockdownSign` | `(220, -1560, -1080)` | Thin standing cube |
+| `Neuro_Ch3_Glass_1` | `(400, -1720, -1188)` | Broken-glass flat |
+| `Neuro_Ch3_Glass_2` | `(310, -1640, -1185)` | Broken-glass flat, yaw 25° |
+| `Neuro_Ch3_EmergencyKit` | `(180, -1720, -1175)` | Small emergency prop cube |
+
+Visible unit is on the walk after desks (`Y≈-1400`) before benches (`Y≈-1850/-2000`). Hosts remain north (`Y>1000`). Station `(800, -1600)` kept.
+
+### Research-failure pads (`AProjectOrganoidDataPad`, C++ placeable, no BP)
+
+| Label | Location | Title | Broadcast |
+|---|---|---|---|
+| `DataPad_NeuroContainment` | `(380, -1580, -1110)` | Containment anomaly noted | `bBroadcastGenericDataPadEvent=false`, `ObjectiveEventId=None` |
+| `DataPad_NeuroResearchFailure` | `(280, -1760, -1110)` | Research log: containment variance | `bBroadcastGenericDataPadEvent=false`, `ObjectiveEventId=None` |
+
+Placeholder bodies only (no mechanism / Node Zero / vaccine / Sterling): “Containment variance is visible in this lab. Breach state is not explained. Cause unknown.” / “Research notes incomplete. Containment did not hold as recorded. No mechanism identified.” Author Unknown. EntryIds `Pad_Neuro_ContainmentAnomaly` / `Pad_Neuro_ContainmentVariance`. Main beat is the **open unit + stripes/sign/glass**, not pads-only.
+
+### Kept (unchanged)
+
+Floor, walls, nav, 3 `Host_Neuro_*`, `ResearchStation_NeuroGenetics`, `PowerPanel_NeuroBackup` (Emergency / “Restore Lab Power”), `Hazard_ScrubberLeak`, `CorridorTraps_GowningRing`, 3 `Scannable_OrganoidMatrix_*` (stale copy — not canonized), SE benches/desks/microscope, `Ambience_GowningCorridor`. Stale Ethics/Specimen/NPC stay gone.
+
+### Writes
+
+| Change | ID | Approvals | Result |
+|---|---|---|---|
+| `spawn_neuro_ch3_containment_evidence` | `chg_591d0099-4321-e87e-60d9-9b8131459507` | Tom + ArenaReviewer | spawned_meshes=9, spawned_pads=2, save=false, power_changed=false |
+| `save_maps` Neuro-only | `chg_c40907cc-4ae1-8698-7ff8-34b52521f579` | Tom + ArenaReviewer | `packages_saved=[/Game/Maps/Epitope/SL_Epitope_NeuroGenetics]`. Admin / Lvl_Epitope / MainMenu **not** saved |
+
+Pre-save dirty: Neuro world only. Post-save `dirty_count=0`. Persistent stayed `Lvl_Epitope`. Unique `NavMeshBounds_NeuroGenetics` on Neuro.
+
+### editor-state after save + 9/9
+
+`Lvl_Epitope`; Admin+Neuro(+Cryo/Compute/Reactor) loaded; `dirty_packages=[]`.
+
+### 9/9 regressions PASS
+
+| Test | Run ID | Result |
+|---|---|---|
+| OpeningFoundation_Functional | `ptr_73b3e593-43ee-6849-1e1e-8aae6435b844` | **PASS** 41/41 |
+| OpeningInvestigation_Functional | `ptr_b89ff378-41a3-ad82-0afb-cd8e7b4aa57a` | **PASS** 71/71 |
+| OpeningResources_Functional | `ptr_3e8c9fa4-477c-2439-3ae8-839a68ad6d68` | **PASS** 105/105 |
+| OpeningBlock4_Functional | `ptr_76c82296-4e6b-1172-3b90-85bfe0b2b5d5` | **PASS** 36/36 |
+| CheckpointHealth_Functional | `ptr_44097e65-4f1f-60c1-593a-4a86b64e4205` | **PASS** 70/70 |
+| AmmoReload_Functional | `ptr_407ec545-421a-29f0-ba68-d3819ce8e8e9` | **PASS** 57/57 |
+| HostCombatLoop_Functional | `ptr_f56c9825-451c-2fac-a3e3-90a08f759cf0` | **PASS** 31/31 |
+| NeuroAccess_Functional | `ptr_80132016-4af6-1a95-d37e-9bb4edfa8f9c` | **PASS** 58/58 |
+| AdminToNeuroTraversal_Functional | `ptr_de327f46-4a8c-1c76-4793-e6a6e84573a2` | **PASS** 26/26 |
+
+### Out of scope (unchanged)
+
+Ch #4 campaign Hosts; Ch #5 Candidate B restore; targeting-why (3C); Research Station intro (5B); pursuer (4B deferred); Node Zero (6 BLOCKED).
+
+### Waiting on
+
+Tom: commit (map + `PROJECT_STATE.md` only, same as arrival `6004468`) or next beat. Do **not** commit bridge/playtest unless named.
