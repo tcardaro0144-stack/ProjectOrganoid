@@ -43,8 +43,10 @@ namespace
 	constexpr TCHAR GateIdName[] = TEXT("Gate_Neuro_Research");
 	constexpr TCHAR CheckpointLabel[] = TEXT("Checkpoint_NeuroAirlock");
 	constexpr TCHAR Host1Label[] = TEXT("Host_Neuro_1");
+	constexpr TCHAR AuthorizedAdminHostLabel[] = TEXT("Host_Admin_SecurityOfficer");
 	constexpr TCHAR SaveSlot[] = TEXT("OrganoidNeuroAccessTest");
 	const FVector PickupLocation(2580.0f, -560.0f, 80.0f);
+	const FVector AuthorizedAdminHostLocation(2820.0f, -600.0f, 100.0f);
 
 	bool PackageIsDirty(const TCHAR* Path)
 	{
@@ -1141,8 +1143,31 @@ namespace
 			UWorld* World,
 			AProjectOrganoidCharacter* Character)
 		{
-			AssertTrue(Record, TEXT("no_admin_hosts"), CountHostsInPackage(World, TEXT("SL_Epitope_Admin")) == 0,
-				TEXT("0"), FString::FromInt(CountHostsInPackage(World, TEXT("SL_Epitope_Admin"))), TEXT("Admin"));
+			const int32 AdminHosts = CountHostsInPackage(World, TEXT("SL_Epitope_Admin"));
+			AProjectOrganoidHostBase* AuthorizedAdminHost = Cast<AProjectOrganoidHostBase>(
+				OrganoidPlaytestActions::FindUniqueByLabel(World, AuthorizedAdminHostLabel));
+			const bool bZeroAdminHostsOk = AdminHosts == 0 && AuthorizedAdminHost == nullptr;
+			const FVector AdminHostLoc = AuthorizedAdminHost ? AuthorizedAdminHost->GetActorLocation() : FVector::ZeroVector;
+			const bool bOneAuthorizedAdminHostOk = AdminHosts == 1
+				&& AuthorizedAdminHost != nullptr
+				&& OrganoidPlaytestActions::ActorPackage(AuthorizedAdminHost).Contains(TEXT("SL_Epitope_Admin"))
+				&& OrganoidPlaytestActions::ActorLabel(AuthorizedAdminHost) == AuthorizedAdminHostLabel
+				&& AuthorizedAdminHost->GetClass()
+				&& AuthorizedAdminHost->GetClass()->GetName().Contains(TEXT("BP_OrganoidHost"))
+				&& FVector::Dist2D(AdminHostLoc, AuthorizedAdminHostLocation) <= 2.0f
+				&& FMath::Abs(AdminHostLoc.Z - AuthorizedAdminHostLocation.Z) <= 20.0f;
+			AssertTrue(
+				Record,
+				TEXT("admin.opening_hosts_authorized_only"),
+				bZeroAdminHostsOk || bOneAuthorizedAdminHostOk,
+				TEXT("0 or exactly one Host_Admin_SecurityOfficer at authored Block 4 transform"),
+				FString::Printf(
+					TEXT("count=%d label=%s class=%s loc=%s"),
+					AdminHosts,
+					AuthorizedAdminHost ? *OrganoidPlaytestActions::ActorLabel(AuthorizedAdminHost) : TEXT("none"),
+					(AuthorizedAdminHost && AuthorizedAdminHost->GetClass()) ? *AuthorizedAdminHost->GetClass()->GetName() : TEXT("n/a"),
+					AuthorizedAdminHost ? *AdminHostLoc.ToCompactString() : TEXT("n/a")),
+				TEXT("Admin"));
 			AssertTrue(Record, TEXT("neuro_hosts_remain"), CountHostsInPackage(World, TEXT("SL_Epitope_NeuroGenetics")) >= 3,
 				TEXT(">=3"), FString::FromInt(CountHostsInPackage(World, TEXT("SL_Epitope_NeuroGenetics"))), TEXT("Neuro"));
 			AProjectOrganoidHostBase* Host1 = Cast<AProjectOrganoidHostBase>(
