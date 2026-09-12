@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-12 (NeuroAccess + AdminToNeuro re-run PASS after rebuild. Lvl_Epitope clean.)_
+_Last updated: 2026-09-12 (Neuro Chapter Candidate B decision lock LOCKED at 468003c. No implementation.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -1457,3 +1457,124 @@ Editor was not running at session start; launched `Lvl_Epitope` via UnrealEditor
 |---|---|---|
 | NeuroAccess_Functional | `ptr_c083592f-45af-c78b-9a87-11b91d450ba7` | **PASS** 58/58 |
 | AdminToNeuroTraversal_Functional | `ptr_99b892b3-40de-c9b4-07e9-aba52fff3110` | **PASS** 26/26 |
+
+---
+
+## Full Game Remaining Audit (2026-09-12)
+
+**Doc-only.** No spawn / save / map mutation. HEAD context: Block 4 + RW blockout verified (`8e681e1` / `dc17932` lineage); 9/9 opening+RW regressions PASS; `Lvl_Epitope` clean.
+
+### Canon source and limits
+
+- Design authority in-repo is `Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md` (Restored Canon v1.0 **index**). Full v1.0 prose is **not in the repository** (canon file says it lives in owner-approved conversation material). This audit does **not** invent beats from that missing prose.
+- There is **no Opening Block 5+** in canon. After first transformed personnel, canon gives: (1) facility spine **Admin → NeuroGenetics → Cryo → Compute → Reactor / Incubator**; (2) conceptual early-campaign escalate; (3) **intended Neuro chapter shape** explicitly labeled *design target, not an implementation order*; (4) Candidate B / Research Station / pursuer / targeting as **do-not-implement until detailed campaign design**.
+- Live implementation evidence: this file + `Tools/unreal_mcp/PROJECT_ORGANOID_MASTER_AI_HANDOFF.md` + existing maps/tests. Handoff rows that still say Block 4 “PROPOSED” are **stale** vs `8e681e1`.
+
+### Planned beats after Opening Block 4 (order as written in canon)
+
+**A. Early-campaign escalate** (remaining after “first transformed personnel”; *not a locked room-by-room sequence*):
+
+1. Increasingly abnormal biology
+2. Deeper Epitope science
+3. NeuroGenetics revelation
+
+**B. Intended Neuro chapter shape** (canon order as written):
+
+Arrival → establish scientific environment → evidence of containment/research failure → transformed personnel → discover systems/power compromised → exploration branches (resources, science, danger, optional discoveries) → deeper nervous-system evidence → power-restoration as structural spine → targeting knowledge becomes more meaningful → significant transformed-scientist encounter(s) → possible first pursuer escalation → power restored / state changes → Nathan reaches the Neuro revelation → Cryo route becomes legitimately available → chapter transition.
+
+**C. Facility spine after Neuro:** Cryo → Compute → Reactor / Incubator.
+
+**D. Named later systems (canon lists them; not a numbered opening-block sequence):** first meaningful Research Station intro; Layer 2 remaining (adaptations, Epitope Syringe, RPG at stations); six principal weapons / Lytic Cannon; first major pursuer (Neuro is a *candidate*, placement not locked). TBD and **not** listed as implementable beats: Node Zero details, vaccine mechanism, final Sterling role, remaining five weapon names.
+
+**E. Not a canon numbered beat:** Admin Security Officer unique visual / presentation pass — locked **Later** in this file’s Post–Block 4 decision lock (`cb42f05`). Included below as a known deferred item only.
+
+### Table
+
+| Beat | Planned in Canon | Implemented? | Map exists? | Tests? | Status |
+|---|---|---|---|---|---|
+| Research Wing / Admin→Neuro arrival (keycard + `Gate_ResearchWing`) | Implied by spine Admin → NeuroGenetics; coordinates not in canon (Block 2 / handoff lock `(2580,-560,80)`) | Yes — pickup + gate + connector (blockout meshes); required-beat framing locked at `cb42f05` | Admin + `Lvl_Epitope` (no `SL_Epitope_ResearchWing`) | `NeuroAccess_Functional`, `AdminToNeuroTraversal_Functional`, OpeningFoundation ResearchWingHold — PASS 2026-09-12 | **DONE** (blockout; presentation later) |
+| Admin Host unique visual / presentation | Not a canon campaign beat; PROJECT_STATE deferred | Blockout HostBase only | Admin | `OpeningBlock4_Functional` mechanical only | **BLOCKOUT** (presentation INCOMPLETE; later) |
+| Neuro arrival / establish scientific environment | Neuro chapter shape #1–2 | Geometry + streaming exist; no locked campaign “arrival” beat / objectives | `SL_Epitope_NeuroGenetics` | Traversal tests reach Neuro landing; no campaign-arrival test | **BLOCKOUT** (level exists; campaign beat not authored) |
+| Evidence of containment / research failure | Neuro chapter shape #3 | Stale Avery/Sterling Neuro pads/missions exist as **historical** only; not canonized | Neuro map | None as campaign beat | **NOT STARTED** (do not treat stale assets as canon) |
+| Neuro transformed personnel | Neuro chapter shape #4; “do not automatically create new enemy classes” | HostBase chassis + Neuro Hosts for *system* tests (`Host_Neuro_*`); not a locked Neuro campaign encounter | Neuro | `HostCombatLoop_Functional` (system) | **BLOCKOUT** (chassis; campaign encounter **NOT STARTED**) |
+| Discover systems / power compromised | Neuro chapter shape #5; Candidate B preferred | Power subsystem + panels exist as systems | Neuro / Admin power code | Power-related Admin tests; no Neuro power-campaign test | **BLOCKED** (Candidate B design not finished) |
+| Exploration branches (resources / science / danger / optional) | Neuro chapter shape #6 | Map scaffolding only; required vs optional **UNRESOLVED** | Neuro | None as campaign branches | **NOT STARTED** / **BLOCKED** until room-order design |
+| Deeper nervous-system evidence | Neuro chapter shape #7 + escalate “deeper Epitope science” | Not authored as campaign | Neuro | None | **NOT STARTED** |
+| Power-restoration spine (Candidate B) | Preferred direction; **do not implement until design finished** | Not implemented as campaign spine | Neuro | None | **BLOCKED** |
+| Biological targeting becomes meaningful (tutorial) | Layer 2 + Neuro “strong place to teach why”; HostBase 3 hitboxes are chassis not locked roster | Weak-point types + tactical 2.5× exist (**PROVISIONAL**); no campaign tutorial | Any (system) | `PETactical_Functional` (system) | **BLOCKED** / **NOT STARTED** as campaign beat |
+| Transformed-scientist encounter(s) | Neuro chapter shape #10; design separately | None as campaign | — | None | **NOT STARTED** / **BLOCKED** |
+| First major pursuer | Intended; Neuro **candidate**; placement / biology **not locked** | None | — | None | **NOT STARTED** / **BLOCKED** |
+| Power restored / state changes | Neuro chapter shape #12 | Facility-state exists for **Admin** (S21); not Neuro campaign climax | Admin verified; Neuro no | `S21_*` Admin only | **BLOCKED** (Neuro campaign) |
+| NeuroGenetics revelation | Chapter shape #13 + escalate #3; one question only (nervous systems reorganized/adapted) | Not authored | Neuro | None | **NOT STARTED** / **BLOCKED** |
+| First meaningful Research Station intro | Locked *role*; exact first placement TBD; Neuro actor does **not** lock intro | Class + `ResearchStation_NeuroGenetics` @ `(800,-1600,-1100)` | Neuro | `ResearchStation_Functional`, `NeuroResearchStationPlacement_Functional` (placement/class, not campaign intro) | **BLOCKED** (placement DONE; campaign intro not authorized) |
+| Cryo route unlock / Neuro→Cryo transition | Chapter shape #14; Candidate B holds Cryo so floor cannot sequence-break | Checkpoint `Checkpoint_FreightAirlock` exists; no authorized unlock beat | `SL_Epitope_Cryo` | Checkpoint floor test includes instance; no Cryo unlock test | **BLOCKED** / **NOT STARTED** |
+| Cryo chapter | Facility spine | Blockout / scaffolding; campaign beats **UNRESOLVED** | `SL_Epitope_Cryo` | None as campaign | **BLOCKOUT** (map) / **NOT STARTED** (beats) |
+| Compute chapter | Facility spine | Same | `SL_Epitope_Compute` (`Checkpoint_InterfaceChamber`) | None as campaign | **BLOCKOUT** (map) / **NOT STARTED** (beats) |
+| Reactor / Incubator chapter | Facility spine | Same | `SL_Epitope_Reactor` (`Checkpoint_BasinRim`) | None as campaign | **BLOCKOUT** (map) / **NOT STARTED** (beats) |
+| Layer 2 remaining: adaptations / syringe / RPG at stations | Opening tutorial Layer 2 “eventual” | Adaptations system verified; syringe kit TBD; station class verified | N/A (systems) | `BiologicalAdaptation_Functional`; no syringe campaign | **BLOCKOUT** (systems) / **BLOCKED** (campaign dump / kit names) |
+| Six principal weapons / Lytic Cannon | Locked count/roles; five names + Lytic specs **UNRESOLVED** | Opening default pistol loop verified; four-weapon roster SUPERSEDED | N/A | `AmmoReload_Functional` (pistol) | **NOT STARTED** (roster) / pistol **DONE** for opening |
+| Node Zero / vaccine / final Sterling | TBD — do not invent | Do not implement lore answers | — | None | **BLOCKED** (TBD) |
+
+### Reading
+
+- **Playable verified campaign path today:** Opening Blocks 1–4 + RW keycard/gate blockout to Neuro vestibule. Stop there for campaign content.
+- **Next implementable campaign work** still needs Tom design lock (canon): Neuro Candidate B (room order, required vs optional, power spine, targeting tutorial, scientist encounters, pursuer yes/no, Research Station intro, Neuro climax, Cryo unlock). Do **not** treat “preferred Candidate B” as approval to build.
+- **Maps ahead of story:** Cryo / Compute / Reactor exist as blockout with checkpoints; no campaign beats.
+
+### Waiting on
+
+Tom: which remaining beat (if any) to design-lock next. No implementation from this audit.
+
+---
+
+## Neuro Chapter — Candidate B Power Restoration Spine — Decision Lock - LOCKED at 468003c
+
+**Status:** **LOCKED** (Tom approved recommended set 1B, 2B, 3C, 4B, 5B, 6 BLOCKED). Doc-only. No spawn, save, map, mission, actor, or C++ implementation authorized by this lock.
+**HEAD context:** `468003c` (RW Host-allow tests) + `dc17932` (RW blockout evidence). Opening 1–4 + RW blockout **DONE**. Neuro campaign after vestibule still not implemented.
+**Authority:** `Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md` (Restored Canon v1.0 **index**). Full v1.0 prose is not in the repo. This sheet does **not** invent lore, room order, enemy classes, or mechanism answers.
+**Still standing locks:** Admin Security Officer **PRESENTATION INCOMPLETE** (later). Layer 2 **Epitope Syringe kit TBD**. Post–Block 4 Choice 4 (Candidate B blocked pending design) is **superseded** by this lock — design is locked; implementation is **not** started.
+
+### What this sheet is / is not
+
+Canon already prefers Candidate B: *Neuro power restoration as the progression spine, with Cryo held so the floor cannot be sequence-broken immediately* (`PROJECT_ORGANOID_CANON.md` § Progression design context). That is **preferred direction, not an implementation order**, and **must not be implemented until detailed campaign design is finished**.
+
+This sheet covers **only** the six unresolved choices Tom asked for. Still **out of scope** (canon TBD / later sheets): exact Neuro room order; required vs optional discoveries; transformed-scientist encounter design; Neuro climax text; Cryo unlock choreography; targeting UI presentation (debug sphere is not final); Host taxonomy beyond HostBase chassis.
+
+**Implementation evidence (not design authority):** `UProjectOrganoidPowerSubsystem` + `AProjectOrganoidPowerPanel` already have sectors (FacilityWide / Admin / NeuroGenetics / Cryo / Compute / Reactor) and states (Online / Emergency / Blackout). Lights, DoorLock, SecurityGate, and hazards can listen. `ResearchStation_NeuroGenetics` exists at `(800,-1600,-1100)`. Existing systems may be **reused**; they do not lock campaign meaning.
+
+### Decision table
+
+| # | Choice | Options | LOCKED | Reason (cite; do not invent) |
+|---|---|---|---|---|
+| 1 | **Power compromised:** what systems go down? | **A.** Total blackout — lights, doors, research logs, and containment all dead until restore. **B.** Selective / emergency — emergency lighting; some doors / sector systems offline (especially the Cryo hold); logs and containment *evidence* stay readable on backup. **C.** Doors-only — full lights; only progression locks. **D.** Containment-primary — power failure framed as a new breach spectacle. | **LOCKED 1B — Selective / emergency** | Chapter shape separates *evidence of containment/research failure* (#3) from *discover systems/power compromised* (#5) (`PROJECT_ORGANOID_CANON.md` § Intended Neuro chapter shape). Do not collapse those into one “everything dies” beat. Revelation must be understandable on the **main path**; optional pads may deepen science — do **not** hide the central plot only inside optional datapads, and do not invent a rule that all research logs are dead until power (`§ Nathan and the science`). Candidate B’s structural job is to **hold Cryo** (`§ Progression design context`), which wants **some** doors/systems offline, not a lecture-blocking blackout. Nathan can already recognize containment failure as an operational abnormality without knowing the cause (`§ Nathan and the science`) — that evidence should be visible *before* the restore puzzle. Existing power chassis already has Emergency vs Blackout (implementation evidence only). **Do not invent** which tanks, strains, or logs fail. |
+| 2 | **Candidate B:** what *is* the power-restoration spine? | **A.** Single generator restart (one authored interact). **B.** Restore Neuro sector via existing PowerPanel / Online–Emergency–Blackout chassis (one or more authored panels; room count later). **C.** Scattered fuse / breaker hunt (new collectible loop). **D.** Abstract override with no power systems. | **LOCKED 2B — Sector restore via existing PowerPanel chassis** | Canon names the spine as **power restoration**, not a fuse hunt or QTE (`§ Progression design context`; chapter shape: *power-restoration as structural spine* → later *power restored / state changes*). It does **not** specify fuse vs generator vs routing — those names would be invented if treated as canon. Hierarchy: *working compatible systems should be preserved rather than rewritten for taste*. PowerPanel + NeuroGenetics sector already exist as **chassis**; campaign wiring (which panels, which doors, exact rooms) stays **UNRESOLVED** (`§ TBD`: exact Neuro room order). Function of the spine if Tom locks this row: player restores Neuro sector power → authored state change → Cryo remains held until that restore makes the route **legitimately available** (chapter shape #14–15). **Not** a new minigame type. Exact panel count / room list = later sheet. |
+| 3 | **Biological targeting tutorial:** when does the player learn *why* to target the nervous system, and what teaches it? | **A.** Neuro arrival. **B.** After failure-evidence + first Neuro Host, before power restore. **C.** After/during power restore, when chapter shape says targeting becomes more meaningful. **D.** Only at transformed-scientist encounter(s). **E.** Defer past Neuro. | **LOCKED 3C — After/during power restore; taught by a required Host encounter + prior nervous-system evidence** | Canon: *Neuro is a strong place to teach **why** biological targets matter. Understanding the biology should give tactical options. Weak points should not feel like arbitrary glowing shooter dots* (`§ Biological targeting`). Written chapter order: deeper nervous-system evidence → power-restoration spine → **targeting knowledge becomes more meaningful** (`§ Intended Neuro chapter shape`). Layer 2: introduce gradually; do not dump (`§ Opening tutorial`). Show biological evidence **before** fully explaining it; early language stays cautious (*“Something's changing the way their nervous systems work”*) (`§ Nathan and the science`). **What teaches it (recommended, not a locked roster):** a required transformed-personnel fight (HostBase chassis only; *do not automatically create new enemy classes*) where hitting a canon *example* target produces a readable operational effect (Locomotor Nerve Cluster → impair movement — example language, not a complete taxonomy). Player already has Admin Host (kill) and HostBase 3 hitboxes as **systems**; this beat is the first time the **why** is authored. Targeting Sphere = mechanic to teach; **debug sphere / radius not final** — **PRESENTATION INCOMPLETE**. Layer 2 syringe still **TBD** — do not attach syringe teaching here. |
+| 4 | **First pursuer:** Neuro, or later? What triggers it? | **A.** Neuro late-chapter (after scientist encounter / as power state changes) — Neuro stays the candidate. **B.** Defer first major pursuer past Neuro (Cryo or later). **C.** Neuro arrival / power-down trigger. **D.** Lock Neuro as first pursuer now and invent identity/trigger. | **LOCKED 4B — Defer past Neuro; Neuro remains a candidate, not a placement lock** | Canon: a recurring pursuer is **intended**; NeuroGenetics is a **candidate**, *not final placement canon*; *do not finalize* biology, appearance, identity, origin, HP, attacks, or narrative connection (`§ First major pursuer`). TBD list explicitly includes *whether the first pursuer introduction occurs in Neuro*. Chapter shape marks it **possible**, after scientist encounters, not on arrival. Option **C** contradicts “teach a different category of threat” if it stacks on vestibule entry. Option **D** invents lore. Option **A** is the only Neuro-compatible reading of the written chapter order (*possible first pursuer escalation* → *power restored / state changes*) **if** Tom later wants Neuro; it is **not** recommended as the default for *this* sheet because Candidate B + targeting + revelation already fill the unfinished chapter, and pursuer needs an authored escape path that does not exist yet. **Trigger:** TBD — do not invent (no “power-on releases X”). If Tom overrides to **A**, follow canon teaching rules (resilience / recover / escape / stagger — do **not** display “THIS ENEMY CANNOT BE KILLED”); still no biology lock. |
+| 5 | **Research Station intro:** Neuro arrival, or after power restored? | **A.** Neuro arrival (use existing `ResearchStation_NeuroGenetics`). **B.** After power restored / after targeting-why (enough context). **C.** After Neuro revelation. **D.** Cryo or later. | **LOCKED 5B — After power restored (and after targeting-why), not on arrival** | Canon: introduce Research Stations *when the player has enough context to understand why customization matters*; free respec; not during combat; do not revive Sterling shop (`§ Research Stations`). *Exact first placement remains to be designed*; existing Neuro actor **does not lock** the first *meaningful* introduction (same section). Arrival is too early: Layer 2 is gradual; Nathan is not a research scientist; player has not yet been taught why biological targeting / RPG customization matters (`§ Locked identity`; `§ Opening tutorial` Layer 2). After power restore + targeting-why, context exists without waiting for Node Zero / vaccine answers (those stay blocked — Choice 6). Existing actor at `(800,-1600,-1100)` may remain **placement evidence**; campaign intro wait for this lock. Do not dump adaptations + syringe + full RPG at the same beat (Layer 2 syringe **TBD**). |
+| 6 | **Node Zero / vaccine / final Sterling** | (No design options.) | **LOCKED 6 — Still BLOCKED — do not design now** | Neuro must **not** yet answer who/what controls the process, why it is occurring, the complete mechanism, its full relationship to Epitope’s larger program, the **final role of Node Zero**, the **final vaccine mechanism**, or the **final role of Dr. Sterling** (`§ NeuroGenetics narrative function`). Same items sit on the canon **TBD** list (`§ TBD in Restored Canon v1.0`). Neuro answers **one** question only: victims’ nervous systems are being reorganized/adapted in connection with Epitope neural research. **No options, no recommended lore, no Sterling-shop revival.** |
+
+### Sequencing implication (LOCKED recommended set)
+
+1. Neuro arrives on **emergency / selective** power (Choice **1 = B**): lights readable; some doors/systems down; Cryo held; logs/evidence not globally bricked.
+2. Player explores branches, sees containment/research-failure **evidence**, then finds power compromised (chapter shape #3–6 — room order still TBD).
+3. Spine is **Neuro sector restore** through existing PowerPanel chassis (Choice **2 = B**) — not a new fuse-hunt genre.
+4. After restore, **targeting-why** on a required HostBase encounter using prior nervous-system evidence (Choice **3 = C**). Presentation of tactical UI stays incomplete.
+5. **First meaningful Research Station intro** after that context (Choice **5 = B**). Existing Neuro actor ≠ auto-intro.
+6. **Pursuer** stays off this pass (Choice **4 = B**). Neuro remains a later candidate.
+7. Revelation still the one locked Neuro question only. Choice **6** stays blocked.
+8. Cryo becomes legitimately available **after** power restored / state changes — details on a later sheet.
+
+### Explicitly out of scope until Tom approves implementation
+
+- Any Neuro spawn, save, mission, objective, or Candidate B wiring
+- Admin / Host **presentation** pass (still **INCOMPLETE**)
+- Layer 2 Epitope Syringe kit / abilities
+- Fuse-hunt or generator set-pieces as new mechanics
+- Pursuer biology / identity / trigger
+- Node Zero, vaccine, final Sterling, transformation mechanism
+- Exact Neuro room list / required vs optional
+- Treating the lock as a build-now order (next implementation is a separate Neuro arrival / scientific environment blockout pass)
+
+### Waiting on
+
+Lock accepted. **No implementation in this commit.** Next implementation (separate pass): Neuro arrival / scientific environment blockout.
