@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-12 (Neuro Chapter Candidate B decision lock LOCKED at 468003c. No implementation.)_
+_Last updated: 2026-09-12 (Neuro arrival / scientific environment blockout saved. 9/9 regressions PASS. Lvl_Epitope clean.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -1578,3 +1578,168 @@ This sheet covers **only** the six unresolved choices Tom asked for. Still **out
 ### Waiting on
 
 Lock accepted. **No implementation in this commit.** Next implementation (separate pass): Neuro arrival / scientific environment blockout.
+
+---
+
+## Neuro Arrival / Scientific Environment — Inventory (2026-09-12)
+
+**Phase 1 only.** No spawn / save / map mutation. HEAD `9eade68`. Live editor read: `Lvl_Epitope`, Admin+Neuro(+Cryo/Compute/Reactor) loaded, `dirty_count=0`, PIE stopped. Bridge `get_editor_state` / `get_actor` / `get_actor_property` / `list_actors_near` (read_only).
+
+### 1. Canon — what “Arrival” and “scientific environment” mean
+
+From `Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md`. **No coordinates, actor labels, bench list, or arrival trigger in canon.**
+
+Quoted / paraphrased without invention:
+
+- Intended Neuro chapter shape (design target, **not** an implementation order): **Arrival → establish scientific environment** → evidence of containment/research failure → … (`§ Intended Neuro chapter shape`).
+- Exact Neuro room order, required vs optional discoveries, first Research Station placement, Neuro climax, Cryo unlock remain **TBD** (`§ TBD`; `§ Progression design context`).
+- Neuro is a BSL-4 neural-research floor. Territory may include neural organoids / cultures / bio-silicon — naming that territory does **not** canonize a catastrophe mechanism (`§ Science / horror principle`).
+- Nathan is **not** a research scientist; he and the player learn deeper science together (`§ Locked identity`; `§ Nathan and the science`).
+- Show biological evidence **before** fully explaining it. Critical revelation stays on the main path; optional pads may deepen. Existing Avery/Sterling-era Neuro missions, datapads, survivor dialogue, Python builders are **historical/stale — not canonized** (`§ Nathan and the science`; `§ NeuroGenetics narrative function`).
+- Candidate B **LOCKED** at `9eade68`: arrival on **1B selective/emergency**; Cryo held; power-restore / targeting-why / station intro / pursuer are **later** beats, not this pass.
+
+**Gap:** canon does not define where Arrival happens, what meshes “sell the lab,” or any new objective. Do not invent Node Zero / vaccine / Sterling answers.
+
+### 2. How the player currently arrives (no new trigger)
+
+Open walk. No `Trigger_NeuroArrival`, no `Obj_NeuroArrival`. Matches Post–Block 4 Choice 1 (no new Host-death objective). RW keycard + `Gate_ResearchWing` is the required credential.
+
+| Step | Actor | Package (live) | Location | Notes |
+|---|---|---|---|---|
+| Admin connector | `Admin_ResearchWing_Connector_Floor` | Admin (handoff / prior RW inventory) | `(4752.5, -912.5, 10)` | Present |
+| Admin landing | `Spine_Landing_Admin` | `/Game/Maps/Lvl_Epitope` | `(5000, -900, 0)` | Present |
+| Seam stream | `StreamBand_Admin_NeuroGenetics` | `/Game/Maps/Lvl_Epitope` | `(5000, 0, -600)` | NeuroAccess waits here |
+| Ramp | `Spine_Ramp_Admin_To_NeuroGenetics` | `/Game/Maps/Lvl_Epitope` | `(5000, 0, -600)` pitch ≈ −33.7° | Walk + last-point teleport in tests |
+| Neuro landing | `Spine_Landing_NeuroGenetics` | `/Game/Maps/Lvl_Epitope` | `(5000, 900, -1200)` | Test waypoint `neuro_landing` |
+| Neuro bridge | `Spine_Bridge_NeuroGenetics` | `/Game/Maps/Lvl_Epitope` | `(4000, 900, -1200)` | Approach to gate |
+| Gate | `Gate_ResearchWing` (`GateId=Gate_Neuro_Research`) | `/Game/Maps/Lvl_Epitope` | `(2900, 900, -1060)` | `RequiredSecurityTier=2` (Level2_Lab); `GateState=0` Sealed |
+| Floor | `NeuroGenetics_FloorPlate` | `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics` | `(0, 0, -1200)` extent 3000×3000×10 | After gate |
+| Arrival save | `Checkpoint_NeuroAirlock` | Neuro | `(1950, 0, -1140)` | `CheckpointId=Checkpoint_Neuro_Airlock`; display **Gowning Airlock**; 25% floor |
+
+Tests that already prove this path: `NeuroAccess_Functional`, `AdminToNeuroTraversal_Functional` (PASS 2026-09-12).
+
+### 3. Existing Neuro map (live, 2026-09-12)
+
+**Geometry / streaming:** `SL_Epitope_NeuroGenetics` loaded. Floor plate + corridor walls (`Wall_Corridor_North/South_*`, `Wall_EntryHall_0/1`). `NavMeshBounds_NeuroGenetics` @ `(0, 0, -1000)`. `StreamVolume_Region_NeuroGenetics` @ `(0, 0, -700)`. No `NeuroGenetics_Ceiling`, no `Light_Neuro_1`.
+
+**Already-present gameplay actors (Neuro package unless noted):**
+
+| Label | Class | Location | Role vs this beat |
+|---|---|---|---|
+| `Checkpoint_NeuroAirlock` | Checkpoint | `(1950, 0, -1140)` | Existing arrival save — **keep** |
+| `Host_Neuro_1/2/3` | `BP_OrganoidHost_C` | `(-400,1400,-1100)` / `(400,2150,-1100)` / `(-1950,1025,-1100)` | System-test Hosts. Chapter #4 campaign encounter **not** this pass. Tests require **≥3**. **Do not delete.** |
+| `ResearchStation_NeuroGenetics` | ResearchStation | `(800, -1600, -1100)` yaw 180 | Placement verified. Intro **LOCKED 5B later**. Prompt “Use Research Station”. **Do not intro.** |
+| `PowerPanel_NeuroBackup` | PowerPanel | `(-500, -2275, -1100)` | `PowerSector=NeuroGenetics` (enum 2); `RestoredState=Online` (0); prompt “Restore Lab Power”. Spine **LOCKED 2B later**. **Do not wire campaign restore.** |
+| `Hazard_ScrubberLeak` | HazardZone | `(-1950, -1650, -1000)` | Existing; not an arrival beat |
+| `CorridorTraps_GowningRing` | CorridorTrapVolume | `(-1145, 0, -1060)` | Existing; not an arrival beat |
+| `Scannable_OrganoidMatrix_1/2/3` | Scannable | `(-2425/ -1950/ -1475, 1900, -1080)` | Closest existing “lab science” props. Avery-era Python text is **stale** — do not canonize scan copy |
+| `DataPad_EthicsObjection` | DataPad | `(0, -1650, -1110)` | **Stale** Sterling-era (`build_epitope_rooms.py`). Not canon |
+| `DataPad_SpecimenBadge` | DataPad | `(-360, -2150, -1110)` | **Stale**. Not canon |
+| `NPC_IncineratorSurvivor` | DialogueNPC | `(440, -1100, -1100)` | **Stale**. Not canon |
+| `Ambience_GowningCorridor` | AmbienceZone | `(-950, 0, -1000)` | Existing gowning tone |
+
+`SterlingTerminal_FieldOffice` is on **Admin** @ `(0, -1650, 100)` — not Neuro. Sterling shop superseded.
+
+**Power (C++ seed, not a Neuro map property):** `UProjectOrganoidPowerSubsystem::SeedDefaultSectorStates` already sets **NeuroGenetics = Emergency**, **Cryo = Blackout**, Admin/Compute/FacilityWide Online. Matches LOCKED **1B** + Cryo hold **without a new Phase 2 power change**. `PowerPanel_NeuroBackup.RestoredState` is Online (what the panel *would restore to*).
+
+### 4. Scientific environment props — blockout level
+
+| Kind | Present? |
+|---|---|
+| Lab benches / desks / microscopes (`LabBench_*`, `Microscope_*`, etc.) | **NONE** (label probes miss) |
+| Organoid matrix scannables | Yes — 3 (stale scan copy; chassis exists) |
+| Data pads | Yes — 2 stale Avery/Sterling pads |
+| Unique lighting / ceiling | Not found |
+| Campaign “this is a lab” dressing beyond floor/walls/matrices | **Missing** |
+
+### 5. Gaps vs Chapter #1–2 (do not invent fills)
+
+1. Canon has **no** locked arrival coordinate or scientific-prop list.
+2. Traversal + gowning checkpoint **already work**. Missing piece is **authored campaign meaning**, not a missing door.
+3. No arrival objective/trigger — keep it that way unless Tom asks otherwise.
+4. Hosts / station / PowerPanel / stale pads / survivor **already exist**. Phase 2 ChatGPT draft (“no Hosts,” “keep power Online”) is **wrong** vs live map + C++ seed + tests + Candidate B lock. Do not delete Hosts. Do not flip Neuro to Online. Do not implement restore/targeting/station intro.
+5. 2026-08-31 progression survey file is **not in the repo**; this live editor read is the current “what exists” snapshot.
+
+### 6. Phase 2 wait-for-approval (not started)
+
+Recommended default if Tom says go — **verify-existing + optional blockout dress only**:
+
+- Treat **`Spine_Landing_NeuroGenetics` + `Checkpoint_NeuroAirlock` (Gowning Airlock)** as the arrival. No new checkpoint unless Tom rejects this.
+- Scientific environment: either (A) accept existing matrices + walls as the lab read for blockout, or (B) add a **small** set of unlabeled blockout benches on Neuro only — Tom must pick. Presentation stays **INCOMPLETE**.
+- Do **not** add containment-failure evidence, new Hosts, power-restore wiring, station intro, pursuer, or new lore pads.
+- Save: Neuro-only `save_maps` **if** Neuro package actors change; Lvl_Epitope-only **only** if spine/landing/gate change (not expected). Dual approval. Never Save All. Recast dirt ≠ authored.
+
+### Waiting on
+
+Tom: approve Phase 2 scope (verify-existing vs add benches) before any spawn/save.
+
+---
+
+## Neuro Arrival / Scientific Environment — Phase 2 COMPLETE (2026-09-12)
+
+**Scope executed as approved:** verify-existing arrival; small Neuro-only blockout lab set; remove stale Avery/Sterling pads + incinerator NPC; no power flip; presentation **INCOMPLETE**. HEAD context `9eade68` + this working tree.
+
+### Arrival (verify-existing, no new spawn/trigger)
+
+| Actor | Location | Status |
+|---|---|---|
+| `Spine_Landing_NeuroGenetics` | `(5000, 900, -1200)` on `Lvl_Epitope` | Unchanged |
+| `Checkpoint_NeuroAirlock` (Gowning Airlock) | `(1950, 0, -1140)` on Neuro | Unchanged |
+
+No `Trigger_NeuroArrival` / `Obj_NeuroArrival`.
+
+### Lab dressing (Neuro only, Engine BasicShapes, collision off)
+
+| Label | Location | Mesh |
+|---|---|---|
+| `Neuro_Lab_Bench_1` | `(200, -1850, -1160)` | Cube |
+| `Neuro_Lab_Bench_2` | `(500, -2000, -1160)` | Cube |
+| `Neuro_Lab_Bench_3` | `(-100, -2000, -1160)` | Cube |
+| `Neuro_Lab_Desk_1` | `(550, -1400, -1162)` | Cube |
+| `Neuro_Lab_Desk_2` | `(250, -1450, -1162)` | Cube |
+| `Neuro_Lab_Microscope_1` | `(550, -1380, -1100)` | Cylinder |
+
+SE lab pocket; Hosts remain north (`Y>1000`). Station / PowerPanel / hazard / traps / matrices / ambience **kept**.
+
+### Stale removed (not canon)
+
+`DataPad_EthicsObjection`, `DataPad_SpecimenBadge`, `NPC_IncineratorSurvivor` — gone. `NeuroResearchStationPlacement_Functional` DistTo treats missing as clear; station neighborhood allowlist now 0 or 1 for those labels.
+
+### Power
+
+Not touched. C++ seed still Neuro **Emergency**, Cryo **Blackout**. `PowerPanel_NeuroBackup` prompt still “Restore Lab Power”. Candidate B restore **not** implemented.
+
+### Writes
+
+| Change | ID | Approvals | Result |
+|---|---|---|---|
+| `spawn_neuro_arrival_lab_dressing` | `chg_f17a1580-46db-f076-8861-f7980f5c8df5` | Tom + ArenaReviewer | deleted_stale=3, spawned=6, save=false |
+| `save_maps` Neuro-only | `chg_de0c30bf-4340-986c-c3e6-aebded1bbd51` | Tom + ArenaReviewer | `SL_Epitope_NeuroGenetics` saved. Admin / Lvl_Epitope / MainMenu **not** saved |
+
+Pre-save dirty: Neuro world only. Post-save `dirty_count=0`. Persistent stayed `Lvl_Epitope`.
+
+### editor-state after save + 9/9
+
+`Lvl_Epitope`; Admin+Neuro(+Cryo/Compute/Reactor) loaded; `dirty_packages=[]`.
+
+### 9/9 regressions PASS
+
+| Test | Run ID | Result |
+|---|---|---|
+| OpeningFoundation_Functional | `ptr_826c8107-4d93-63a2-91f6-119f1dff6403` | **PASS** 41/41 |
+| OpeningInvestigation_Functional | `ptr_8a3b134c-4507-7722-77d5-57be88764411` | **PASS** 71/71 |
+| OpeningResources_Functional | `ptr_5145b80b-492b-10a6-a3b1-04a3e923cd84` | **PASS** 105/105 |
+| OpeningBlock4_Functional | `ptr_5eac01a8-4d7a-810a-9a8c-1691a332bd32` | **PASS** 36/36 |
+| CheckpointHealth_Functional | `ptr_dfcfe5bb-4c22-a272-cb45-6d83a4a2c11b` | **PASS** 70/70 |
+| AmmoReload_Functional | `ptr_aa7f7f18-4c7b-4dbf-f1b1-bf9092a0004b` | **PASS** 57/57 |
+| HostCombatLoop_Functional | `ptr_12d43d8d-4fca-237b-78fa-4397757a1608` | **PASS** 31/31 |
+| NeuroAccess_Functional | `ptr_989f2e62-4eef-e6cc-acdc-ab9f6515546d` | **PASS** 58/58 |
+| AdminToNeuroTraversal_Functional | `ptr_e3ff941d-4ff0-43f7-f8bc-c294036fb148` | **PASS** 26/26 |
+
+### Out of scope (unchanged)
+
+Ch #3 containment evidence; Ch #4 campaign Hosts; Ch #5 Candidate B restore; targeting-why; Research Station intro; pursuer; Node Zero.
+
+### Waiting on
+
+Tom: commit or next beat (containment/research-failure evidence is Ch #3 — still **not** authorized).
