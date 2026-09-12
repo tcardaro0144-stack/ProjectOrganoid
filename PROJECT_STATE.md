@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-11 (Block 4 VERIFIED at `8e681e1`. Appended Post-Block 4 Next Beat Decision Lock Prep — DRAFT awaiting Tom approval. No implementation.)_
+_Last updated: 2026-09-12 (NeuroAccess + AdminToNeuro re-run PASS after rebuild. Lvl_Epitope clean.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -1247,3 +1247,213 @@ Neuro's older spawn path only checks coarse `GetActorBounds` magnitude. The Admi
 ### Waiting on
 
 Tom’s explicit creative approval (accept recommended set, or rewrite any row). **No implementation until that approval.**
+
+---
+
+## RW Keycard Blockout — Inventory (Phase 1, 2026-09-11)
+
+**Status:** inventory only — **no spawn / save / map mutation**. HEAD `cb42f05` (decision lock commit message treats Choices 1–4 recommended set as accepted). Block 4 remains at `8e681e1`.
+**Scope of this note:** what already exists vs canon gaps for Research Wing keycard/door as the next **required** beat (blockout). Not authorizing Phase 2.
+
+### 1. Canon (`Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md`) — Research Wing keycard / door
+
+Canon does **not** specify a Research Wing keycard actor label, world coordinates, or a dedicated Research Wing door mesh.
+
+Relevant canon facts (no invention beyond these):
+
+- Facility progression: **Admin → NeuroGenetics → Cryo → Compute → Reactor / Incubator**.
+- Neuro Candidate B / first meaningful Research Station intro: **do not implement** until Tom finishes detailed campaign design.
+- Opening tutorial sequence and many Neuro beats remain **UNRESOLVED** in the unknown list (includes first transformed encounter, exact Neuro room order, Cryo unlock, etc.).
+
+**Gap:** exact keycard placement, door placement, and “after Security Officer → Research Wing” player guidance are **not** in canon prose. Authoritative *implementation* coordinates come from handoff + verified Opening Block 2 / Neuro access work (below), not from inventing new lore.
+
+### 2. Existing maps (`Content/Maps/`)
+
+| Package | Role for RW |
+|---|---|
+| `/Game/Maps/Lvl_Epitope` | Persistent campaign world. Owns **`Gate_ResearchWing`** (unique on this package for Lvl_Epitope-only saves). |
+| `/Game/Maps/Epitope/SL_Epitope_Admin` | Opening Admin. Owns **`Pickup_ResearchWingKeycard`** and Admin Research Wing **connector** geometry (`Admin_ResearchWing_Connector_*`). |
+| `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics` | Beyond the gate (Neuro). Not a “Research Wing” sublevel name. |
+| `/Game/Maps/Epitope/SL_Epitope_Cryo` | Later sector |
+| `/Game/Maps/Epitope/SL_Epitope_Compute` | Later sector |
+| `/Game/Maps/Epitope/SL_Epitope_Reactor` | Later sector |
+| `/Game/Maps/Lvl_MainMenu` | Menu |
+
+**No `SL_Epitope_ResearchWing` (or similar) exists.** “Research Wing” in current implementation = Admin connector + `Gate_ResearchWing` on `Lvl_Epitope` + Neuro streaming beyond. Do not invent a new map package without Tom approval.
+
+### 3. Keycard system (already implemented)
+
+| Piece | Path / label | Notes |
+|---|---|---|
+| Pickup class | `AProjectOrganoidItemPickup` (`/Script/ProjectOrganoid.ProjectOrganoidItemPickup`) | Same base as other item pickups; blockout mesh via `PickupMesh`. |
+| Item DA | `/Game/Data/Items/DA_Item_ResearchWingKeycard` | `ItemName` “Research Wing Keycard”; `ItemType` KeyItem; **`SecurityTier = Level2_Lab`**; `bBroadcastGenericKeycardObjectiveEvent = false` (no generic keycard objective spam). |
+| World label | **`Pickup_ResearchWingKeycard`** (not `Keycard_ResearchWing`) | Locked by bridge preflight. |
+| Location | **`(2580, -560, 80)`** | Handoff Block 2 verified; bridge `spawn_admin_research_wing_keycard` requires this exact location. On **Admin** package. |
+| Related Admin keycard | `DA_Item_AdminKeycard` / `Pickup_AdminKeycard` | `Level1_Admin` tier; separate from RW. |
+| Inventory API | `UProjectOrganoidInventoryComponent::HasKeycardOfTier` / `ConsumeKeycardOfTier` | Gate checks tier. |
+| Bridge action | `spawn_admin_research_wing_keycard` | Fail-closed; Admin-only; does not save. |
+
+### 4. Door / gate (already implemented)
+
+| Piece | Path / label | Notes |
+|---|---|---|
+| Gate class | `AProjectOrganoidSecurityGate` (+ BP `BP_AdminSecurityGate`) | Keycard override; sealed barrier volume. |
+| World label | **`Gate_ResearchWing`** (not `Door_ResearchWing`) | Must be unique on **`Lvl_Epitope`**; must **not** be duplicated onto Admin (connector spawn preflight). |
+| Required tier | **`Level2_Lab`** (asserted by `NeuroAccess_Functional`) | Matches RW keycard DA. |
+| Connector (Admin) | `Admin_ResearchWing_Connector_Floor` etc. near `(4752.5, -912.5, …)` | Bridge `spawn_admin_research_wing_connector`; Admin package; opens S12 east wall path toward gate. Does not touch Neuro or `Gate_ResearchWing`. |
+
+**Save policy implication:** keycard/connector mutations → **Admin-only** `save_maps` if dirty. Gate mutations → **Lvl_Epitope-only** save policy (persistent must be `Lvl_Epitope`; unique `Spine_Landing_Admin` + `Gate_ResearchWing`). Do not save Neuro Recast dirt.
+
+### 5. Verified flow (handoff + playtests — already green historically)
+
+Expected mechanical flow already covered by tests (not reinvented):
+
+1. Keycard held in Admin Security office at `(2580, -560, 80)`.
+2. Without `Level2_Lab`, `Gate_ResearchWing` blocks (`OpeningFoundation` ResearchWingHold / `NeuroAccess` lock proofs).
+3. With RW keycard, gate can be overridden; Admin → Neuro traversal covered by `AdminToNeuroTraversal_Functional` / `NeuroAccess_Functional`.
+4. Opening Blocks 1–3 / Block 4 treat keycard as **present**; Block 4 plan explicitly: after Host victory, “RW keycard still held if not taken; **no** Neuro unlock change” for that encounter boundary — decision lock Choice 2 now reframes RW as the next **required campaign beat** without adding a new objective (Choice 1 = none).
+
+### 6. Gaps / Phase 2 questions (do not invent; wait for Tom)
+
+1. **Spawn from scratch is likely unnecessary** — pickup, DA, gate, connector, and bridge actions already exist and were VERIFIED for Block 2 / Neuro access. Phase 2 may be **verify-in-editor + confirm required-beat framing**, not new actors.
+2. **Canon gap** — no canon coordinates; use locked Block 2 `(2580, -560, 80)` / existing `Gate_ResearchWing` unless Tom overrides.
+3. **Label mismatch vs Phase 2 prompt** — world labels are `Pickup_ResearchWingKeycard` and `Gate_ResearchWing`; keep those (tests + bridge hard-require them). Do not rename to `Keycard_ResearchWing` / `Door_ResearchWing` without a deliberate migration.
+4. **“Required beat” without new objective** — mechanically the gate is already required for Neuro. Remaining design gap: any **post-Host soft guidance** (none per Choice 1), or Host-death prerequisite on the gate (would be **new** behavior; not in current tests; do not add without Tom).
+5. **Live presence** — Phase 1 did not call Unreal. Confirm in Phase 2 with read-only `editor-state` / actor inspect that Admin still has exactly one `Pickup_ResearchWingKeycard` and `Lvl_Epitope` still has exactly one `Gate_ResearchWing`.
+6. Decision sheet section header still says “DRAFT”; commit `cb42f05` message treats it as locked — stamp **LOCKED** on Tom’s go if desired (doc-only).
+
+### Explicitly still out of scope
+
+Unique keycard/door art; new objective after Host death; Neuro Candidate B / Research Station intro; Cryo/Compute/Reactor; “Block 5” naming.
+
+### Waiting on
+
+Tom’s go for Phase 2 (and clarification if Phase 2 is verify-existing vs new mutation).
+
+---
+
+## Post-Block 4 Decision Lock — LOCKED at cb42f05 (stamp 2026-09-11)
+
+**LOCKED** by Tom (commit `cb42f05` + Phase 2 go for verify-existing):
+
+- Choice 1 = **A** — no new objective after Host death
+- Choice 2 = **B** — RW keycard/door is the next **required** beat (blockout); uses existing Block 2 work
+- Choice 3 = **B** — Admin presentation still **INCOMPLETE** (blockout); visual pass later
+- Choice 4 = **A** — Neuro Candidate B / Research Station intro still **BLOCKED**
+- Choice 5 — Cryo/Compute/Reactor after RW required-beat; not now
+- **No Host-death prerequisite** on `Gate_ResearchWing` (confirmed: gate has no such properties)
+
+---
+
+## RW Keycard Blockout — Phase 2 verify-existing + smoke/regressions (2026-09-11)
+
+**Mode:** read-only verify — **no spawn, no save, no map mutation**. Bridge via `Tools/unreal_mcp/client.py` / `call_unreal`. Dirty packages remained `[]` throughout.
+
+### Live editor verify
+
+| Check | Result |
+|---|---|
+| `get_editor_state` | `Lvl_Epitope`; Admin+Neuro(+Cryo/Compute/Reactor) loaded; `dirty_count=0` |
+| `Pickup_ResearchWingKeycard` | Present; class `ProjectOrganoidItemPickup` (`/Script/ProjectOrganoid.ProjectOrganoidItemPickup`); loc `(2580,-560,80)`; owning package Admin (path confirms `SL_Epitope_Admin`); Quantity=1 |
+| Item DA | Confirmed by NeuroAccess assertions `campaign.item_*` / `campaign.pickup_uses_da`: `DA_Item_ResearchWingKeycard`, name “Research Wing Keycard”, tier **Level2_Lab**, no generic keycard objective event. (`get_actor_property` cannot read ObjectProperty `ItemData`.) |
+| `Gate_ResearchWing` | Present on **`/Game/Maps/Lvl_Epitope`**; class `ProjectOrganoidSecurityGate` (C++ placeable; not a `BP_AdminSecurityGate` instance in-world); `RequiredSecurityTier=Level2_Lab`; `GateState=Sealed`; `bAllowKeycardOverride=true`; `bConsumeKeycardOnOverride=false`; `GateId=Gate_Neuro_Research` |
+| Host-death prereq | **None** — `bRequiresHostDeath` / `bRequiresEncounterActivation` / `PrerequisiteObjectiveId` / `RequiredHostLabel` all `property_not_found` |
+| Connectors on Admin | All present: `Admin_ResearchWing_Connector_Floor`, `_Ceiling`, `_Wall_South`, `_Wall_North`, `_Threshold` at authored connector coords |
+
+### Smoke checklist (via NeuroAccess + AdminToNeuro assertions before final fail)
+
+| Step | Evidence |
+|---|---|
+| New Game / campaign pickup present @ Admin | PASS — `campaign.pickup_*`, `access.campaign_pickup_present` |
+| Gate requires Level2_Lab / sealed without card | PASS — covered in NeuroAccess lock proofs + OpeningFoundation ResearchWingHold (Foundation PASS this session) |
+| Pick up / grant Level2 from campaign DA | PASS — `campaign.pickup_held`, `access.level2_injected_from_campaign_da` |
+| Path Admin → connector → spine → approach gate / Neuro side | PASS — AdminToNeuro waypoints `service_corridor`, `research_wing_connector`, `neuro_landing`, `neuro_bridge` all passed before end assert |
+| No Neuro Candidate B / Research Station intro | Not exercised; still blocked by design lock |
+| Saves | None performed; final `dirty_count=0` |
+
+### Regression table
+
+| Test | Run ID | Result |
+|---|---|---|
+| NeuroAccess_Functional | `ptr_db804260-4457-fec8-1de1-3b8f2b11e6a5` | **FAIL** 57/58 — `no_admin_hosts expected=0 actual=1` (stale pre–Block 4 assert; RW path assertions passed) |
+| AdminToNeuroTraversal_Functional | `ptr_3476556b-4763-1096-f4ad-f9bb8653fb29` | **FAIL** 25/26 — same `no_admin_hosts expected=0 actual=1` (traversal waypoints passed) |
+| OpeningFoundation_Functional | `ptr_f3c5a302-4375-7b54-f051-58ba5b22c339` | **PASS** 41/41 (includes ResearchWingHold; already allows authorized Admin Host) |
+| OpeningBlock4_Functional | `ptr_3bdc2bd9-4063-a7ed-77c4-aeb254bb759c` | **PASS** 36/36 |
+| OpeningInvestigation_Functional | `ptr_553586c2-4715-0002-7a66-9780f0f8589c` | **PASS** 71/71 |
+| OpeningResources_Functional | `ptr_2a8399d9-4fd0-6c09-aac9-3e8942367550` | **PASS** 105/105 |
+| CheckpointHealth_Functional | `ptr_b50c5605-499a-1939-1665-838543c2eb7d` | **PASS** 70/70 |
+| AmmoReload_Functional | `ptr_082c0057-4e12-3c3d-6aa5-b8a9bb3eef18` | **PASS** 57/57 |
+| HostCombatLoop_Functional | `ptr_f284a610-473b-216c-cee9-69a0b56029ba` | **PASS** 31/31 |
+
+### Disposition
+
+- **Verify-existing RW keycard/door/connectors: PASS.** No map work required for Choice 2 blockout presence.
+- **Suite not fully green:** `NeuroAccess_Functional` + `AdminToNeuroTraversal_Functional` still assert zero Admin Hosts. Same class of world-state update as OpeningFoundation/Investigation/Resources after Block 4.
+- **Recommended next (needs Tom go):** narrow test-only patch — allow exactly one `Host_Admin_SecurityOfficer` (or package host count == 1 with that label) in those two files; Live Coding/UBT; re-run those two only. No map save.
+
+### Waiting on
+
+Tom authorization to patch `NeuroAccess_Functional.cpp` + `AdminToNeuroTraversal_Functional.cpp` zero-host asserts (or accept FAIL as known until then).
+
+---
+
+## RW regressions — Admin Host allow patch (in progress, 2026-09-11)
+
+### Source patch (done)
+
+Same pattern as `OpeningFoundation_Functional` `admin.opening_hosts_authorized_only`:
+
+- `NeuroAccess_Functional.cpp` — replaced `no_admin_hosts` expected=0 with allow **0 or exactly one** `Host_Admin_SecurityOfficer` on Admin at `(2820,-600,100)` (XY ≤2, Z ≤20), `BP_OrganoidHost` class name contains check.
+- `AdminToNeuroTraversal_Functional.cpp` — identical assert replacement.
+- No keycard/gate/Melee/Proximity/Host-death changes.
+
+### Compile status (blocked)
+
+- UBT `-SingleFile=` for both cpp: **Succeeded** (objs at Intermediate `…/ProjectOrganoidPlaytest/*NeuroAccess*` / `*AdminToNeuro*` ~15:43).
+- Full Live Coding / `ModuleWithSuffix` also tried to rebuild `Module.OrganoidAIBridge.cpp` and failed (unity duplicate `GetPieWorld` / helper bodies — stale LC bridge intermediate from earlier ModuleWithSuffix attempts).
+- Cleared bridge `LiveCodingInfo.json` / generated unity; killed `LiveCodingConsole` to reset — **editor Live Coding session did not reattach** (hotkey no longer grows `ProjectOrganoid.log`; console title stayed generic “Live Coding”).
+- Logs recorded: `%TEMP%\ProjectOrganoid_LiveCoding_NeuroAccess_AdminHostAllow_*.log`, `%TEMP%\ProjectOrganoid_UBT_SingleFile_AdminHostAllow_*.log`, `%TEMP%\ProjectOrganoid_UBT_PlaytestOnly_AdminHostAllow_*.log`.
+
+### Re-run status
+
+**Not run yet** — patched DLL not loaded into editor. `Block4-Bridge-Hardened.py` absent; will use `Tools/unreal_mcp/client.py run_playtest` after compile lands.
+
+### Need from Tom
+
+Either:
+1. In Unreal: **Ctrl+Alt+F11** (Enable Live Coding for Session if prompted) until title shows `ProjectOrganoid - Live Coding` and compile succeeds, then say go to re-run the 2 tests; or
+2. **Close Unreal** and say go for closed-editor `ProjectOrganoidEditor` Win64 Development UBT, reopen, then re-run the 2 tests.
+
+No commit. No map mutation.
+
+---
+
+## RW regressions — Admin Host allow patch COMPLETE (2026-09-11)
+
+### Build
+
+- Closed-editor UBT **Succeeded** after setting `OrganoidAIBridge.Build.cs` `bUseUnity = false` (Commands.cpp + Writes.cpp share anonymous-namespace helpers; unity amalgamation caused C2084 and blocked full rebuild / `.modules` generation).
+- Log: `%TEMP%\ProjectOrganoid_UBT_NeuroAccess_AdminHostAllow_OnDisk_20260911-161900.log`
+- Note: `Block4-Bridge-Hardened.py` absent; used `Tools/unreal_mcp/client.py` / `call_unreal` for playtests.
+
+### Re-run (Lvl_Epitope, dirty_count=0)
+
+| Test | Run ID | Result |
+|---|---|---|
+| NeuroAccess_Functional | `ptr_9170d494-4a8b-7cb0-3171-e9b35539b97f` | **PASS** 58/58 |
+| AdminToNeuroTraversal_Functional | `ptr_2b2afacc-4eb5-59fd-228c-47b56352f02d` | **PASS** 26/26 |
+
+### Disposition
+
+Both previously failing RW regressions green with authorized Block 4 Admin Host allowlist. No map saves.
+
+---
+
+## RW regressions — post-rebuild re-run (2026-09-12)
+
+Editor was not running at session start; launched `Lvl_Epitope` via UnrealEditor. `dirty_count=0` before and after. Used `Tools/unreal_mcp/client.py` (`Block4-Bridge-Hardened.py` still absent).
+
+| Test | Run ID | Result |
+|---|---|---|
+| NeuroAccess_Functional | `ptr_c083592f-45af-c78b-9a87-11b91d450ba7` | **PASS** 58/58 |
+| AdminToNeuroTraversal_Functional | `ptr_99b892b3-40de-c9b4-07e9-aba52fff3110` | **PASS** 26/26 |
