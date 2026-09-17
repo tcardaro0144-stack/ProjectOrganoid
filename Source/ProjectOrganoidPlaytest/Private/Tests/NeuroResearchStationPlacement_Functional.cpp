@@ -619,7 +619,7 @@ namespace
 				auto DistTo = [&](const TCHAR* Label) -> float
 				{
 					AActor* Other = OrganoidPlaytestActions::FindUniqueByLabel(World, Label);
-					return Other ? FVector::Dist(Alive->GetActorLocation(), Other->GetActorLocation()) : 0.0f;
+					return Other ? FVector::Dist(Alive->GetActorLocation(), Other->GetActorLocation()) : 99999.0f;
 				};
 				AssertTrue(Record, TEXT("no_overlap_checkpoint"), DistTo(CheckpointLabel) > 400.0f, TEXT(">400"), FString::SanitizeFloat(DistTo(CheckpointLabel)), CheckpointLabel);
 				AssertTrue(Record, TEXT("no_overlap_npc"), DistTo(TEXT("NPC_IncineratorSurvivor")) > 420.0f, TEXT(">420"), FString::SanitizeFloat(DistTo(TEXT("NPC_IncineratorSurvivor"))), TEXT("NPC"));

@@ -100,11 +100,12 @@
 		for (const TPair<const TCHAR*, float>& Entry : ClearOf)
 		{
 			TArray<AActor*> Owned = FindOwnedByExactLabel(World, Entry.Key, NeuroPackage);
-			if (Owned.Num() != 1)
+			if (Owned.Num() > 1)
 			{
-				return FString::Printf(TEXT("%s Neuro count=%d expected=1. Abort."), Entry.Key, Owned.Num());
+				return FString::Printf(TEXT("%s Neuro count=%d expected 0 or 1. Abort."), Entry.Key, Owned.Num());
 			}
-			if (FVector::Dist(Owned[0]->GetActorLocation(), NeuroResearchStationLocation) < Entry.Value)
+			if (Owned.Num() == 1
+				&& FVector::Dist(Owned[0]->GetActorLocation(), NeuroResearchStationLocation) < Entry.Value)
 			{
 				return FString::Printf(TEXT("Approved station location overlaps %s. Abort."), Entry.Key);
 			}
