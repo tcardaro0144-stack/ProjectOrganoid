@@ -2,8 +2,10 @@
 
 #include "ProjectOrganoidPowerPanel.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -43,6 +45,12 @@ bool AProjectOrganoidPowerPanel::CanInteract_Implementation(AProjectOrganoidChar
 		return false;
 	}
 
+	if (bDiscoverPowerFailureBeforeRestore)
+	{
+		// Discovery panels stay reviewable; restore engagement is not used on this path.
+		return true;
+	}
+
 	return !(bSingleUse && bHasBeenEngaged);
 }
 
@@ -58,6 +66,32 @@ bool AProjectOrganoidPowerPanel::Interact_Implementation(AProjectOrganoidCharact
 		return false;
 	}
 
+	if (bDiscoverPowerFailureBeforeRestore)
+	{
+		return InteractDiscoverPowerFailure(Interactor);
+	}
+
+	return InteractRestorePower(Interactor);
+}
+
+bool AProjectOrganoidPowerPanel::InteractDiscoverPowerFailure(AProjectOrganoidCharacter* Interactor)
+{
+	const bool bFirstDiscovery = !bHasDiscoveredPowerFailure;
+	ReportFailureStatus(Interactor, bFirstDiscovery);
+
+	if (bFirstDiscovery)
+	{
+		bHasDiscoveredPowerFailure = true;
+		NotifyObjectiveEvent(DiscoveryObjectiveEventId);
+		++DiscoveryEventFireCount;
+		RefreshPrompt();
+	}
+
+	return true;
+}
+
+bool AProjectOrganoidPowerPanel::InteractRestorePower(AProjectOrganoidCharacter* Interactor)
+{
 	UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -76,8 +110,41 @@ bool AProjectOrganoidPowerPanel::Interact_Implementation(AProjectOrganoidCharact
 	return true;
 }
 
+void AProjectOrganoidPowerPanel::ReportFailureStatus(AProjectOrganoidCharacter* Interactor, bool bFirstDiscovery)
+{
+	LastStatusReport = FailureStatusReport;
+	++StatusReportCount;
+
+	if (Interactor)
+	{
+		if (UProjectOrganoidLogComponent* Logs = Interactor->GetLogComponent())
+		{
+			FProjectOrganoidLogEntry Entry;
+			Entry.EntryId = FailureStatusLogEntryId.IsNone()
+				? FName(TEXT("Log_NeuroPowerFailureStatus"))
+				: FailureStatusLogEntryId;
+			Entry.Title = FText::FromString(TEXT("Power Controls"));
+			Entry.Body = FailureStatusReport;
+			Entry.Author = FText::FromString(TEXT("Facility Power Panel"));
+			Entry.Category = TEXT("Systems");
+			Logs->CollectLogEntry(Entry);
+		}
+	}
+
+	BP_OnPowerFailureStatusReported(Interactor, FailureStatusReport, bFirstDiscovery);
+}
+
 void AProjectOrganoidPowerPanel::RefreshPrompt()
 {
+	if (bDiscoverPowerFailureBeforeRestore && bHasDiscoveredPowerFailure)
+	{
+		InteractionPrompt = ReviewPrompt.IsEmpty()
+			? FText::FromString(TEXT("Review Power Status"))
+			: ReviewPrompt;
+		bIsInteractable = true;
+		return;
+	}
+
 	if (bSingleUse && bHasBeenEngaged)
 	{
 		bIsInteractable = false;

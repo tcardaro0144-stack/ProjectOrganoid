@@ -746,9 +746,9 @@ namespace
 				TEXT("objectives"));
 
 			const TArray<FProjectOrganoidObjective> MainTasks = Objectives->GetObjectivesByType(EProjectOrganoidObjectiveType::Main);
-			AssertTrue(Record, TEXT("mission.two_tasks"),
-				MainTasks.Num() == 2,
-				TEXT("2"),
+			AssertTrue(Record, TEXT("mission.three_tasks"),
+				MainTasks.Num() == 3,
+				TEXT("3"),
 				FString::FromInt(MainTasks.Num()),
 				TEXT("objectives"));
 			AssertTrue(Record, TEXT("mission.active_count"),
@@ -791,6 +791,24 @@ namespace
 				bHasSecurity && SecurityTask.State == EProjectOrganoidObjectiveState::Inactive,
 				TEXT("Inactive"),
 				bHasSecurity ? UEnum::GetValueAsString(SecurityTask.State) : TEXT("missing"),
+				TEXT("objectives"));
+
+			FProjectOrganoidObjective NeuroTask;
+			const bool bHasNeuro = Objectives->GetObjective(TEXT("Obj_InvestigateNeuroPowerFailure"), NeuroTask);
+			AssertTrue(Record, TEXT("mission.neuro_id"),
+				bHasNeuro && NeuroTask.ObjectiveId == TEXT("Obj_InvestigateNeuroPowerFailure"),
+				TEXT("Obj_InvestigateNeuroPowerFailure"),
+				bHasNeuro ? NeuroTask.ObjectiveId.ToString() : TEXT("missing"),
+				TEXT("objectives"));
+			AssertTrue(Record, TEXT("mission.neuro_title"),
+				bHasNeuro && NeuroTask.Title.ToString() == TEXT("Investigate the NeuroGenetics power failure"),
+				TEXT("Investigate the NeuroGenetics power failure"),
+				bHasNeuro ? NeuroTask.Title.ToString() : TEXT("missing"),
+				TEXT("objectives"));
+			AssertTrue(Record, TEXT("mission.neuro_inactive"),
+				bHasNeuro && NeuroTask.State == EProjectOrganoidObjectiveState::Inactive,
+				TEXT("Inactive"),
+				bHasNeuro ? UEnum::GetValueAsString(NeuroTask.State) : TEXT("missing"),
 				TEXT("objectives"));
 
 			bool bForbidden = ContainsForbidden(MissionId) || ContainsForbidden(MissionTitle);

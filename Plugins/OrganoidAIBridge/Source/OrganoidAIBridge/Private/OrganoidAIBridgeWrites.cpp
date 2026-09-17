@@ -133,6 +133,7 @@ namespace
 		TEXT("spawn_neuro_arrival_lab_dressing"),
 		TEXT("spawn_neuro_ch3_containment_evidence"),
 		TEXT("spawn_neuro_ch4_transformed_personnel"),
+		TEXT("configure_neuro_power_failure_discovery"),
 	};
 
 	const TSet<FString> HighRiskActions = {
@@ -167,6 +168,7 @@ namespace
 		TEXT("spawn_neuro_arrival_lab_dressing"),
 		TEXT("spawn_neuro_ch3_containment_evidence"),
 		TEXT("spawn_neuro_ch4_transformed_personnel"),
+		TEXT("configure_neuro_power_failure_discovery"),
 	};
 
 	const TSet<FString> SpawnPropertyAllowlist = {
@@ -3090,6 +3092,7 @@ namespace
 #include "OrganoidAIBridgeNeuroArrivalLab.inl"
 #include "OrganoidAIBridgeNeuroCh3Evidence.inl"
 #include "OrganoidAIBridgeNeuroCh4Personnel.inl"
+#include "OrganoidAIBridgeNeuroPowerFailureDiscovery.inl"
 
 	FString PreflightSpawnBlueprintActor(
 		const TSharedPtr<FJsonObject>& Args,
@@ -3694,6 +3697,10 @@ namespace
 		{
 			PreflightError = PreflightSpawnNeuroCh4TransformedPersonnel(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("configure_neuro_power_failure_discovery"))
+		{
+			PreflightError = PreflightConfigureNeuroPowerFailureDiscovery(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("move_actor_to_level"))
 		{
 			PreflightError = PreflightMoveActorToLevel(Args, Before, Proposed);
@@ -3740,7 +3747,8 @@ namespace
 			|| Action == TEXT("spawn_neuro_research_station")
 			|| Action == TEXT("spawn_neuro_arrival_lab_dressing")
 			|| Action == TEXT("spawn_neuro_ch3_containment_evidence")
-			|| Action == TEXT("spawn_neuro_ch4_transformed_personnel"))
+			|| Action == TEXT("spawn_neuro_ch4_transformed_personnel")
+			|| Action == TEXT("configure_neuro_power_failure_discovery"))
 		{
 			Package = NeuroPackage;
 		}
@@ -4890,7 +4898,8 @@ namespace
 				|| Change->Action == TEXT("save_admin_block4_navmesh_prerequisite")
 				|| Change->Action == TEXT("spawn_neuro_arrival_lab_dressing")
 				|| Change->Action == TEXT("spawn_neuro_ch3_containment_evidence")
-				|| Change->Action == TEXT("spawn_neuro_ch4_transformed_personnel");
+				|| Change->Action == TEXT("spawn_neuro_ch4_transformed_personnel")
+				|| Change->Action == TEXT("configure_neuro_power_failure_discovery");
 			const bool bEpitopeOrAdminSession = PackagesEqual(SessionPackage, AdminPackage)
 				|| PackagesEqual(SessionPackage, EpitopePackage);
 			const bool bNeuroSession = PackagesEqual(SessionPackage, NeuroPackage)
@@ -5048,6 +5057,10 @@ namespace
 		if (Change->Action == TEXT("spawn_neuro_ch4_transformed_personnel"))
 		{
 			return ExecuteSpawnNeuroCh4TransformedPersonnel(*Change);
+		}
+		if (Change->Action == TEXT("configure_neuro_power_failure_discovery"))
+		{
+			return ExecuteConfigureNeuroPowerFailureDiscovery(*Change);
 		}
 		if (Change->Action == TEXT("set_s20_light_intensity"))
 		{

@@ -14,7 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidLogEntryRead, cons
  *  Avery's facility lore archive — collects data-pad entries.
  */
 UCLASS(ClassGroup = (ProjectOrganoid), meta = (BlueprintSpawnableComponent))
-class UProjectOrganoidLogComponent : public UActorComponent
+class PROJECTORGANOID_API UProjectOrganoidLogComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

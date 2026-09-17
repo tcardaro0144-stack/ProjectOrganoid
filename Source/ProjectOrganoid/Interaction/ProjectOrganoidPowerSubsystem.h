@@ -24,7 +24,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidFacilityPowerChang
  *  - Broadcasts power events for doors, terminals, and gates
  */
 UCLASS()
-class UProjectOrganoidPowerSubsystem : public UWorldSubsystem
+class PROJECTORGANOID_API UProjectOrganoidPowerSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 

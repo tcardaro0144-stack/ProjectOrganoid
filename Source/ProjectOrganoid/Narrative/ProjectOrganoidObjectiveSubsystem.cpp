@@ -68,6 +68,27 @@ void UProjectOrganoidObjectiveSubsystem::SeedOpeningFoundationMission()
 
 	ActivateObjective(TEXT("Obj_ReceptionCheckIn"));
 
+	// Neuro campaign: inactive until PowerPanel discovery interact fires Event_NeuroPowerFailureDiscovered.
+	FProjectOrganoidObjective InvestigateNeuroPower;
+	InvestigateNeuroPower.ObjectiveId = TEXT("Obj_InvestigateNeuroPowerFailure");
+	InvestigateNeuroPower.Title = FText::FromString(TEXT("Investigate the NeuroGenetics power failure"));
+	InvestigateNeuroPower.Description = FText::FromString(
+		TEXT("Primary feed is offline. Emergency backup is active. Trace the NeuroGenetics power failure."));
+	InvestigateNeuroPower.Type = EProjectOrganoidObjectiveType::Main;
+	InvestigateNeuroPower.State = EProjectOrganoidObjectiveState::Inactive;
+	InvestigateNeuroPower.TargetProgress = 1;
+	InvestigateNeuroPower.StageIndex = 1;
+	InvestigateNeuroPower.bShowInJournal = true;
+	InvestigateNeuroPower.bAutoUnlockWhenPrerequisitesMet = false;
+	RegisterObjective(InvestigateNeuroPower);
+	ActiveMissionObjectiveIds.Add(InvestigateNeuroPower.ObjectiveId);
+
+	FProjectOrganoidObjectiveEventTrigger NeuroPowerDiscovered;
+	NeuroPowerDiscovered.EventId = TEXT("Event_NeuroPowerFailureDiscovered");
+	NeuroPowerDiscovered.ObjectiveId = TEXT("Obj_InvestigateNeuroPowerFailure");
+	NeuroPowerDiscovered.Action = EProjectOrganoidObjectiveEventAction::Activate;
+	RegisterEventTrigger(NeuroPowerDiscovered);
+
 	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
 	BroadcastJournalState();
 }
@@ -644,6 +665,7 @@ TArray<FProjectOrganoidObjective> UProjectOrganoidObjectiveSubsystem::GetJournal
 		}
 
 		if (Objective.State == EProjectOrganoidObjectiveState::Inactive
+			&& Objective.bAutoUnlockWhenPrerequisitesMet
 			&& ArePrerequisitesMetForObjective(Objective))
 		{
 			Entries.Add(Objective);

@@ -2062,3 +2062,79 @@ Local three-commit checkpoint only. No Unreal open, no PIE/bridge/build/test/map
 - Precommit Ch4 dirty-package hardening + closed-editor UBT **Succeeded**: `%TEMP%\ProjectOrganoid_Ch4PrecommitBuild_20260917-054141\UBT_ProjectOrganoidEditor_Win64_Development.log`.
 
 On successful creation of the immediately containing commit, this map/test/state checkpoint completes Phase 2 Option B locally. The containing commit hash is then available via `git log -1`. No push is performed.
+---
+
+## Neuro Power-Failure Discovery Checkpoint — 2026-09-17 (R5E–R5H)
+
+Compromised-power discovery on Neuro is implemented, persisted, and validated. Gameplay implementation and validation complete. **Not** staged, committed, or pushed. No off-machine backup claimed.
+
+### Gameplay behavior
+
+- Initial prompt: `Inspect Power Controls`.
+- First status: `PRIMARY FEED OFFLINE — EMERGENCY BACKUP ACTIVE`.
+- Repeat prompt: `Review Power Status`.
+- Discovery event: `Event_NeuroPowerFailureDiscovered`.
+- Objective: `Obj_InvestigateNeuroPowerFailure` — **Investigate the NeuroGenetics power failure**.
+- Seeded Main + Inactive; activates once on discovery.
+- Before discovery: absent from the journal.
+- After discovery: appears exactly once; unduplicated after Review.
+- Neuro remains **Emergency**; Cryo remains **Blackout**.
+- Persisted panel does **not** restore power.
+- `RestoredState=Online` and `Event_NeuroPowerRestored` remain reserved for later Candidate B.
+
+### Persisted map state
+
+- Panel: `PowerPanel_NeuroBackup` on Neuro at `(-500,-2275,-1100)`.
+- Discovery configuration exact (`bDiscoverPowerFailureBeforeRestore=true`, prompts/status/event IDs as above).
+- Persisted editor instance remains unengaged/undiscovered; counters zero.
+- Neuro map SHA-256: `12952BABB80C5A2309A719065F33D666C6FC545F66C39993D8463727B1E33000`.
+
+### Production correction (journal)
+
+- Inactive journal previews now require **both** met prerequisites **and** `bAutoUnlockWhenPrerequisitesMet`.
+- Preserves Security’s auto-unlock journal chain while hiding event-dormant Neuro.
+- Active Neuro remains normally journal-visible.
+- No dynamic `bShowInJournal` mutation; no objective-ID special case.
+
+### Build / dedicated / serial results
+
+| Gate | Result |
+|---|---|
+| R5F closed-editor `ProjectOrganoidEditor` Win64 Development | **Succeeded** EXIT=0 — `%TEMP%\ProjectOrganoid_NeuroPowerR5F_20260917-144116` |
+| R5G `NeuroPowerFailureDiscovery_Functional` | `ptr_ac8be108-45e3-3297-79ce-b7bb056f6d25` — **PASS** 49/49 — `%TEMP%\ProjectOrganoid_NeuroPowerR5G_20260917-144753` |
+
+R5H authoritative 9/9 (did **not** rerun dedicated discovery):
+
+| Test | Run ID | Result |
+|---|---|---|
+| OpeningFoundation_Functional | `ptr_2e018630-4ac0-8fb8-5f3e-16b543fd173a` | **PASS** 44/44 |
+| OpeningInvestigation_Functional | `ptr_673fba9b-46fb-e3a5-78ea-92aa7f95be35` | **PASS** 71/71 |
+| OpeningResources_Functional | `ptr_e3990ca2-4e5d-2a33-6ec3-e0a6d1144fe7` | **PASS** 105/105 |
+| OpeningBlock4_Functional | `ptr_c1ed036f-4dde-7eda-dcb1-f2bf2d2a84e5` | **PASS** 36/36 |
+| CheckpointHealth_Functional | `ptr_80421f28-46a0-74d5-634e-d8ad55a84f56` | **PASS** 70/70 |
+| AmmoReload_Functional | `ptr_728c91ec-4c50-b467-15ea-fd91baa586bd` | **PASS** 57/57 |
+| HostCombatLoop_Functional | `ptr_01370336-45b7-0b76-889b-31b946e428c6` | **PASS** 33/33 |
+| NeuroAccess_Functional | `ptr_5dbd9b83-472e-c67b-ed1d-428c99ca24b5` | **PASS** 58/58 |
+| AdminToNeuroTraversal_Functional | `ptr_ee06751a-4ff7-8d83-fe77-f4838f9252d9` | **PASS** 26/26 |
+
+Evidence also: R5E `%TEMP%\ProjectOrganoid_NeuroPowerR5E_20260917-142510`; R5H `%TEMP%\ProjectOrganoid_NeuroPowerR5H_20260917-145412`.
+
+### Exact current source hashes (R5E)
+
+| File | SHA-256 |
+|---|---|
+| `ProjectOrganoidObjectiveSubsystem.cpp` | `76F13B1A8CDED00ABA6C4122DBE10DED919DAE12058875AFE3E35A02BA9DF7C9` |
+| `OpeningFoundation_Functional.cpp` | `A27806F4CDA7650DD42F9B9A1685B8D4BCEAB186185046A2381EF79C5A81E925` |
+| `NeuroPowerFailureDiscovery_Functional.cpp` | `B79DE0870CD254ECBB92E7542A56BAF565D66D2379842821E90EB3F1B12CB53E` |
+
+### Deferred design dependency
+
+- Neuro objective remains in `ActiveMissionObjectiveIds`.
+- Reception + Security alone do **not** complete `Mission_OpeningFoundation`.
+- No Neuro completion trigger is registered.
+- Do **not** remove the objective or wire `Event_NeuroPowerRestored` in this checkpoint.
+- Resolve completion semantics with later Candidate B design.
+
+### Leave-off
+
+Gameplay implementation and validation complete. Checkpoint is **not** staged, committed, or pushed. At this evidence boundary: sole UnrealEditor PID **13584** open idle on direct `Lvl_Epitope`, PIE stopped, `dirty_packages=[]`.
