@@ -504,6 +504,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_security_officer")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_navmesh_bounds")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_admin_block4_navmesh_prerequisite")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_arrival_lab_dressing")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_ch3_containment_evidence")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_ch4_transformed_personnel")));
 		Data->SetArrayField(TEXT("native_game_thread_actions"), NativeActions);
 		Data->SetStringField(TEXT("map_save"), TEXT("use save_maps; save_asset rejects map packages"));
 		Data->SetBoolField(TEXT("save_maps_admin_only_requires_epitope_persistent"), false);
@@ -556,6 +559,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_security_officer")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_admin_block4_navmesh_bounds")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_admin_doorlock_interactable")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_arrival_lab_dressing")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_ch3_containment_evidence")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_ch4_transformed_personnel")));
 		Data->SetArrayField(TEXT("spawn_actions"), SpawnActions);
 		return Ok(Data);
 	}
@@ -1755,7 +1761,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("trim_spine_landing_admin")
 		|| Normalized == TEXT("spawn_admin_block4_security_officer")
 		|| Normalized == TEXT("spawn_admin_block4_navmesh_bounds")
-		|| Normalized == TEXT("save_admin_block4_navmesh_prerequisite"))
+		|| Normalized == TEXT("save_admin_block4_navmesh_prerequisite")
+		|| Normalized == TEXT("spawn_neuro_arrival_lab_dressing")
+		|| Normalized == TEXT("spawn_neuro_ch3_containment_evidence")
+		|| Normalized == TEXT("spawn_neuro_ch4_transformed_personnel"))
 	{
 		return Fail(
 			TEXT("needs_prepare"),

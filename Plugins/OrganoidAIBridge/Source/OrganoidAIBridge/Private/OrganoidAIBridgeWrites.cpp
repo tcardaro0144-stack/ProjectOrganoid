@@ -130,6 +130,9 @@ namespace
 		TEXT("spawn_admin_block4_security_officer"),
 		TEXT("spawn_admin_block4_navmesh_bounds"),
 		TEXT("save_admin_block4_navmesh_prerequisite"),
+		TEXT("spawn_neuro_arrival_lab_dressing"),
+		TEXT("spawn_neuro_ch3_containment_evidence"),
+		TEXT("spawn_neuro_ch4_transformed_personnel"),
 	};
 
 	const TSet<FString> HighRiskActions = {
@@ -161,6 +164,9 @@ namespace
 		TEXT("spawn_admin_block4_security_officer"),
 		TEXT("spawn_admin_block4_navmesh_bounds"),
 		TEXT("save_admin_block4_navmesh_prerequisite"),
+		TEXT("spawn_neuro_arrival_lab_dressing"),
+		TEXT("spawn_neuro_ch3_containment_evidence"),
+		TEXT("spawn_neuro_ch4_transformed_personnel"),
 	};
 
 	const TSet<FString> SpawnPropertyAllowlist = {
@@ -3081,6 +3087,9 @@ namespace
 #include "OrganoidAIBridgeOpeningBlock3.inl"
 #include "OrganoidAIBridgeOpeningBlock4.inl"
 #include "OrganoidAIBridgeOpeningBlock4NavMesh.inl"
+#include "OrganoidAIBridgeNeuroArrivalLab.inl"
+#include "OrganoidAIBridgeNeuroCh3Evidence.inl"
+#include "OrganoidAIBridgeNeuroCh4Personnel.inl"
 
 	FString PreflightSpawnBlueprintActor(
 		const TSharedPtr<FJsonObject>& Args,
@@ -3673,6 +3682,18 @@ namespace
 		{
 			PreflightError = PreflightSaveAdminBlock4NavMeshPrerequisite(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("spawn_neuro_arrival_lab_dressing"))
+		{
+			PreflightError = PreflightSpawnNeuroArrivalLabDressing(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_neuro_ch3_containment_evidence"))
+		{
+			PreflightError = PreflightSpawnNeuroCh3ContainmentEvidence(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_neuro_ch4_transformed_personnel"))
+		{
+			PreflightError = PreflightSpawnNeuroCh4TransformedPersonnel(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("move_actor_to_level"))
 		{
 			PreflightError = PreflightMoveActorToLevel(Args, Before, Proposed);
@@ -3715,7 +3736,11 @@ namespace
 
 		FString Package = NormalizePackage(
 			GetString(Args, TEXT("required_package"), GetString(Args, TEXT("package"))));
-		if (Action == TEXT("spawn_neuro_navmesh_bounds") || Action == TEXT("spawn_neuro_research_station"))
+		if (Action == TEXT("spawn_neuro_navmesh_bounds")
+			|| Action == TEXT("spawn_neuro_research_station")
+			|| Action == TEXT("spawn_neuro_arrival_lab_dressing")
+			|| Action == TEXT("spawn_neuro_ch3_containment_evidence")
+			|| Action == TEXT("spawn_neuro_ch4_transformed_personnel"))
 		{
 			Package = NeuroPackage;
 		}
@@ -4862,7 +4887,10 @@ namespace
 				|| Change->Action == TEXT("spawn_admin_block3_resources")
 				|| Change->Action == TEXT("spawn_admin_block4_security_officer")
 				|| Change->Action == TEXT("spawn_admin_block4_navmesh_bounds")
-				|| Change->Action == TEXT("save_admin_block4_navmesh_prerequisite");
+				|| Change->Action == TEXT("save_admin_block4_navmesh_prerequisite")
+				|| Change->Action == TEXT("spawn_neuro_arrival_lab_dressing")
+				|| Change->Action == TEXT("spawn_neuro_ch3_containment_evidence")
+				|| Change->Action == TEXT("spawn_neuro_ch4_transformed_personnel");
 			const bool bEpitopeOrAdminSession = PackagesEqual(SessionPackage, AdminPackage)
 				|| PackagesEqual(SessionPackage, EpitopePackage);
 			const bool bNeuroSession = PackagesEqual(SessionPackage, NeuroPackage)
@@ -5008,6 +5036,18 @@ namespace
 		if (Change->Action == TEXT("save_admin_block4_navmesh_prerequisite"))
 		{
 			return ExecuteSaveAdminBlock4NavMeshPrerequisite(*Change);
+		}
+		if (Change->Action == TEXT("spawn_neuro_arrival_lab_dressing"))
+		{
+			return ExecuteSpawnNeuroArrivalLabDressing(*Change);
+		}
+		if (Change->Action == TEXT("spawn_neuro_ch3_containment_evidence"))
+		{
+			return ExecuteSpawnNeuroCh3ContainmentEvidence(*Change);
+		}
+		if (Change->Action == TEXT("spawn_neuro_ch4_transformed_personnel"))
+		{
+			return ExecuteSpawnNeuroCh4TransformedPersonnel(*Change);
 		}
 		if (Change->Action == TEXT("set_s20_light_intensity"))
 		{
