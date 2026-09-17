@@ -31,6 +31,8 @@ namespace
 	constexpr TCHAR Host1Label[] = TEXT("Host_Neuro_1");
 	constexpr TCHAR Host2Label[] = TEXT("Host_Neuro_2");
 	constexpr TCHAR Host3Label[] = TEXT("Host_Neuro_3");
+	constexpr TCHAR HostResearcherLabel[] = TEXT("Host_Neuro_Researcher");
+	const FVector HostResearcherLocation(-1200.0f, 800.0f, -1100.0f);
 
 	bool PackageIsDirty(const TCHAR* Path)
 	{
@@ -166,6 +168,7 @@ namespace
 		{
 			Subjects,
 			AdminIsolation,
+			NeuroCampaignIsolation,
 			Nav,
 			ActivateCheckpoint,
 			HearingInvestigate,
@@ -462,6 +465,35 @@ namespace
 					TEXT("Host_Admin_SecurityOfficer in Admin with authored gate and mutation opt-out"),
 					AdminHost ? OrganoidPlaytestActions::ActorPackage(AdminHost) : TEXT("missing or duplicate label"),
 					AdminHostLabel);
+				Proof = EProof::NeuroCampaignIsolation;
+				break;
+			}
+			case EProof::NeuroCampaignIsolation:
+			{
+				const int32 NeuroHosts = CountHostsInPackage(World, TEXT("SL_Epitope_NeuroGenetics"));
+				AProjectOrganoidHostBase* CampaignHost = FindHost(World, HostResearcherLabel);
+				const FVector CampaignLoc = CampaignHost ? CampaignHost->GetActorLocation() : FVector::ZeroVector;
+				AssertTrue(
+					Record, TEXT("neuro_hosts_system_plus_authored"),
+					NeuroHosts >= 4,
+					TEXT(">=4"),
+					FString::FromInt(NeuroHosts),
+					TEXT("Neuro"));
+				AssertTrue(
+					Record, TEXT("authorized_neuro_campaign_host_identity"),
+					CampaignHost
+						&& OrganoidPlaytestActions::ActorPackage(CampaignHost).Contains(TEXT("SL_Epitope_NeuroGenetics"))
+						&& CampaignHost->bRequiresEncounterActivation
+						&& !CampaignHost->bAllowPhaseShiftMutations
+						&& FVector::Dist2D(CampaignLoc, HostResearcherLocation) <= 2.0f
+						&& FMath::Abs(CampaignLoc.Z - HostResearcherLocation.Z) <= 20.0f,
+					TEXT("Host_Neuro_Researcher in Neuro with authored gate and mutation opt-out"),
+					CampaignHost ? OrganoidPlaytestActions::ActorPackage(CampaignHost) : TEXT("missing or duplicate label"),
+					HostResearcherLabel);
+				if (CampaignHost)
+				{
+					CampaignHost->Destroy();
+				}
 				Proof = EProof::Nav;
 				break;
 			}

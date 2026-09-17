@@ -1883,3 +1883,182 @@ Ch #4 campaign Hosts; Ch #5 Candidate B restore; targeting-why (3C); Research St
 ### Waiting on
 
 Tom: commit (map + `PROJECT_STATE.md` only, same as arrival `6004468`) or next beat. Do **not** commit bridge/playtest unless named.
+
+---
+
+## Neuro Ch4 Transformed Personnel — Inventory (2026-09-12)
+
+**Phase 1 only.** No spawn / save / map mutation. HEAD `f2e0d4e`. Live editor: `Lvl_Epitope`, Admin+Neuro loaded, `dirty_count=0`. Bridge read-only.
+
+### 1. Canon — what Ch #4 means
+
+From `Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md` (Restored Canon v1.0 **index**). Full v1.0 prose is **not in repo**. **No Neuro count, job title, coordinate, or room** for this beat.
+
+Quoted / paraphrased without invention:
+
+- Locked identity: *Transformed personnel exist and should read as former Epitope people (scientists, researchers, technicians, security, other staff), not generic zombies. Complete transformation mechanism is **not** finalized. HostBase remains a technical chassis, not the final enemy taxonomy (The Integrated and later archetypes).*
+- Transformed personnel section: *Nathan should encounter zombie-esque transformed humans. Some should clearly have been Epitope employees. Transformations may produce different behaviors and combat characteristics. **Do not finalize the complete transformation mechanism. Do not automatically create new enemy classes.** Design exact enemies separately. Prefer fewer, more threatening, meaningfully placed threats over horde density.*
+- Intended Neuro chapter shape (design target, **not** an implementation order): Arrival → establish scientific environment → evidence of containment/research failure → **transformed personnel** → discover systems/power compromised → … → later **significant transformed-scientist encounter(s)** → possible first pursuer… (`§ Intended Neuro chapter shape`).
+- Ch #4 is therefore **transformed personnel** as a campaign beat **before** Ch #5 power compromised. It is **not** the later #10 scientist encounter (that stays **UNRESOLVED** / design separately; Candidate B sheet: transformed-scientist encounter design out of scope).
+- Early-campaign escalate (also not a locked room order) already had **first transformed personnel** in Admin Block 4 (`Host_Admin_SecurityOfficer`). Neuro Ch #4 is the first **Neuro** personnel beat, not a second opening tutorial.
+- Nathan can recognize operational abnormalities (abnormal tissue, containment failure) without knowing the cause. Show evidence before explaining. Early language stays cautious. Neuro revelation (later) is only nervous systems reorganized/adapted — **LOCKED 6 BLOCKED** (`§ Nathan and the science`; `§ NeuroGenetics narrative function`).
+- TBD (do **not** invent): *first transformed-human encounter; exact Neuro room order; transformed-scientist encounters; whether the first pursuer introduction occurs in Neuro* (`§ TBD`).
+- Candidate B **LOCKED** at `9eade68`: **1B** Emergency power; **3C** targeting-why after/during restore (not this pass); **4B** pursuer deferred past Neuro; **5B** Research Station intro later; **2B** restore not this pass.
+
+**Handoff** (`PROJECT_ORGANOID_MASTER_AI_HANDOFF.md`): HostBase + `AProjectOrganoidHostAIController` is the **verified system** chassis. Neuro `Host_Neuro_1` exists for **system** tests — do not move those into Admin. *Do not automatically create new enemy classes.* Admin opening stays **one** Host.
+
+**Gap:** canon does not name a Neuro scientist/technician label, count (1 vs 2), or room. Do not invent a named researcher, mechanism, or new class.
+
+### 2. Existing Neuro / Admin personnel (live, 2026-09-12)
+
+| Label | Class | Location | Package | Role vs Ch #4 |
+|---|---|---|---|---|
+| `Host_Neuro_1` | `BP_OrganoidHost_C` | `(-400, 1400, -1100)` | Neuro | **System** Host. `bRequiresEncounterActivation=false`, `bAllowPhaseShiftMutations=true`. Tests require **≥3** Neuro Hosts and this exact label (`HostCombatLoop_Functional`, NeuroAccess, AdminToNeuro). **Keep. Not authored as Ch #4 campaign.** |
+| `Host_Neuro_2` | `BP_OrganoidHost_C` | `(400, 2150, -1100)` | Neuro | Same — system. North `Y>1000`. **Keep.** |
+| `Host_Neuro_3` | `BP_OrganoidHost_C` | `(-1950, 1025, -1100)` | Neuro | Same — system. West-north. **Keep.** |
+| `Host_Neuro_4` / `Host_Neuro_Scientist` | — | — | — | **MISS** |
+| `NPC_IncineratorSurvivor` | — | — | Neuro | Still **gone** (arrival stale remove) |
+| `Host_Admin_SecurityOfficer` | `BP_OrganoidHost_C` | `(2820, -600, 100)` | Admin | Opening Block 4 campaign Host. `bRequiresEncounterActivation=true`, range 200, `bAllowPhaseShiftMutations=false`. **Admin only — do not move to Neuro.** |
+
+No other transformed-personnel actors on Neuro. Cube/capsule “scientist blockout” that is **not** HostBase does **not** exist and would be a new class — canon says do not automatically create one.
+
+**Chassis to reuse:** `AProjectOrganoidHostBase` (`/Script/ProjectOrganoid.ProjectOrganoidHostBase`) + `AProjectOrganoidHostAIController`. Placeable BP is `BP_OrganoidHost` (same class as `Host_Neuro_1`; Block 4 spawn **derived** that class). Combat loop: Idle → Investigate → Pursue → Attack → Search → Return. Possess starts **Idle**. Authored dormant pattern already exists: `bRequiresEncounterActivation` (Block 4). Do **not** invent final AI or unique art.
+
+**Stale mission (do not canonize this pass):** C++ still registers Avery-era `Side_ClearNeuroHosts` (“Neutralize Mutated Hosts”, TargetProgress=2). Historical. Not a Ch #4 objective lock.
+
+### 3. Current vs missing for Ch #4
+
+| What | Present? | Role vs Ch #4 |
+|---|---|---|
+| HostBase chassis / Idle combat loop | Yes — system | Chassis only |
+| 3 Neuro Hosts | Yes — north/west | **System tests**, not campaign Ch #4 |
+| Authored Neuro campaign Host (dormant, campaign label, after Ch #3 path) | **NONE** | Missing |
+| Unique scientist mesh / new enemy class | No | Correct — do not add |
+| Pursuer | No | **LOCKED 4B** defer |
+| Power Emergency | Yes — C++ seed | **Keep 1B** |
+
+Full Game Audit row still reads: *Neuro transformed personnel — BLOCKOUT (chassis; campaign encounter **NOT STARTED**)*.
+
+### 4. Tests if Phase 2 adds 1–2 Neuro Hosts
+
+`NeuroAccess_Functional` / `AdminToNeuroTraversal_Functional` assert Neuro Host count **≥3** (not exact 3). `HostCombatLoop_Functional` keys the three existing labels. Adding Hosts should **not** need a count patch unless a test later asserts exact-3 (none found). Admin tests stay exact **1** Admin Host.
+
+### 5. Phase 2 location options (pick before spawn)
+
+Canon has **no** place. Do **not** drop on SE arrival/containment (benches/desks/unit/pads @ Y≈−1400…−2000). Keep those. Propose:
+
+**A — North lab hall (near existing system Hosts, away from SE).** Additional 1–2 Hosts around `Host_Neuro_1` / `_2` (`Y>1000`). Same north science volume; Hosts stay clustered. Risk: campaign beat blurs with system Hosts already standing there.
+
+**B — West matrix / scrubber side (away from SE and from the north Host pair).** Additional 1–2 Hosts west of center, south of `Host_Neuro_3` `(−1950, 1025)`, not on `Hazard_ScrubberLeak` as the only beat, not on matrices as the only beat. Reads as a branch after containment, before power panel `(−500, −2275)`.
+
+Do **not** re-label the 3 system Hosts as Ch #4 without a separate go (tests + keep-list depend on those labels). Do **not** place in Gowning Airlock / SE pocket. Count 1 vs 2, dormant (`bRequiresEncounterActivation=true` like Block 4) vs always-on Idle (current Neuro Hosts), and any player-facing role name (or none) need Tom pick — inventing “Dr. X” / scientist class is **blocked**.
+
+**If Tom picks A or B:** Phase 2 would add (blockout only, presentation INCOMPLETE): 1–2 `BP_OrganoidHost` on Neuro; Idle / encounter-activation; no unique art; no pursuer; no power flip; Neuro-only `save_maps`. New fixed-spec bridge action required (no Neuro campaign-Host spawn exists yet; Block 4 action is Admin-only).
+
+### Waiting on
+
+Tom: pick **A** or **B** (and 1 vs 2, dormant vs always-on Idle). **No spawn/save until that go.**
+
+---
+
+## Neuro Ch4 Transformed Personnel — Phase 2 COMPLETE (2026-09-12)
+
+**LOCKED:** Option **B**, **1** Host, **dormant**. Label `Host_Neuro_Researcher` (role, not a named scientist). West of `Host_Neuro_3`, after SE containment, before PowerPanel. Presentation **INCOMPLETE**. Power **Emergency** unchanged (1B). No Ch #5 restore, no 3C, no 5B, no 4B pursuer, no Node Zero.
+
+### Authored Host
+
+| Field | Value |
+|---|---|
+| Label | `Host_Neuro_Researcher` |
+| Class | `BP_OrganoidHost_C` (`AProjectOrganoidHostBase` + `AProjectOrganoidHostAIController`, same chassis as Block 4 / `Host_Neuro_1`) |
+| Location | `(-1200, 800, -1100)` — user hint `(-1200, 800, -1200)` adjusted to Host stand Z (floor `-1200`). Capsule overlap: Neuro floor + stream volume only |
+| Rotation / scale | `(0,0,0)` / `(1,1,1)` |
+| `bRequiresEncounterActivation` | **true** |
+| `ProximityActivationRange` | **200** |
+| `MaxHealth` / `MeleeDamage` | **100** / **15** |
+| `bAllowPhaseShiftMutations` | **false** |
+
+System Hosts 1–3 and Admin `Host_Admin_SecurityOfficer` **kept**. Neuro Host count **4**.
+
+### Kept (unchanged)
+
+Floor, walls, nav, station, PowerPanel Emergency, scrubber, traps, 3 matrices, SE benches/desks/microscope, Ch #3 containment + pads, gowning ambience.
+
+### Writes
+
+| Change | ID | Approvals | Result |
+|---|---|---|---|
+| `spawn_neuro_ch4_transformed_personnel` | `chg_8be0b885-4ef1-610c-7af8-6d921b3750be` | Tom + ArenaReviewer | spawned=true, neuro_host_count=4, save=false, power_changed=false |
+| `save_maps` Neuro-only | `chg_c8c9c14c-43c6-eb66-8cde-c995133f7a4c` | Tom + ArenaReviewer | `packages_saved=[/Game/Maps/Epitope/SL_Epitope_NeuroGenetics]` |
+
+### Test note (HostCombatLoop)
+
+First 9/9 run: HostCombatLoop **FAIL** `sight_causes_pursuit` (Investigate not Pursue). Cause: gunfire at 3500uu **activates** the dormant Host (`HandleHearingStimulus`); it walked into `Host_Neuro_1`’s sight proof. **Not** an exact-3 count fail (`>=3` already OK). Narrow PIE-only isolate in `HostCombatLoop_Functional`: assert `>=4` + Researcher identity, then **Destroy** the PIE instance so Host_Neuro_1 proofs stay closed. Pursuit assert **not** weakened. Re-run **PASS** 33/33. Test cpp left **unstaged** (same as bridge).
+
+### editor-state after save + 9/9
+
+`Lvl_Epitope`; Admin+Neuro(+Cryo/Compute/Reactor) loaded; `dirty_packages=[]`. Editor `Host_Neuro_Researcher` still at `(-1200, 800, -1100)`.
+
+### 9/9 regressions PASS (post-isolate)
+
+| Test | Run ID | Result |
+|---|---|---|
+| OpeningFoundation_Functional | `ptr_5b250b6d-4d49-bd0f-5e38-9ba6a164feab` | **PASS** 41/41 |
+| OpeningInvestigation_Functional | `ptr_84107880-4fe5-12f1-30fc-cba1cd2b145b` | **PASS** 71/71 |
+| OpeningResources_Functional | `ptr_6e773e2a-41b7-4b7f-42d2-fb938e0e6739` | **PASS** 105/105 |
+| OpeningBlock4_Functional | `ptr_81d80a09-412e-41ca-2b4e-6996c67e98c5` | **PASS** 36/36 |
+| CheckpointHealth_Functional | `ptr_888af2f1-4647-cc8e-b20e-c08ea6591be1` | **PASS** 70/70 |
+| AmmoReload_Functional | `ptr_ce3d3485-415d-b00e-2765-fca6481ad137` | **PASS** 57/57 |
+| HostCombatLoop_Functional | `ptr_483c318a-4c58-9f23-7f9c-2d8195d6f929` | **PASS** 33/33 |
+| NeuroAccess_Functional | `ptr_595e0365-450e-5462-ee60-59b5a035bbc1` | **PASS** 58/58 |
+| AdminToNeuroTraversal_Functional | `ptr_67bf9fee-4f10-018c-8678-a5aaf1f88000` | **PASS** 26/26 |
+
+### Out of scope (unchanged)
+
+Ch #5 Candidate B restore; targeting-why (3C); Research Station intro (5B); pursuer (4B); Node Zero (6 BLOCKED).
+
+### Waiting on
+
+Tom: commit (map + `PROJECT_STATE.md` only unless you name the HostCombatLoop isolate / bridge action).
+
+---
+
+## Neuro Ch4 — Precommit Safety Hardening + Closed-Editor Build (2026-09-17)
+
+**Scope:** Bridge-action safety only. Ch4 content/map **not** changed and **not** rerun. Unreal stayed closed. No prepare/approve/execute, no map/package save, no stage/commit/push.
+
+### Hardening
+
+`Plugins/OrganoidAIBridge/Source/OrganoidAIBridge/Private/OrganoidAIBridgeNeuroCh4Personnel.inl` — clean-start (Lvl_Epitope + Admin + Neuro clean; complete dirty set empty) at prepare and execute preflight; fresh-spawn postcondition requires dirty set exactly `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics` else destroy spawned actor, mark `execute_postcondition_failed` / `bExecuted`, no save; exact-existing no-op requires clean entry and clean after. Reused `CollectDirtyPackageNamesSorted` / `DirtyPackageJsonArray` / `FormatPackageList` / `RequireEpitopeEditorWorld`. Fixed Host values and keep-list unchanged. `HostCombatLoop_Functional` **unchanged** this pass.
+
+### Build
+
+| Field | Value |
+|---|---|
+| Target | `ProjectOrganoidEditor Win64 Development` (ordinary, non-clean, `-WaitMutex -NoHotReloadFromIDE`) |
+| Result | **Succeeded** (EXIT=0) |
+| Log | `%TEMP%\ProjectOrganoid_Ch4PrecommitBuild_20260917-054141\UBT_ProjectOrganoidEditor_Win64_Development.log` |
+
+### Waiting on
+
+Tom: explicit commit approval. Work remains unstaged.
+
+---
+
+## Phase 2 Option B local checkpoint — 2026-09-17
+
+Local three-commit checkpoint only. No Unreal open, no PIE/bridge/build/test/map-save during commit, no push.
+
+| Commit var | Full hash | Subject |
+|---|---|---|
+| `STALE_PAD_COMMIT` | `7dc906453a18fd4a9c9034512c05f8628adc1e09` | Fix Neuro research station stale-pad placement checks |
+| `NEURO_BRIDGE_COMMIT` | `0bfd9a076cf912cb5cefe49417a3afe29a780128` | Add gated Neuro progression bridge actions |
+
+### Content being checkpointed in the immediately containing commit
+
+- Dormant `Host_Neuro_Researcher` on Neuro at `(-1200, 800, -1100)`, Block 4 chassis, `bRequiresEncounterActivation=true`, `ProximityActivationRange=200`, health 100 / melee 15, `bAllowPhaseShiftMutations=false`.
+- Bridge writes already executed earlier: spawn `chg_8be0b885-4ef1-610c-7af8-6d921b3750be`; Neuro-only `save_maps` `chg_c8c9c14c-43c6-eb66-8cde-c995133f7a4c`. Post-test `dirty_packages=[]`.
+- 9/9 regressions PASS; HostCombatLoop **33/33 PASS** with accepted `>=4` minimum and PIE-only Researcher destroy isolation (pursuit assert unchanged).
+- Precommit Ch4 dirty-package hardening + closed-editor UBT **Succeeded**: `%TEMP%\ProjectOrganoid_Ch4PrecommitBuild_20260917-054141\UBT_ProjectOrganoidEditor_Win64_Development.log`.
+
+On successful creation of the immediately containing commit, this map/test/state checkpoint completes Phase 2 Option B locally. The containing commit hash is then available via `git log -1`. No push is performed.
