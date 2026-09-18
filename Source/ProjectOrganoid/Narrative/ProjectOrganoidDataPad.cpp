@@ -4,6 +4,7 @@
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -21,6 +22,40 @@ AProjectOrganoidDataPad::AProjectOrganoidDataPad()
 	LogEntry.Body = FText::FromString(TEXT("Corrupted entry."));
 	LogEntry.Author = FText::FromString(TEXT("Unknown"));
 	LogEntry.Category = TEXT("Facility");
+}
+
+bool AProjectOrganoidDataPad::CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const
+{
+	if (!Super::CanInteract_Implementation(Interactor))
+	{
+		return false;
+	}
+
+	if (RequiredObjectiveIdForInteraction.IsNone())
+	{
+		return true;
+	}
+
+	const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	if (!GI)
+	{
+		return false;
+	}
+
+	const UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(RequiredObjectiveIdForInteraction, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Active
+		|| Objective.State == EProjectOrganoidObjectiveState::Completed;
 }
 
 bool AProjectOrganoidDataPad::Interact_Implementation(AProjectOrganoidCharacter* Interactor)

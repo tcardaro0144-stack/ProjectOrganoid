@@ -89,6 +89,25 @@ void UProjectOrganoidObjectiveSubsystem::SeedOpeningFoundationMission()
 	NeuroPowerDiscovered.Action = EProjectOrganoidObjectiveEventAction::Activate;
 	RegisterEventTrigger(NeuroPowerDiscovered);
 
+	FProjectOrganoidObjectiveEventTrigger NeuroPowerDiagnosed;
+	NeuroPowerDiagnosed.EventId = TEXT("Event_NeuroPowerFailureDiagnosed");
+	NeuroPowerDiagnosed.ObjectiveId = TEXT("Obj_InvestigateNeuroPowerFailure");
+	NeuroPowerDiagnosed.Action = EProjectOrganoidObjectiveEventAction::Complete;
+	RegisterEventTrigger(NeuroPowerDiagnosed);
+
+	FProjectOrganoidObjective InvestigateNeuroResearchFloor;
+	InvestigateNeuroResearchFloor.ObjectiveId = TEXT("Obj_InvestigateNeuroResearchFloor");
+	InvestigateNeuroResearchFloor.Title = FText::FromString(TEXT("Investigate the NeuroGenetics research floor"));
+	InvestigateNeuroResearchFloor.Type = EProjectOrganoidObjectiveType::Main;
+	InvestigateNeuroResearchFloor.State = EProjectOrganoidObjectiveState::Inactive;
+	InvestigateNeuroResearchFloor.TargetProgress = 1;
+	InvestigateNeuroResearchFloor.StageIndex = 2;
+	InvestigateNeuroResearchFloor.bShowInJournal = true;
+	InvestigateNeuroResearchFloor.bAutoUnlockWhenPrerequisitesMet = true;
+	InvestigateNeuroResearchFloor.PrerequisiteObjectiveIds.Add(TEXT("Obj_InvestigateNeuroPowerFailure"));
+	RegisterObjective(InvestigateNeuroResearchFloor);
+	ActiveMissionObjectiveIds.Add(InvestigateNeuroResearchFloor.ObjectiveId);
+
 	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
 	BroadcastJournalState();
 }

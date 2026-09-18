@@ -2138,3 +2138,85 @@ Evidence also: R5E `%TEMP%\ProjectOrganoid_NeuroPowerR5E_20260917-142510`; R5H `
 ### Leave-off
 
 Gameplay implementation and validation complete. Checkpoint is **not** staged, committed, or pushed. At this evidence boundary: sole UnrealEditor PID **13584** open idle on direct `Lvl_Epitope`, PIE stopped, `dirty_packages=[]`.
+---
+## Neuro Post-Discovery Diagnosis Checkpoint - 2026-09-18 (N3-N10)
+
+### Gameplay result
+
+- Completed the post-discovery diagnosis beat without restoration.
+- Candidate B restoration and `Event_NeuroPowerRestored` remain separate.
+- Research-floor follow-up is seeded (`Obj_InvestigateNeuroResearchFloor`) but its later content/tutorial is outside this slice.
+
+### Persisted actor
+
+- Exactly one native `AProjectOrganoidDataPad`: `DataPad_NeuroPowerDiagnostics`
+- Package: `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics`
+- Transform: location `(-500,-2775,-1110)`; rotation `(0,180,0)`; actor scale `(1,1,1)`
+- Interaction range `200`
+- Required objective: `Obj_InvestigateNeuroPowerFailure`
+- Event: `Event_NeuroPowerFailureDiagnosed`
+- Generic DataPad event: `false`
+- Initially unread
+- Prompt: `Inspect Feed Diagnostics`
+
+### Log
+
+- EntryId: `Log_NeuroPrimaryFeedDiagnostic`
+- Title: `NEUROGENETICS FEED DIAGNOSTIC`
+- Author: `FACILITIES CONTROL`
+- Category: Systems
+- Exact body:
+  - `PRIMARY FEED: ISOLATED`
+  - `EMERGENCY BACKUP: ACTIVE`
+  - `PRIMARY RECONNECT: INHIBITED`
+  - `FAULT HISTORY: REPEATING LOAD SPIKES — RESEARCH FLOOR`
+
+### Presentation
+
+- Mesh: `/Engine/BasicShapes/Cube.Cube`
+- Relative scale: `(0.8,0.2,1.6)`
+- Collision: `NoCollision`
+- Explicitly temporary, replaceable blockout; not final art.
+
+### Behavior
+
+- Interaction blocked while `Obj_InvestigateNeuroPowerFailure` is Inactive.
+- Panel discovery activates the investigation.
+- First valid read completes it and activates `Obj_InvestigateNeuroResearchFloor` exactly once.
+- Mission remains incomplete.
+- Neuro remains Emergency.
+- Cryo remains Blackout.
+
+### Implementation and safety
+
+- Fixed high-risk bridge action: `spawn_neuro_power_diagnostic` / `neuro_power_diagnostic_v1`
+- No arbitrary client spawn/config surface.
+- Exact Neuro-only save used a separately prepared and dual-approved `save_maps` change.
+- No other map package was saved.
+
+### Validation
+
+- N3C source build passed - `%TEMP%\ProjectOrganoid_NeuroN3C_20260918-061615`
+- N3D source-layer tests passed 66/66, 47/47, and 49/49 - `%TEMP%\ProjectOrganoid_NeuroN3D_20260918-064108`
+- N4R bridge/map-bound build passed - `%TEMP%\ProjectOrganoid_NeuroN4R_20260918-070036`
+- N5 prepare-only spawn proposal - `%TEMP%\ProjectOrganoid_NeuroN5_20260918-071405`
+- N6 dual-approve unsaved execute + N6R read-only reconcile - `%TEMP%\ProjectOrganoid_NeuroN6_20260918-083553` (N6R under that tree)
+- N7A prepare-only Neuro `save_maps` - `%TEMP%\ProjectOrganoid_NeuroN7A_20260918-095114`
+- N7B dual-approve + one Neuro-only save - `%TEMP%\ProjectOrganoid_NeuroN7B_20260918-101039`
+- N8 fresh reload proved persistence; its 85/86 result isolated only a mojibake expected test constant - `%TEMP%\ProjectOrganoid_NeuroN8_20260918-103059`
+- N9 replaced only that malformed expected dash with ASCII C++ `\u2014`; closed-editor build passed in 8.4 seconds - `%TEMP%\ProjectOrganoid_NeuroN9_20260918-105028`
+- Final fresh serial results (N9):
+  - Diagnosis 86/86: `ptr_2ac09103-436e-acfb-bac9-0ca46afdc702`
+  - OpeningFoundation 47/47: `ptr_03ed1700-4d21-6b5e-f842-078c594ae65e`
+  - Discovery 49/49: `ptr_2fcef013-4844-7a00-22a9-d581d89c1cbc`
+- Final editor boundary was clean, then Unreal closed normally.
+
+### Current checkpoint
+
+- Parent HEAD remains `3e5f796cab007804bc216c846d04bdfff1cc8c58`.
+- Work remains uncommitted.
+- After this state append, expected checkpoint is exactly eleven paths.
+- Index remains empty.
+- Next step is exact-path staging only after Arena reviews N10.
+- Commit and push remain separate and unauthorized.
+- N10 evidence: `%TEMP%\ProjectOrganoid_NeuroN10_20260918-123657`

@@ -746,9 +746,9 @@ namespace
 				TEXT("objectives"));
 
 			const TArray<FProjectOrganoidObjective> MainTasks = Objectives->GetObjectivesByType(EProjectOrganoidObjectiveType::Main);
-			AssertTrue(Record, TEXT("mission.three_tasks"),
-				MainTasks.Num() == 3,
-				TEXT("3"),
+			AssertTrue(Record, TEXT("mission.four_tasks"),
+				MainTasks.Num() == 4,
+				TEXT("4"),
 				FString::FromInt(MainTasks.Num()),
 				TEXT("objectives"));
 			AssertTrue(Record, TEXT("mission.active_count"),
@@ -809,6 +809,24 @@ namespace
 				bHasNeuro && NeuroTask.State == EProjectOrganoidObjectiveState::Inactive,
 				TEXT("Inactive"),
 				bHasNeuro ? UEnum::GetValueAsString(NeuroTask.State) : TEXT("missing"),
+				TEXT("objectives"));
+
+			FProjectOrganoidObjective NeuroResearchFloorTask;
+			const bool bHasNeuroResearchFloor = Objectives->GetObjective(TEXT("Obj_InvestigateNeuroResearchFloor"), NeuroResearchFloorTask);
+			AssertTrue(Record, TEXT("mission.neuro_research_floor_id"),
+				bHasNeuroResearchFloor && NeuroResearchFloorTask.ObjectiveId == TEXT("Obj_InvestigateNeuroResearchFloor"),
+				TEXT("Obj_InvestigateNeuroResearchFloor"),
+				bHasNeuroResearchFloor ? NeuroResearchFloorTask.ObjectiveId.ToString() : TEXT("missing"),
+				TEXT("objectives"));
+			AssertTrue(Record, TEXT("mission.neuro_research_floor_title"),
+				bHasNeuroResearchFloor && NeuroResearchFloorTask.Title.ToString() == TEXT("Investigate the NeuroGenetics research floor"),
+				TEXT("Investigate the NeuroGenetics research floor"),
+				bHasNeuroResearchFloor ? NeuroResearchFloorTask.Title.ToString() : TEXT("missing"),
+				TEXT("objectives"));
+			AssertTrue(Record, TEXT("mission.neuro_research_floor_inactive"),
+				bHasNeuroResearchFloor && NeuroResearchFloorTask.State == EProjectOrganoidObjectiveState::Inactive,
+				TEXT("Inactive"),
+				bHasNeuroResearchFloor ? UEnum::GetValueAsString(NeuroResearchFloorTask.State) : TEXT("missing"),
 				TEXT("objectives"));
 
 			bool bForbidden = ContainsForbidden(MissionId) || ContainsForbidden(MissionTitle);
