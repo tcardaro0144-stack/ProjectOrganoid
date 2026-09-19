@@ -114,6 +114,9 @@ public:
 	FText GetActiveMissionTitle() const { return ActiveMissionTitle; }
 
 	UFUNCTION(BlueprintPure, Category = "Objectives|Mission")
+	FSoftObjectPath GetPendingNextMissionAssetPath() const { return PendingNextMissionAsset.ToSoftObjectPath(); }
+
+	UFUNCTION(BlueprintPure, Category = "Objectives|Mission")
 	bool IsMissionComplete(FName MissionId) const;
 
 	/** Journal rows: active + completed + unlocked-but-inactive tasks marked ShowInJournal */

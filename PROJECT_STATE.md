@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-12 (Neuro Ch #3 Phase 2 COMPLETE — SE-pocket containment/research-failure blockout saved Neuro-only. 9/9 PASS. Not committed.)_
+_Last updated: 2026-09-19 (Neuro Beats 1–2 validated — DA_Mission_NeuroGenetics + NeuralMappingArray_NeuroGenetics + NRFA 98/98. Not staged/committed/pushed.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -2220,3 +2220,77 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 - Next step is exact-path staging only after Arena reviews N10.
 - Commit and push remain separate and unauthorized.
 - N10 evidence: `%TEMP%\ProjectOrganoid_NeuroN10_20260918-123657`
+
+---
+
+## 2026-09-19 — Neuro Beats 1–2
+
+### Baseline / status
+
+- Layered on HEAD `e5f791a9d8f8765c7d93a603762fae56abfc8f72`.
+- Implementation and persisted Neuro content are validated (S6C four-test serial PASS).
+- The validated slice is checkpointed by the commit containing this section.
+- Git is authoritative for local/remote publication status; do not duplicate a transient pushed/unpushed claim in this living section.
+- Evidence roots (TEMP only): S6B2 `%TEMP%\ProjectOrganoid_NeuroBeats12_S6B2_20260919-091742`; S6C `%TEMP%\ProjectOrganoid_NeuroBeats12_S6C_20260919-092115`; S7 `%TEMP%\ProjectOrganoid_NeuroBeats12_S7_20260919-092629`.
+
+### Gameplay implementation
+
+- New native interactable: `AProjectOrganoidInspectableInstrument`.
+- Deterministic player-owned HUD notification route (`ShowTransientNotification` / owned HUD path; decoy HUD ignored).
+- Exact Nathan line once on first inspect; review prompt thereafter with no line/event replay.
+- `Event_NeuroResearchArrayLocated` → completes `Obj_InvestigateNeuroResearchFloor`.
+- Array-first path (research floor can complete before power diagnosis) and diagnosis-first ordered path both covered.
+- Save/load reconstruction uses identically configured transient clone authority; map actor is never destroyed for fixtures.
+- OpeningFoundation completion hands off to persisted `Mission_NeuroGenetics` with `Obj_IsolateNeuroResearchLoad` activating exactly once.
+
+### Persisted content
+
+- Mission asset object path: `/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics`
+  - Disk: `Content/Data/Missions/DA_Mission_NeuroGenetics.uasset`
+  - SHA-256: `7cb5a6061215b94f6006eec4d8f3ac04a2cf06bdc0659356183be9815c4d0481`
+  - Sole task: `Obj_IsolateNeuroResearchLoad` (“Isolate the NeuroGenetics research load”).
+- Mapping array actor: `NeuralMappingArray_NeuroGenetics`
+  - Owner package: `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics`
+  - Transform: location `(-500,-600,-1100)`; rotation `(0,0,0)`; scale `(1,1,1)`
+  - Interaction range `200`
+  - Event: `Event_NeuroResearchArrayLocated`
+  - Replay-guard completed objective: `Obj_InvestigateNeuroResearchFloor`
+  - Prompts: `Inspect Neural Mapping Array` / `Review Neural Mapping Array`
+  - Speaker: `Nathan`
+  - Response: `The spikes are coming from this array. It’s still mapping something.`
+  - Notification duration: `4` seconds
+  - Initially uninspected
+- Temporary presentation (replaceable Engine BasicShapes blockout — **not final art**):
+  - `PedestalMesh` Cube; `ColumnMesh` Cylinder; `ArrayHeadMesh` Cylinder
+  - All three: `NoCollision`; overlap events off
+
+### Fixed editor tooling
+
+- `create_neurogenetics_mission` / `neurogenetics_mission_v1` — create/configure only the exact NeuroGenetics mission DA; separate dual-approved `save_asset` lifecycle.
+- `spawn_neuro_neural_mapping_array` / `neuro_neural_mapping_array_v1` — spawn/configure only `NeuralMappingArray_NeuroGenetics` on Neuro; separate dual-approved Neuro-only `save_maps` lifecycle.
+- Fixed contracts: preview vs apply separation; exact dirty-package boundaries; cleanup/destroy+restore on failure where specified.
+- Transient ledger `change_id` values are session-local only — do not record them as reusable actions.
+
+### Validation
+
+- S6B2 closed-editor `ProjectOrganoidEditor Win64 Development` build Succeeded (~21.8 s) after playtest-only observer probe.
+- S6C fresh Lvl_Epitope reload + four serial functional tests (PID 13016):
+  - `NeuroResearchFloorArray_Functional` **98/98** — `ptr_ced23468-4705-6d27-c744-24bb0304cab4` (4.3 s)
+  - `OpeningFoundation_Functional` **48/48** — `ptr_b3ad4ac9-482a-85bd-3828-e5a27db3e75d` (11.0 s)
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_aee43a32-4301-170a-f4e8-b7947d203df0` (4.3 s)
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_7531ce4b-41a7-98cd-696f-2d884cbe33c5` (4.3 s)
+- Initial S6 NRFA **97/98** was a **test observer defect**: `IsMissionComplete` only observes the **active** mission, so after NeuroGenetics handoff it correctly returns false for OpeningFoundation.
+- Correction (playtest-only): `UOrganoidNeuroResearchFloorArrayMissionCompletionProbe` binds `OnMissionCompleted` via `AddDynamic`; `ordered.opening_completed_once` asserts OpeningFoundation callback count **expected=1 actual=1** after duplicate interaction.
+- No production ObjectiveSubsystem / native production delegate change for that fix.
+
+### Preservation
+
+- Neuro remains Emergency; Cryo remains Blackout.
+- Hosts / Researcher / Research Station / PowerPanel / Ch3 pads / doors / hazards / archive / Cryo-access keep-list untouched.
+- Mission and Neuro packages clean after validation; SHAs unchanged through S6C and clean editor close.
+- `PROJECT_ORGANOID_CANON.md` unchanged.
+
+### Current next step
+
+- Before any remote publication, perform an origin/outgoing-range audit and obtain explicit push authorization.
+- Subsequent gameplay work requires a separately approved slice.

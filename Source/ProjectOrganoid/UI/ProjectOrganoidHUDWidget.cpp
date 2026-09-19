@@ -107,6 +107,27 @@ void UProjectOrganoidHUDWidget::NotifyResourceAcquired(UProjectOrganoidItemData*
 	ResourceNotificationSecondsRemaining = 4.0f;
 }
 
+void UProjectOrganoidHUDWidget::ShowTransientNotification(const FText& SpeakerLabel, const FText& Line, float Seconds)
+{
+	const FString Speaker = SpeakerLabel.ToString().TrimStartAndEnd();
+	const FString LineText = Line.ToString();
+	if (Speaker.IsEmpty())
+	{
+		LastResourceNotification = FText::FromString(LineText);
+	}
+	else
+	{
+		LastResourceNotification = FText::FromString(FString::Printf(TEXT("%s: %s"), *Speaker, *LineText));
+	}
+
+	if (ResourceNotificationText)
+	{
+		ResourceNotificationText->SetText(LastResourceNotification);
+		ResourceNotificationText->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	ResourceNotificationSecondsRemaining = FMath::Max(0.0f, Seconds);
+}
+
 void UProjectOrganoidHUDWidget::BindToCharacter(AProjectOrganoidCharacter* InCharacter)
 {
 	if (BoundCharacter == InCharacter)

@@ -139,8 +139,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HUD|Inventory")
 	void NotifyResourceAcquired(UProjectOrganoidItemData* ItemData, int32 Quantity);
 
+	/**
+	 * Center-top transient toast (ResourceNotificationText).
+	 * Empty SpeakerLabel shows Line only (no leading colon). Replaces any active toast.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "HUD|Notification")
+	void ShowTransientNotification(const FText& SpeakerLabel, const FText& Line, float Seconds = 4.0f);
+
 	UFUNCTION(BlueprintPure, Category = "HUD|Inventory")
 	FText GetLastResourceNotification() const { return LastResourceNotification; }
+
+	UFUNCTION(BlueprintPure, Category = "HUD|Notification")
+	float GetTransientNotificationSecondsRemaining() const { return ResourceNotificationSecondsRemaining; }
 
 	UFUNCTION(BlueprintPure, Category = "HUD|Weapon")
 	FText GetDisplayedAmmoText() const { return LastAmmoText; }

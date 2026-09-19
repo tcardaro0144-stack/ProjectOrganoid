@@ -78,6 +78,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HUD|Upgrade")
 	bool RequestUpgrade(EProjectOrganoidUpgradeType UpgradeType);
 
+	/**
+	 * Forward a transient toast to the exact BoundHUD registered for this controller's player.
+	 * Returns false if no owned HUD is bound (presentation only — callers must not roll back gameplay).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "HUD|Notification")
+	bool ShowTransientNotification(const FText& SpeakerLabel, const FText& Line, float Seconds = 4.0f);
+
+	/** Exact GameMode-owned HUD bound to this controller (may be null). */
+	UFUNCTION(BlueprintPure, Category = "HUD|Loop")
+	UProjectOrganoidHUDWidget* GetBoundHUDWidget() const { return BoundHUD.Get(); }
+
 protected:
 
 	UPROPERTY()

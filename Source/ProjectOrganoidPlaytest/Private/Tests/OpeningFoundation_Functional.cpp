@@ -829,6 +829,13 @@ namespace
 				bHasNeuroResearchFloor ? UEnum::GetValueAsString(NeuroResearchFloorTask.State) : TEXT("missing"),
 				TEXT("objectives"));
 
+			const FString PendingNextPath = Objectives->GetPendingNextMissionAssetPath().ToString();
+			AssertTrue(Record, TEXT("mission.pending_next_neurogenetics_soft_path"),
+				PendingNextPath == TEXT("/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics"),
+				TEXT("/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics"),
+				PendingNextPath,
+				TEXT("objectives"));
+
 			bool bForbidden = ContainsForbidden(MissionId) || ContainsForbidden(MissionTitle);
 			for (const FProjectOrganoidObjective& Objective : Objectives->GetActiveObjectives())
 			{

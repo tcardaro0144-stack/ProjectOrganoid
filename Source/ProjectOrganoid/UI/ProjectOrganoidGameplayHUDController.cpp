@@ -239,6 +239,16 @@ void UProjectOrganoidGameplayHUDController::HandleItemPickedUp(UProjectOrganoidI
 	PushInventoryToHUD();
 }
 
+bool UProjectOrganoidGameplayHUDController::ShowTransientNotification(const FText& SpeakerLabel, const FText& Line, float Seconds)
+{
+	if (UProjectOrganoidHUDWidget* HUD = BoundHUD.Get())
+	{
+		HUD->ShowTransientNotification(SpeakerLabel, Line, Seconds);
+		return true;
+	}
+	return false;
+}
+
 void UProjectOrganoidGameplayHUDController::HandleJournalUpdated()
 {
 	PushJournalToHUD();

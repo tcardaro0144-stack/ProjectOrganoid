@@ -509,6 +509,8 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_ch4_transformed_personnel")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_power_failure_discovery")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_power_diagnostic")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neurogenetics_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		Data->SetArrayField(TEXT("native_game_thread_actions"), NativeActions);
 		Data->SetStringField(TEXT("map_save"), TEXT("use save_maps; save_asset rejects map packages"));
 		Data->SetBoolField(TEXT("save_maps_admin_only_requires_epitope_persistent"), false);
@@ -566,6 +568,8 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_ch4_transformed_personnel")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_power_failure_discovery")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_power_diagnostic")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neurogenetics_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		Data->SetArrayField(TEXT("spawn_actions"), SpawnActions);
 		return Ok(Data);
 	}
@@ -1770,7 +1774,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("spawn_neuro_ch3_containment_evidence")
 		|| Normalized == TEXT("spawn_neuro_ch4_transformed_personnel")
 		|| Normalized == TEXT("configure_neuro_power_failure_discovery")
-		|| Normalized == TEXT("spawn_neuro_power_diagnostic"))
+		|| Normalized == TEXT("spawn_neuro_power_diagnostic")
+		|| Normalized == TEXT("create_neurogenetics_mission")
+		|| Normalized == TEXT("spawn_neuro_neural_mapping_array"))
 	{
 		return Fail(
 			TEXT("needs_prepare"),

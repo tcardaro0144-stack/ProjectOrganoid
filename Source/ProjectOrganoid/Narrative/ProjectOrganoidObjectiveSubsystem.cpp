@@ -108,6 +108,16 @@ void UProjectOrganoidObjectiveSubsystem::SeedOpeningFoundationMission()
 	RegisterObjective(InvestigateNeuroResearchFloor);
 	ActiveMissionObjectiveIds.Add(InvestigateNeuroResearchFloor.ObjectiveId);
 
+	FProjectOrganoidObjectiveEventTrigger NeuroResearchArrayLocated;
+	NeuroResearchArrayLocated.EventId = TEXT("Event_NeuroResearchArrayLocated");
+	NeuroResearchArrayLocated.ObjectiveId = TEXT("Obj_InvestigateNeuroResearchFloor");
+	NeuroResearchArrayLocated.Action = EProjectOrganoidObjectiveEventAction::Complete;
+	RegisterEventTrigger(NeuroResearchArrayLocated);
+
+	// Soft path only — DA_Mission_NeuroGenetics is authored in a later content phase.
+	PendingNextMissionAsset = TSoftObjectPtr<UProjectOrganoidObjectiveDataAsset>(
+		FSoftObjectPath(TEXT("/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics")));
+
 	OnMissionLoaded.Broadcast(ActiveMissionId, ActiveMissionTitle);
 	BroadcastJournalState();
 }

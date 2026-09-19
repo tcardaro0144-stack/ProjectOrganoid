@@ -15,7 +15,7 @@ class APlayerController;
  *  ProjectOrganoid GameMode — Avery Vance pawn, Organoid player controller, diegetic HUD.
  */
 UCLASS()
-class AProjectOrganoidGameMode : public AGameModeBase
+class PROJECTORGANOID_API AProjectOrganoidGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
