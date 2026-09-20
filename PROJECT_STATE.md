@@ -2380,3 +2380,92 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 - `Obj_TraceNeuralMappingSignal` is the next approved **design** target only after a separate slice decision.
 - No automatic implementation of power restoration, Cryo unlock, pursuer, Research Station tutorial, or the full Neuro revelation.
 - Before any remote publication, perform exact staging/checkpoint and origin/outgoing audit with explicit authorization.
+
+---
+
+---
+
+## 2026-09-20 — Neuro Beat 4: Neural-signal trace
+
+### Baseline / status
+
+- Layered on the Neuro Beats 1–3 validated slice (research-floor array → research-load cutoff → neural-signal trace).
+- The validated Beat 4 slice is represented by the commit containing this section.
+- Git remains authoritative for local/remote publication status.
+- Evidence root (TEMP only): `%TEMP%\ProjectOrganoid_NeuroBeat4_Q7R_20260920-084950` (fresh persistence + six serial functionals). Supporting slice evidence: Q5–Q7A under `%TEMP%\ProjectOrganoid_NeuroBeat4_Q*`.
+
+### Gameplay
+
+- Exact neural mapping terminal: label `NeuralMappingTerminal_NeuroGenetics`; class `AProjectOrganoidInspectableInstrument` / `ProjectOrganoidInspectableInstrument`; owning package `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics`.
+- Transform `(300,-600,-1100)` · rotation `(0,0,0)` · scale `(1,1,1)` · interaction range `175`.
+- Required-active / replay-guard objective: `Obj_TraceNeuralMappingSignal`.
+- Objective event: `Event_NeuralMappingSignalTraced`.
+- Prompts: `Trace Neural Mapping Signal` / `Signal Trace Complete`.
+- Speaker `Nathan`; exact response (two U+2019): `These scans line up with the victims’ neural changes. Something’s been tracking the same pattern across all of them.`
+- Notification duration `4` seconds; initially uninspected.
+- The exact Nathan line is required main-path evidence and remains cautious about the controller/mechanism (does not complete the Neuro revelation).
+- Terminal unavailable before trace Active (required-active gate rejects interact).
+- First valid interaction completes trace once, shows the Nathan line once, enters Review, and activates `Obj_FollowNeuralSignature` once.
+- Repeat inspect and save/load reconstruction produce Review with no event/line replay.
+
+### Mission
+
+- `DA_Mission_NeuroGenetics` now has exactly three ordered Main tasks (Beat 4).
+- Task 1 `Obj_IsolateNeuroResearchLoad` unchanged; owns `Event_NeuroResearchLoadIsolated`.
+- Task 2 `Obj_TraceNeuralMappingSignal` owns `Event_NeuralMappingSignalTraced` through `EventTriggers` (Complete); prerequisite `Obj_IsolateNeuroResearchLoad`.
+- Task 3 `Obj_FollowNeuralSignature` — exact title `Follow the neural signature`; exact description `Track the matching neural pattern deeper into the research wing.`; prerequisite `Obj_TraceNeuralMappingSignal`; empty event triggers.
+- After terminal: isolate Completed, trace Completed, follow Active.
+- `Mission_NeuroGenetics` remains the current mission and remains incomplete (follow still open).
+- No new global ObjectiveSubsystem seed for the trace event; OpeningFoundation completion continues to drive soft-path → real DA load.
+
+### Content
+
+- Mission object path: `/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics`
+  - Disk: `Content/Data/Missions/DA_Mission_NeuroGenetics.uasset`
+  - SHA-256: `79b9907030b96fae4763c316d7ccd0274afc63ad79a6844d1e1d5a12c533a115`
+- Terminal `NeuralMappingTerminal_NeuroGenetics` persisted on `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics` at `(300,-600,-1100)`.
+- Neuro map disk: `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap`
+  - SHA-256: `6e04ee70c468efead21f687e1d4d18a63620aa4ce6336427e1ffe7c0528aec5d`
+- Temporary three-Cube Engine BasicShapes `NoCollision` blockout on `PedestalMesh` / `ColumnMesh` / `ArrayHeadMesh` remains replaceable art — **not final art**.
+- Mapping array and emergency cutoff remain persisted/exact/initially uninspected alongside the terminal.
+
+### Fixed editor tooling
+
+- `expand_neurogenetics_mission_beat4` / `neurogenetics_mission_beat4_v1` — expand the exact NeuroGenetics DA from Beat 3 → Beat 4 contract; separate dual-approved `save_asset` lifecycle for the mission package.
+- `spawn_neuro_neural_mapping_terminal` / `neuro_neural_mapping_terminal_v1` — spawn/configure only `NeuralMappingTerminal_NeuroGenetics` on Neuro; separate dual-approved Neuro-only `save_maps` lifecycle.
+- Mission and map save lifecycles remain separate (no Save All; no map via `save_asset`).
+- Exact dirty / already-exact no-op / rollback contracts: terminal spawn dirties Neuro only until Neuro-only `save_maps`; mission expand dirties the mission package only until `save_asset`.
+- Native floor / AABB / nav / interaction / keepout checks remain fail-closed.
+- Exact nonphysical streaming / NavMesh metadata classification preserved (physical meshes, BlockingVolume, hazards, traps, doors, gates, interactables remain fail-closed on AABB intersect).
+- Transient ledger `change_id` values are session-local only — do not record them as reusable actions.
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor Win64 Development -WaitMutex -NoHotReloadFromIDE` succeeded for the Q7A cutoff functional task-count correction.
+- Q7R fresh process persistence + six serial functionals (PID 23360):
+  - Evidence: `%TEMP%\ProjectOrganoid_NeuroBeat4_Q7R_20260920-084950`
+  - `NeuroMappingSignalTrace_Functional` **130/130** — `ptr_086a789f-4407-2d98-3063-9099aebf67ef` (~6.37 s)
+  - `NeuroResearchLoadCutoff_Functional` **163/163** — `ptr_fdf9797d-47c1-f7be-c86b-c392bd44c076` (~3.33 s)
+  - `NeuroResearchFloorArray_Functional` **120/120** — `ptr_b7eaabfc-4ab2-9d4d-f14f-5fa7284451cd` (~3.33 s)
+  - `OpeningFoundation_Functional` **48/48** — `ptr_5f045238-4e50-9ad8-2c6b-e9ad35b4e676` (~8.33 s)
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_6a4eae99-424b-8b09-5bd0-ceae84871fba` (~3.66 s)
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_baa29f20-4498-48f1-e99a-a58ec5e19eab` (~3.33 s)
+  - **Total 596/596**
+- Initial Q7 campaign stopped on one stale test-only Beat 3 task-count expectation inside `saveload.no_transient_mission_da` (`Tasks.Num() == 2` while the real disk mission was already exact Beat 4 with three tasks). Q7A corrected that assert to the real three-task contract; closed build succeeded; Q7R fresh campaign then passed.
+- Fresh persistence proved exact Beat 4 mission + array + cutoff + terminal on reload before tests.
+- Signal functional proved: exact Nathan line once; follow objective Active once; repeat Review with no replay; save/load isolate+trace Completed and follow Active; reconstructed terminal Review with no replay; Emergency/Blackout and keep-list preservation.
+
+### Preservation
+
+- Neuro remains Emergency; Cryo remains Blackout.
+- Research Station was not used as a tutorial.
+- Datapads were not used as sole central-path proof.
+- Power panel / restoration path, Hosts, Researcher, doors, hazards, archive, Cryo access, pursuer, and full mechanism/controller revelation remain untouched.
+- Mission and Neuro packages clean after Q7R validation; SHAs unchanged through clean editor close (Q8).
+- `PROJECT_ORGANOID_CANON.md` unchanged.
+
+### Next gameplay boundary
+
+- `Obj_FollowNeuralSignature` is the next possible gameplay target only through a separately approved design slice.
+- No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation.
+- Before any remote publication, perform exact staging/checkpoint and origin/outgoing audit with explicit authorization.

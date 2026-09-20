@@ -53,6 +53,12 @@ namespace
 	constexpr TCHAR TraceTitle[] = TEXT("Trace the neural mapping signal");
 	constexpr TCHAR TraceDescription[] =
 		TEXT("Use the research-floor systems to determine what the array was monitoring.");
+	constexpr TCHAR TraceEvent[] = TEXT("Event_NeuralMappingSignalTraced");
+
+	constexpr TCHAR FollowId[] = TEXT("Obj_FollowNeuralSignature");
+	constexpr TCHAR FollowTitle[] = TEXT("Follow the neural signature");
+	constexpr TCHAR FollowDescription[] =
+		TEXT("Track the matching neural pattern deeper into the research wing.");
 
 	constexpr TCHAR ResearchFloorId[] = TEXT("Obj_InvestigateNeuroResearchFloor");
 	constexpr TCHAR DiagnosisEvent[] = TEXT("Event_NeuroPowerFailureDiagnosed");
@@ -66,6 +72,7 @@ namespace
 	constexpr TCHAR CutoffReloadLabel[] = TEXT("EmergencyCutoff_NeuroResearchLoad_ReloadClone");
 	constexpr TCHAR ArrayLabel[] = TEXT("NeuralMappingArray_NeuroGenetics");
 	constexpr TCHAR ArrayOrderedLabel[] = TEXT("NeuralMappingArray_NeuroGenetics_OrderedClone");
+	constexpr TCHAR TerminalLabel[] = TEXT("NeuralMappingTerminal_NeuroGenetics");
 	constexpr TCHAR StationLabel[] = TEXT("ResearchStation_NeuroGenetics");
 	constexpr TCHAR PanelLabel[] = TEXT("PowerPanel_NeuroBackup");
 	constexpr TCHAR GateNoneLabel[] = TEXT("EmergencyCutoff_GateNone_Test");
@@ -107,6 +114,20 @@ namespace
 	const FVector ArrayHeadRel(0.0f, 0.0f, 192.5f);
 	const FVector ArrayHeadScale(1.6f, 1.6f, 0.25f);
 	const FVector StationLocation(800.0f, -1600.0f, -1100.0f);
+
+	const FVector TerminalLocation(300.0f, -600.0f, -1100.0f);
+	constexpr float TerminalInteractionRange = 175.0f;
+	constexpr float TerminalNotifySeconds = 4.0f;
+	constexpr TCHAR TerminalInspectPrompt[] = TEXT("Trace Neural Mapping Signal");
+	constexpr TCHAR TerminalReviewPrompt[] = TEXT("Signal Trace Complete");
+	constexpr TCHAR TerminalLine[] =
+		TEXT("These scans line up with the victims\u2019 neural changes. Something\u2019s been tracking the same pattern across all of them.");
+	const FVector TerminalPedestalRel(0.0f, 0.0f, 30.0f);
+	const FVector TerminalPedestalScale(0.55f, 0.45f, 0.60f);
+	const FVector TerminalColumnRel(0.0f, 0.0f, 90.0f);
+	const FVector TerminalColumnScale(0.50f, 0.25f, 0.60f);
+	const FVector TerminalHeadRel(0.0f, 0.0f, 145.0f);
+	const FVector TerminalHeadScale(0.75f, 0.35f, 0.25f);
 
 	bool PackageIsDirty(const TCHAR* Path)
 	{
@@ -631,7 +652,10 @@ namespace
 			const TArray<AActor*> Arrays = World
 				? OrganoidPlaytestActions::FindActorsByLabel(World, ArrayLabel)
 				: TArray<AActor*>();
-			if (World && Character && Cutoffs.Num() == 1 && Arrays.Num() == 1)
+			const TArray<AActor*> Terminals = World
+				? OrganoidPlaytestActions::FindActorsByLabel(World, TerminalLabel)
+				: TArray<AActor*>();
+			if (World && Character && Cutoffs.Num() == 1 && Arrays.Num() == 1 && Terminals.Num() == 1)
 			{
 				Stage = EStage::Proof;
 				Owner.SetStage(TEXT("Proof"));
@@ -641,7 +665,7 @@ namespace
 			{
 				FailAndStop(
 					Owner, Record,
-					TEXT("Timed out waiting for PIE player, EmergencyCutoff_NeuroResearchLoad, and NeuralMappingArray_NeuroGenetics. Persist Beat 3 expand+save and cutoff spawn+save before this test can pass."));
+					TEXT("Timed out waiting for PIE player, EmergencyCutoff_NeuroResearchLoad, NeuralMappingArray_NeuroGenetics, and NeuralMappingTerminal_NeuroGenetics. Persist Beat 4 + cutoff + terminal saves before this test can pass."));
 			}
 		}
 
@@ -692,7 +716,7 @@ namespace
 				PowerStateName(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)),
 				TEXT("Power"));
 
-			// ---- A. Persisted Beat 3 mission asset ----
+			// ---- A. Persisted Beat 4 mission asset ----
 			UProjectOrganoidObjectiveDataAsset* Mission = LoadPersistedMissionAsset();
 			AssertTrue(
 				Record, TEXT("mission.asset_loaded"),
@@ -704,7 +728,7 @@ namespace
 			{
 				FailAndStop(
 					Owner, Record,
-					TEXT("DA_Mission_NeuroGenetics missing. Require Beat 3 expand+save and cutoff spawn+save before this test can pass."));
+					TEXT("DA_Mission_NeuroGenetics missing. Require Beat 4 expand+save, cutoff spawn+save, and mapping terminal spawn+save before this test can pass."));
 				return;
 			}
 			AssertTrue(
@@ -746,21 +770,22 @@ namespace
 					: TEXT("null"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task_count_two"),
-				Mission->Tasks.Num() == 2,
-				TEXT("2"),
+				Record, TEXT("mission.task_count_three"),
+				Mission->Tasks.Num() == 3,
+				TEXT("3"),
 				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
-			if (Mission->Tasks.Num() != 2)
+			if (Mission->Tasks.Num() != 3)
 			{
 				FailAndStop(
 					Owner, Record,
-					TEXT("DA_Mission_NeuroGenetics is still Beat 2 (task count != 2). Require expand_neurogenetics_mission_beat3 + save before this test can pass."));
+					TEXT("DA_Mission_NeuroGenetics is not exact Beat 4 (task count != 3). Require expand_neurogenetics_mission_beat4 + save before this test can pass."));
 				return;
 			}
 
 			const FProjectOrganoidMissionTaskDefinition& Task1 = Mission->Tasks[0];
 			const FProjectOrganoidMissionTaskDefinition& Task2 = Mission->Tasks[1];
+			const FProjectOrganoidMissionTaskDefinition& Task3 = Mission->Tasks[2];
 			AssertTrue(
 				Record, TEXT("mission.task1_objective_id"),
 				Task1.Objective.ObjectiveId == FName(IsolateId),
@@ -875,10 +900,16 @@ namespace
 					: FString::FromInt(Task2.Objective.PrerequisiteObjectiveIds.Num()),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task2_event_triggers_empty"),
-				Task2.EventTriggers.Num() == 0,
-				TEXT("0"),
-				FString::FromInt(Task2.EventTriggers.Num()),
+				Record, TEXT("mission.task2_event_triggers_exact"),
+				Task2.EventTriggers.Num() == 1
+					&& Task2.EventTriggers[0].EventId == FName(TraceEvent)
+					&& Task2.EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete
+					&& (Task2.EventTriggers[0].ObjectiveId.IsNone()
+						|| Task2.EventTriggers[0].ObjectiveId == FName(TraceId)),
+				TEXT("Event_NeuralMappingSignalTraced/Complete"),
+				Task2.EventTriggers.Num() == 1
+					? Task2.EventTriggers[0].EventId.ToString()
+					: FString::FromInt(Task2.EventTriggers.Num()),
 				TEXT("DA"));
 			AssertTrue(
 				Record, TEXT("mission.task2_initially_incomplete"),
@@ -889,6 +920,74 @@ namespace
 					TEXT("%s/%d"),
 					*ObjectiveStateName(Task2.Objective.State),
 					Task2.Objective.CurrentProgress),
+				TEXT("DA"));
+
+			AssertTrue(
+				Record, TEXT("mission.task3_objective_id"),
+				Task3.Objective.ObjectiveId == FName(FollowId),
+				FollowId,
+				Task3.Objective.ObjectiveId.ToString(),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_title"),
+				Task3.Objective.Title.ToString() == FollowTitle,
+				FollowTitle,
+				Task3.Objective.Title.ToString(),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_description"),
+				Task3.Objective.Description.ToString() == FollowDescription,
+				FollowDescription,
+				Task3.Objective.Description.ToString(),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_category_main"),
+				Task3.Objective.Type == EProjectOrganoidObjectiveType::Main,
+				TEXT("Main"),
+				UEnum::GetValueAsString(Task3.Objective.Type),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_target_one"),
+				Task3.Objective.TargetProgress == 1,
+				TEXT("1"),
+				FString::FromInt(Task3.Objective.TargetProgress),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_auto_activate"),
+				Task3.bAutoActivate,
+				TEXT("true"),
+				BoolText(Task3.bAutoActivate),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_prereq_trace"),
+				Task3.Objective.PrerequisiteObjectiveIds.Num() == 1
+					&& Task3.Objective.PrerequisiteObjectiveIds[0] == FName(TraceId),
+				TraceId,
+				Task3.Objective.PrerequisiteObjectiveIds.Num() == 1
+					? Task3.Objective.PrerequisiteObjectiveIds[0].ToString()
+					: FString::FromInt(Task3.Objective.PrerequisiteObjectiveIds.Num()),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_event_triggers_empty"),
+				Task3.EventTriggers.Num() == 0,
+				TEXT("0"),
+				FString::FromInt(Task3.EventTriggers.Num()),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task3_initially_incomplete"),
+				Task3.Objective.State == EProjectOrganoidObjectiveState::Inactive
+					&& Task3.Objective.CurrentProgress == 0,
+				TEXT("Inactive/0"),
+				FString::Printf(
+					TEXT("%s/%d"),
+					*ObjectiveStateName(Task3.Objective.State),
+					Task3.Objective.CurrentProgress),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.no_fourth_task"),
+				Mission->Tasks.Num() == 3,
+				TEXT("3"),
+				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
 
 			// ---- B. Persisted cutoff actor ----
@@ -1182,6 +1281,153 @@ namespace
 				TEXT("checked"),
 				ArrayLabel);
 
+
+			// ---- C2. Persisted NeuralMappingTerminal (exact; untouched by this test) ----
+			const TArray<AActor*> TerminalMatches = OrganoidPlaytestActions::FindActorsByLabel(World, TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_unique"),
+				TerminalMatches.Num() == 1,
+				TEXT("1"),
+				FString::FromInt(TerminalMatches.Num()),
+				TerminalLabel);
+			AProjectOrganoidInspectableInstrument* Terminal = TerminalMatches.Num() == 1
+				? Cast<AProjectOrganoidInspectableInstrument>(TerminalMatches[0])
+				: nullptr;
+			if (!Terminal)
+			{
+				FailAndStop(
+					Owner, Record,
+					TEXT("NeuralMappingTerminal_NeuroGenetics missing or wrong class. Require spawn_neuro_neural_mapping_terminal + save before this test can pass."));
+				return;
+			}
+			AssertTrue(
+				Record, TEXT("map.terminal_native_class"),
+				Terminal->GetClass() == AProjectOrganoidInspectableInstrument::StaticClass(),
+				TEXT("ProjectOrganoidInspectableInstrument"),
+				Terminal->GetClass() ? Terminal->GetClass()->GetName() : TEXT("null"),
+				TerminalLabel);
+			const FString TerminalPackage = OrganoidPlaytestActions::NormalizePackage(
+				OrganoidPlaytestActions::ActorPackage(Terminal));
+			AssertTrue(
+				Record, TEXT("map.terminal_neuro_package"),
+				TerminalPackage.Equals(NeuroPackage, ESearchCase::CaseSensitive),
+				NeuroPackage,
+				TerminalPackage,
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_transform"),
+				VecNear(Terminal->GetActorLocation(), TerminalLocation)
+					&& RotNear(Terminal->GetActorRotation(), FRotator::ZeroRotator)
+					&& VecNear(Terminal->GetActorScale3D(), FVector::OneVector),
+				TEXT("(300,-600,-1100)/(0,0,0)/(1,1,1)"),
+				FString::Printf(
+					TEXT("(%s)/(%s)/(%s)"),
+					*Terminal->GetActorLocation().ToCompactString(),
+					*Terminal->GetActorRotation().ToCompactString(),
+					*Terminal->GetActorScale3D().ToCompactString()),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_interaction_range"),
+				FMath::IsNearlyEqual(Terminal->InteractionRange, TerminalInteractionRange, 0.05f),
+				TEXT("175"),
+				FString::SanitizeFloat(Terminal->InteractionRange),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_required_active_id"),
+				Terminal->RequiredActiveObjectiveId == FName(TraceId),
+				TraceId,
+				Terminal->RequiredActiveObjectiveId.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_objective_event_id"),
+				Terminal->ObjectiveEventId == FName(TraceEvent),
+				TraceEvent,
+				Terminal->ObjectiveEventId.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_replay_guard_id"),
+				Terminal->CompletedObjectiveIdForReplayGuard == FName(TraceId),
+				TraceId,
+				Terminal->CompletedObjectiveIdForReplayGuard.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_inspection_prompt"),
+				Terminal->InspectionPrompt.ToString() == TerminalInspectPrompt,
+				TerminalInspectPrompt,
+				Terminal->InspectionPrompt.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_review_prompt"),
+				Terminal->ReviewPrompt.ToString() == TerminalReviewPrompt,
+				TerminalReviewPrompt,
+				Terminal->ReviewPrompt.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_speaker_nathan"),
+				Terminal->SpeakerLabel.ToString() == ExpectedSpeaker,
+				ExpectedSpeaker,
+				Terminal->SpeakerLabel.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_response_text_u2019"),
+				Terminal->InspectionResponseText.ToString() == TerminalLine,
+				TerminalLine,
+				Terminal->InspectionResponseText.ToString(),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_notification_duration"),
+				FMath::IsNearlyEqual(Terminal->NotificationDurationSeconds, TerminalNotifySeconds, 0.05f),
+				TEXT("4"),
+				FString::SanitizeFloat(Terminal->NotificationDurationSeconds),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_initially_uninspected"),
+				!Terminal->bHasBeenInspected,
+				TEXT("false"),
+				BoolText(Terminal->bHasBeenInspected),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_components_exist"),
+				Terminal->SceneRoot && Terminal->PedestalMesh && Terminal->ColumnMesh && Terminal->ArrayHeadMesh,
+				TEXT("SceneRoot+Pedestal+Column+ArrayHead"),
+				TEXT("present"),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_pedestal_mesh"),
+				MeshPathMatches(Terminal->PedestalMesh, CubeMeshPath)
+					&& VecNear(Terminal->PedestalMesh->GetRelativeLocation(), TerminalPedestalRel)
+					&& RotNear(Terminal->PedestalMesh->GetRelativeRotation(), FRotator::ZeroRotator)
+					&& VecNear(Terminal->PedestalMesh->GetRelativeScale3D(), TerminalPedestalScale)
+					&& Terminal->PedestalMesh->GetCollisionEnabled() == ECollisionEnabled::NoCollision
+					&& !Terminal->PedestalMesh->GetGenerateOverlapEvents(),
+				TEXT("Cube@rel exact NoCollision"),
+				TEXT("checked"),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_column_mesh"),
+				MeshPathMatches(Terminal->ColumnMesh, CubeMeshPath)
+					&& VecNear(Terminal->ColumnMesh->GetRelativeLocation(), TerminalColumnRel)
+					&& RotNear(Terminal->ColumnMesh->GetRelativeRotation(), FRotator::ZeroRotator)
+					&& VecNear(Terminal->ColumnMesh->GetRelativeScale3D(), TerminalColumnScale)
+					&& Terminal->ColumnMesh->GetCollisionEnabled() == ECollisionEnabled::NoCollision
+					&& !Terminal->ColumnMesh->GetGenerateOverlapEvents(),
+				TEXT("Cube@rel exact NoCollision"),
+				TEXT("checked"),
+				TerminalLabel);
+			AssertTrue(
+				Record, TEXT("map.terminal_array_head_mesh"),
+				MeshPathMatches(Terminal->ArrayHeadMesh, CubeMeshPath)
+					&& VecNear(Terminal->ArrayHeadMesh->GetRelativeLocation(), TerminalHeadRel)
+					&& RotNear(Terminal->ArrayHeadMesh->GetRelativeRotation(), FRotator::ZeroRotator)
+					&& VecNear(Terminal->ArrayHeadMesh->GetRelativeScale3D(), TerminalHeadScale)
+					&& Terminal->ArrayHeadMesh->GetCollisionEnabled() == ECollisionEnabled::NoCollision
+					&& !Terminal->ArrayHeadMesh->GetGenerateOverlapEvents(),
+				TEXT("Cube@rel exact NoCollision"),
+				TEXT("checked"),
+				TerminalLabel);
+			const int32 TerminalEventsBefore = Terminal->ObjectiveEventFireCount;
+			const int32 TerminalLinesBefore = Terminal->InspectionNotificationCount;
+
 			// ---- D. Distinct gate_none probe (RequiredActiveObjectiveId missing) ----
 			FProjectOrganoidObjective GateNoneObj;
 			GateNoneObj.ObjectiveId = FName(GateNoneObjId);
@@ -1314,7 +1560,7 @@ namespace
 				Record, TEXT("ordered.real_da_loaded"),
 				RealMission != nullptr
 					&& RealMission->MissionId == FName(MissionId)
-					&& RealMission->Tasks.Num() == 2
+					&& RealMission->Tasks.Num() == 3
 					&& FSoftObjectPath(RealMission).ToString() == MissionSoftPath,
 				MissionSoftPath,
 				RealMission ? FSoftObjectPath(RealMission).ToString() : TEXT("null"),
@@ -1388,7 +1634,7 @@ namespace
 				Record, TEXT("ordered.real_da_drives_handoff"),
 				Objectives->GetActiveMissionId() == FName(MissionId)
 					&& LoadPersistedMissionAsset() != nullptr
-					&& LoadPersistedMissionAsset()->Tasks.Num() == 2,
+					&& LoadPersistedMissionAsset()->Tasks.Num() == 3,
 				MissionId,
 				Objectives->GetActiveMissionId().ToString(),
 				TEXT("DA"));
@@ -1416,6 +1662,16 @@ namespace
 				TEXT("Inactive"),
 				ObjectiveStateName(TraceAfterHandoff.State),
 				TraceId);
+			AssertTrue(
+				Record, TEXT("ordered.follow_inactive"),
+				CountActiveId(Objectives, FName(FollowId)) == 0
+					&& CountCompletedId(Objectives, FName(FollowId)) == 0,
+				TEXT("active=0 completed=0"),
+				FString::Printf(
+					TEXT("active=%d completed=%d"),
+					CountActiveId(Objectives, FName(FollowId)),
+					CountCompletedId(Objectives, FName(FollowId))),
+				FollowId);
 
 			const int32 OpeningCompletedCount = LiveOpeningProbe
 				? LiveOpeningProbe->OpeningFoundationCompletedCount
@@ -1492,6 +1748,30 @@ namespace
 					CountActiveId(Objectives, FName(TraceId)),
 					CountCompletedId(Objectives, FName(TraceId))),
 				TraceId);
+			AssertTrue(
+				Record, TEXT("cutoff.follow_still_inactive"),
+				CountActiveId(Objectives, FName(FollowId)) == 0
+					&& CountCompletedId(Objectives, FName(FollowId)) == 0,
+				TEXT("active=0 completed=0"),
+				FString::Printf(
+					TEXT("active=%d completed=%d"),
+					CountActiveId(Objectives, FName(FollowId)),
+					CountCompletedId(Objectives, FName(FollowId))),
+				FollowId);
+			AssertTrue(
+				Record, TEXT("cutoff.terminal_still_uninspected"),
+				Terminal && !Terminal->bHasBeenInspected
+					&& Terminal->ObjectiveEventFireCount == TerminalEventsBefore
+					&& Terminal->InspectionNotificationCount == TerminalLinesBefore,
+				TEXT("untouched"),
+				Terminal
+					? FString::Printf(
+						TEXT("inspected=%s events=%d lines=%d"),
+						*BoolText(Terminal->bHasBeenInspected),
+						Terminal->ObjectiveEventFireCount,
+						Terminal->InspectionNotificationCount)
+					: TEXT("null"),
+				TerminalLabel);
 			AssertTrue(
 				Record, TEXT("cutoff.mission_still_neuro"),
 				Objectives->GetActiveMissionId() == FName(MissionId),
@@ -1592,7 +1872,7 @@ namespace
 				Record, TEXT("saveload.no_transient_mission_da"),
 				LoadPersistedMissionAsset() == Mission
 					&& FSoftObjectPath(Mission).ToString() == MissionSoftPath
-					&& Mission->Tasks.Num() == 2,
+					&& Mission->Tasks.Num() == 3,
 				MissionSoftPath,
 				FSoftObjectPath(Mission).ToString(),
 				TEXT("DA"));
