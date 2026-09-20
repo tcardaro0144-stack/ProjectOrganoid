@@ -510,7 +510,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_power_failure_discovery")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_power_diagnostic")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neurogenetics_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat3")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		Data->SetArrayField(TEXT("native_game_thread_actions"), NativeActions);
 		Data->SetStringField(TEXT("map_save"), TEXT("use save_maps; save_asset rejects map packages"));
 		Data->SetBoolField(TEXT("save_maps_admin_only_requires_epitope_persistent"), false);
@@ -569,7 +571,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_power_failure_discovery")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_power_diagnostic")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neurogenetics_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat3")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		Data->SetArrayField(TEXT("spawn_actions"), SpawnActions);
 		return Ok(Data);
 	}
@@ -1776,7 +1780,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("configure_neuro_power_failure_discovery")
 		|| Normalized == TEXT("spawn_neuro_power_diagnostic")
 		|| Normalized == TEXT("create_neurogenetics_mission")
-		|| Normalized == TEXT("spawn_neuro_neural_mapping_array"))
+		|| Normalized == TEXT("expand_neurogenetics_mission_beat3")
+		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
+		|| Normalized == TEXT("spawn_neuro_research_load_cutoff"))
 	{
 		return Fail(
 			TEXT("needs_prepare"),

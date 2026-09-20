@@ -2294,3 +2294,89 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 
 - Before any remote publication, perform an origin/outgoing-range audit and obtain explicit push authorization.
 - Subsequent gameplay work requires a separately approved slice.
+
+---
+
+## 2026-09-20 — Neuro Beat 3: Research-load cutoff
+
+### Baseline / status
+
+- Layered on the Neuro Beats 1–2 validated slice and subsequent Beat 3 implementation through R7.
+- The validated Beat 3 slice is represented by the commit containing this section.
+- Git remains authoritative for local/remote publication status.
+- Evidence root (TEMP only): `%TEMP%\ProjectOrganoid_NeuroBeat3_R7_20260920-042512` (fresh persistence + five serial functionals). Supporting slice evidence: R4–R6I under `%TEMP%\ProjectOrganoid_NeuroBeat3_R*`.
+
+### Gameplay
+
+- Optional `RequiredActiveObjectiveId` gate on `AProjectOrganoidInspectableInstrument`.
+- `None` / empty preserves existing mapping-array behavior (no required-active gate).
+- Completed-objective replay guard remains authoritative for review/no-replay.
+- Inactive, locked, or missing required-active gate: no objective event, no Nathan line, no transient inspected mark.
+- When the required-active objective is Active: interact → event trigger → completion verification → one-time HUD notification (exact owned HUD route).
+- Exact emergency cutoff: label `EmergencyCutoff_NeuroResearchLoad`; location `(-100,-600,-1100)`; rotation `(0,0,0)`; scale `(1,1,1)`; interaction range `175`.
+- Prompts: `Isolate Research Load` / `Research Load Isolated`.
+- Speaker `Nathan`; response: `That cut the feed. The array’s offline, but its last mapping data should still be here.`
+- Notification duration `4` seconds; initially uninspected.
+- Temporary replaceable Engine BasicShapes Cube blockout on `PedestalMesh` / `ColumnMesh` / `ArrayHeadMesh` — **not final art**.
+- All blockout components: `NoCollision`; generate overlap events off.
+
+### Data-driven mission
+
+- `DA_Mission_NeuroGenetics` expanded to exactly two ordered Main tasks (Beat 3).
+- Task 1 `Obj_IsolateNeuroResearchLoad` owns `Event_NeuroResearchLoadIsolated` through `EventTriggers` (Complete).
+- No new global ObjectiveSubsystem seed remains for this handoff path; OpeningFoundation completion continues to drive soft-path → real DA load.
+- Task 2 `Obj_TraceNeuralMappingSignal` — exact title/description; prerequisite `Obj_IsolateNeuroResearchLoad`; empty event triggers.
+- Isolate Active → Completed causes Trace Inactive → Active exactly once on verified cutoff interaction.
+- After cutoff, `Mission_NeuroGenetics` remains the current mission and remains incomplete (trace still open).
+
+### Persisted content
+
+- Mission object path: `/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics`
+  - Disk: `Content/Data/Missions/DA_Mission_NeuroGenetics.uasset`
+  - SHA-256: `7e33bbc77bd405c2a129db4f96d2b3336ed54b23922406f8a82bbd46b0f79b88`
+- Cutoff actor `EmergencyCutoff_NeuroResearchLoad` persisted on `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics` at `(-100,-600,-1100)`.
+- Neuro map disk: `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap`
+  - SHA-256: `603cda1cd1754d3c88c6a23084234b5dea03ad337f4310ad4ef4073ae32fdb0e`
+- Mapping array `NeuralMappingArray_NeuroGenetics` remains persisted/exact/initially uninspected alongside the cutoff.
+- Temporary BasicShapes on the cutoff remain replaceable blockout, not final art.
+
+### Fixed editor tooling
+
+- `expand_neurogenetics_mission_beat3` / `neurogenetics_mission_beat3_v1` — expand the exact NeuroGenetics DA from Beat 2 → Beat 3 contract; separate dual-approved `save_asset` lifecycle for the mission package.
+- `spawn_neuro_research_load_cutoff` / `neuro_research_load_cutoff_v1` — spawn/configure only `EmergencyCutoff_NeuroResearchLoad` on Neuro; separate dual-approved Neuro-only `save_maps` lifecycle.
+- Mission and map save lifecycles remain separate (no Save All; no map via `save_asset`).
+- Exact rollback / already-exact no-op / dirty-package contracts: spawn dirties Neuro only until Neuro-only `save_maps`; mission expand dirties the mission package only until `save_asset`.
+- Placement MeshBoundsClearance ignores region-sized actors only through exact verified nonphysical semantics:
+  - `ProjectOrganoidStreamingVolume` + TriggerVolume QueryOnly + Pawn Overlap (R6C);
+  - `/Script/NavigationSystem.NavMeshBoundsVolume` + brush `NoCollision` (R6E2).
+- Physical meshes, BlockingVolume, NavModifierVolume, unknown volumes, hazards, traps, doors, gates, and interactables remain fail-closed on AABB intersect.
+- Native nav projection / traversal gates still run after mesh-bounds clearance.
+- Transient ledger `change_id` values are session-local only — do not record them as reusable actions.
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor Win64 Development -WaitMutex -NoHotReloadFromIDE` succeeded for the R6E2 brush-component compile fix (cutoff `.inl`).
+- R7 fresh process persistence + five serial functionals (PID 25460 after clean close of 7268):
+  - Evidence: `%TEMP%\ProjectOrganoid_NeuroBeat3_R7_20260920-042512`
+  - `NeuroResearchLoadCutoff_Functional` **132/132** — `ptr_62c251b8-4b1d-7c90-8aca-87aa0f88a308` (7.22 s)
+  - `NeuroResearchFloorArray_Functional` **109/109** — `ptr_13186f1a-4a1d-24fe-63e9-b8817d1aa503` (4.01 s)
+  - `OpeningFoundation_Functional` **48/48** — `ptr_0737111e-4afd-83d7-77ed-55bf1789e6b8` (10.67 s)
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_33e2ae1c-4f8f-ae3d-4a12-b790cfbc4169` (7.0 s)
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_eaa3f8a8-4113-42de-9463-c2949c1e82ac` (4.0 s)
+  - **Total 424/424**
+- Fresh persistence proved exact Beat 3 mission + cutoff + array on reload before tests.
+- Cutoff functional proved: Nathan line once; repeat Review with no event/line replay; save/load isolate Completed + trace Active; fresh clone Review with no replay; OpeningFoundation completion callback once; handoff isolate Active / trace Inactive then cutoff completes isolate and activates trace.
+
+### Preservation
+
+- Neuro remains Emergency; Cryo remains Blackout.
+- Power panel / restoration path untouched.
+- Hosts, Researcher, Research Station, pads, doors, hazards, archive, and Cryo access keep-list untouched through spawn, Neuro-only save, and R7 functionals.
+- Mission and Neuro packages clean after R7 validation; SHAs unchanged through clean editor close (R8).
+- `PROJECT_ORGANOID_CANON.md` unchanged.
+
+### Next gameplay boundary
+
+- `Obj_TraceNeuralMappingSignal` is the next approved **design** target only after a separate slice decision.
+- No automatic implementation of power restoration, Cryo unlock, pursuer, Research Station tutorial, or the full Neuro revelation.
+- Before any remote publication, perform exact staging/checkpoint and origin/outgoing audit with explicit authorization.

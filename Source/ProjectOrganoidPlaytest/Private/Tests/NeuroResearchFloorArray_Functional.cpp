@@ -48,6 +48,8 @@ namespace
 	constexpr TCHAR SecurityEvent[] = TEXT("Event_SecurityTerminalUsed");
 	constexpr TCHAR NextMissionId[] = TEXT("Mission_NeuroGenetics");
 	constexpr TCHAR NextObjectiveId[] = TEXT("Obj_IsolateNeuroResearchLoad");
+	constexpr TCHAR TraceObjectiveId[] = TEXT("Obj_TraceNeuralMappingSignal");
+	constexpr TCHAR IsolateEventId[] = TEXT("Event_NeuroResearchLoadIsolated");
 	constexpr TCHAR NextMissionSoftPath[] =
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics");
 	constexpr TCHAR NextMissionPackage[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroGenetics");
@@ -68,6 +70,9 @@ namespace
 	constexpr TCHAR IsolateTitle[] = TEXT("Isolate the NeuroGenetics research load");
 	constexpr TCHAR IsolateDescription[] =
 		TEXT("Find the emergency cutoff feeding the unstable research equipment.");
+	constexpr TCHAR TraceTitle[] = TEXT("Trace the neural mapping signal");
+	constexpr TCHAR TraceDescription[] =
+		TEXT("Use the research-floor systems to determine what the array was monitoring.");
 	constexpr TCHAR CubeMeshPath[] = TEXT("/Engine/BasicShapes/Cube.Cube");
 	constexpr TCHAR CylinderMeshPath[] = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 
@@ -623,12 +628,12 @@ namespace
 					: TEXT("null"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task_count_one"),
-				Mission->Tasks.Num() == 1,
-				TEXT("1"),
+				Record, TEXT("mission.task_count_two"),
+				Mission->Tasks.Num() == 2,
+				TEXT("2"),
 				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
-			const bool bTaskOk = Mission->Tasks.Num() == 1;
+			const bool bTaskOk = Mission->Tasks.Num() == 2;
 			const FProjectOrganoidMissionTaskDefinition* Task = bTaskOk ? &Mission->Tasks[0] : nullptr;
 			AssertTrue(
 				Record, TEXT("mission.task_objective_id"),
@@ -679,6 +684,88 @@ namespace
 				TEXT("Inactive/0"),
 				Task
 					? FString::Printf(TEXT("%s/%d"), *ObjectiveStateName(Task->Objective.State), Task->Objective.CurrentProgress)
+					: TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task1_event_triggers_exact"),
+				Task && Task->EventTriggers.Num() == 1
+					&& Task->EventTriggers[0].EventId == FName(IsolateEventId)
+					&& Task->EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete,
+				TEXT("1x Event_NeuroResearchLoadIsolated Complete"),
+				Task
+					? FString::Printf(
+						TEXT("%d x %s %s"),
+						Task->EventTriggers.Num(),
+						Task->EventTriggers.Num() > 0 ? *Task->EventTriggers[0].EventId.ToString() : TEXT("n/a"),
+						Task->EventTriggers.Num() > 0
+							? *UEnum::GetValueAsString(Task->EventTriggers[0].Action)
+							: TEXT("n/a"))
+					: TEXT("missing"),
+				TEXT("DA"));
+			const FProjectOrganoidMissionTaskDefinition* TraceTask = bTaskOk ? &Mission->Tasks[1] : nullptr;
+			AssertTrue(
+				Record, TEXT("mission.task2_objective_id"),
+				TraceTask && TraceTask->Objective.ObjectiveId == FName(TraceObjectiveId),
+				TraceObjectiveId,
+				TraceTask ? TraceTask->Objective.ObjectiveId.ToString() : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_title"),
+				TraceTask && TraceTask->Objective.Title.ToString() == TraceTitle,
+				TraceTitle,
+				TraceTask ? TraceTask->Objective.Title.ToString() : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_description"),
+				TraceTask && TraceTask->Objective.Description.ToString() == TraceDescription,
+				TraceDescription,
+				TraceTask ? TraceTask->Objective.Description.ToString() : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_category_main"),
+				TraceTask && TraceTask->Objective.Type == EProjectOrganoidObjectiveType::Main,
+				TEXT("Main"),
+				TraceTask ? UEnum::GetValueAsString(TraceTask->Objective.Type) : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_target_one"),
+				TraceTask && TraceTask->Objective.TargetProgress == 1,
+				TEXT("1"),
+				TraceTask ? FString::FromInt(TraceTask->Objective.TargetProgress) : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_auto_activate"),
+				TraceTask && TraceTask->bAutoActivate,
+				TEXT("true"),
+				TraceTask ? BoolText(TraceTask->bAutoActivate) : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_prereq_isolate"),
+				TraceTask && TraceTask->Objective.PrerequisiteObjectiveIds.Num() == 1
+					&& TraceTask->Objective.PrerequisiteObjectiveIds[0] == FName(NextObjectiveId),
+				NextObjectiveId,
+				TraceTask
+					? (TraceTask->Objective.PrerequisiteObjectiveIds.Num() == 1
+						? TraceTask->Objective.PrerequisiteObjectiveIds[0].ToString()
+						: FString::FromInt(TraceTask->Objective.PrerequisiteObjectiveIds.Num()))
+					: TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_event_triggers_empty"),
+				TraceTask && TraceTask->EventTriggers.Num() == 0,
+				TEXT("0"),
+				TraceTask ? FString::FromInt(TraceTask->EventTriggers.Num()) : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task2_initially_incomplete"),
+				TraceTask && TraceTask->Objective.State == EProjectOrganoidObjectiveState::Inactive
+					&& TraceTask->Objective.CurrentProgress == 0,
+				TEXT("Inactive/0"),
+				TraceTask
+					? FString::Printf(
+						TEXT("%s/%d"),
+						*ObjectiveStateName(TraceTask->Objective.State),
+						TraceTask->Objective.CurrentProgress)
 					: TEXT("missing"),
 				TEXT("DA"));
 
@@ -1221,6 +1308,22 @@ namespace
 				TEXT("1"),
 				FString::FromInt(CountActiveId(Objectives, FName(NextObjectiveId))),
 				NextObjectiveId);
+			FProjectOrganoidObjective TraceAfterHandoff;
+			const bool bHasTrace = Objectives->GetObjective(FName(TraceObjectiveId), TraceAfterHandoff);
+			AssertTrue(
+				Record, TEXT("ordered.trace_inactive_until_isolate"),
+				bHasTrace
+					&& TraceAfterHandoff.State == EProjectOrganoidObjectiveState::Inactive
+					&& CountActiveId(Objectives, FName(TraceObjectiveId)) == 0
+					&& CountCompletedId(Objectives, FName(NextObjectiveId)) == 0,
+				TEXT("trace Inactive; isolate incomplete"),
+				bHasTrace
+					? FString::Printf(
+						TEXT("trace=%s isolateCompleted=%d"),
+						*ObjectiveStateName(TraceAfterHandoff.State),
+						CountCompletedId(Objectives, FName(NextObjectiveId)))
+					: TEXT("missing"),
+				TraceObjectiveId);
 
 			const int32 IsolateActiveBeforeDup = CountActiveId(Objectives, FName(NextObjectiveId));
 			const FName MissionBeforeDup = Objectives->GetActiveMissionId();

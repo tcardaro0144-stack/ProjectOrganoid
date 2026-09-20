@@ -54,7 +54,24 @@ void AProjectOrganoidInspectableInstrument::BeginPlay()
 
 bool AProjectOrganoidInspectableInstrument::CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const
 {
-	return Super::CanInteract_Implementation(Interactor);
+	if (!Super::CanInteract_Implementation(Interactor))
+	{
+		return false;
+	}
+
+	// Review always available once the guarded objective is Completed.
+	if (IsGuardedObjectiveCompleted())
+	{
+		return true;
+	}
+
+	// Optional first-time gate: require Active objective when configured.
+	if (!RequiredActiveObjectiveId.IsNone() && !IsRequiredObjectiveActive())
+	{
+		return false;
+	}
+
+	return true;
 }
 
 bool AProjectOrganoidInspectableInstrument::Interact_Implementation(AProjectOrganoidCharacter* Interactor)
@@ -74,6 +91,12 @@ bool AProjectOrganoidInspectableInstrument::Interact_Implementation(AProjectOrga
 		RefreshPrompt();
 		BP_OnInspected(Interactor, false);
 		return true;
+	}
+
+	// Reject first-time path without marking inspected or firing events.
+	if (!RequiredActiveObjectiveId.IsNone() && !IsRequiredObjectiveActive())
+	{
+		return false;
 	}
 
 	UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem();
@@ -144,6 +167,28 @@ bool AProjectOrganoidInspectableInstrument::IsGuardedObjectiveCompleted() const
 	}
 
 	return Objective.State == EProjectOrganoidObjectiveState::Completed;
+}
+
+bool AProjectOrganoidInspectableInstrument::IsRequiredObjectiveActive() const
+{
+	if (RequiredActiveObjectiveId.IsNone())
+	{
+		return true;
+	}
+
+	const UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(RequiredActiveObjectiveId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Active;
 }
 
 void AProjectOrganoidInspectableInstrument::PresentInspectionNotification(AProjectOrganoidCharacter* Interactor)

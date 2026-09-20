@@ -50,6 +50,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Objectives")
 	FName CompletedObjectiveIdForReplayGuard = FName(TEXT("Obj_InvestigateNeuroResearchFloor"));
 
+	/**
+	 * Optional gate: when set, first-time inspection requires this objective to be Active.
+	 * None preserves legacy ungated behavior. Completed replay-guard still allows Review.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Objectives")
+	FName RequiredActiveObjectiveId = NAME_None;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Presentation")
 	FText InspectionPrompt = FText::FromString(TEXT("Inspect Neural Mapping Array"));
 
@@ -93,6 +100,7 @@ protected:
 
 	UProjectOrganoidObjectiveSubsystem* GetObjectiveSubsystem() const;
 	bool IsGuardedObjectiveCompleted() const;
+	bool IsRequiredObjectiveActive() const;
 	void PresentInspectionNotification(AProjectOrganoidCharacter* Interactor);
 	void ConfigurePresentationMesh(UStaticMeshComponent* Mesh) const;
 };
