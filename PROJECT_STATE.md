@@ -2469,3 +2469,102 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 - `Obj_FollowNeuralSignature` is the next possible gameplay target only through a separately approved design slice.
 - No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation.
 - Before any remote publication, perform exact staging/checkpoint and origin/outgoing audit with explicit authorization.
+
+
+---
+
+## 2026-09-21 — Neuro Beat 5: Follow the neural signature
+
+### Baseline / status
+
+- Layered on the Neuro Beats 1–4 validated slice (research-floor array → research-load cutoff → neural-signal trace → follow the neural signature).
+- The validated Beat 5 slice is represented by the commit containing this section.
+- Git remains authoritative for local/remote publication status.
+- Evidence root (TEMP only): `%TEMP%\ProjectOrganoid_NeuroBeat5_V7R_20260921-155210`. Supporting slice evidence: V7A closed-editor build and V5–V6 save gates under `%TEMP%\ProjectOrganoid_NeuroBeat5_*`.
+- Proven engine during this campaign: UE 5.8.1 (upgrade to 5.8.2 is mandatory next operational gate — not done yet).
+
+### Gameplay
+
+- Exact node: label `NeuralSignatureObservationNode_NeuroGenetics`; class `AProjectOrganoidInspectableInstrument` / `ProjectOrganoidInspectableInstrument`; owning package `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics`.
+- Transform `(500,-2100,-1100)` · rotation `(0,0,0)` · scale `(1,1,1)` · interaction range `175`.
+- Required-active / replay-guard objective: `Obj_FollowNeuralSignature` (`RequiredActiveObjectiveId` / `CompletedObjectiveIdForReplayGuard`).
+- Objective event: `Event_NeuralSignatureFollowed` (`ObjectiveEventId`).
+- Prompts: `Follow Neural Signature` / `Neural Signature Located`.
+- Speaker `Nathan`; exact response (one U+2019): `The signature continues into the research wing. Epitope wasn’t just recording the damage. They were studying the same change in every subject.`
+- Notification duration `4` seconds; initially uninspected.
+- Placement is deeper in the SE research pocket and requires real traversal from the mapping terminal; native terminal→destination path and placement checks passed.
+- Node unavailable before Follow Active (required-active gate rejects interact).
+- First valid interaction completes Follow once, shows the Nathan line once, enters Review, and activates `Obj_ExamineNeuralChangeEvidence` once.
+- Repeat inspect and save/load reconstruction produce Review with no event/line replay.
+
+### Mission
+
+- `DA_Mission_NeuroGenetics` now has exactly four ordered Main tasks (Beat 5).
+- Task 1 `Obj_IsolateNeuroResearchLoad` unchanged; owns `Event_NeuroResearchLoadIsolated`.
+- Task 2 `Obj_TraceNeuralMappingSignal` unchanged; owns `Event_NeuralMappingSignalTraced`.
+- Task 3 `Obj_FollowNeuralSignature` owns `Event_NeuralSignatureFollowed` through `EventTriggers` (Complete); prerequisite `Obj_TraceNeuralMappingSignal`.
+- Task 4 `Obj_ExamineNeuralChangeEvidence` — exact title `Examine the neural-change evidence`; exact description `Inspect the research-wing evidence linked to the matching neural signature.`; Main; target `1`; autoactivate; prerequisite `Obj_FollowNeuralSignature`; empty `EventTriggers`.
+- After observation node: isolate Completed, trace Completed, follow Completed, Examine Active.
+- `Mission_NeuroGenetics` remains the current mission and remains incomplete (Examine still open).
+- No new global ObjectiveSubsystem seed for the Follow event; OpeningFoundation completion continues to drive soft-path → real DA load.
+
+### Narrative boundary
+
+- Required main-path evidence establishes that Epitope was studying the recurring neural change.
+- Controller and complete mechanism remain unknown.
+- Full Neuro revelation is not yet delivered.
+- Research Station, datapads, and power panel were not used as sole proof.
+
+### Persisted content
+
+- Mission object path: `/Game/Data/Missions/DA_Mission_NeuroGenetics.DA_Mission_NeuroGenetics`
+  - Disk: `Content/Data/Missions/DA_Mission_NeuroGenetics.uasset`
+  - SHA-256: `9a7015a21f75a3ed4fed0781436aacae5479a42cf835b8bd3532847c8ef1c611`
+- Observation node `NeuralSignatureObservationNode_NeuroGenetics` persisted on `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics` at `(500,-2100,-1100)`.
+- Neuro map disk: `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap`
+  - SHA-256: `5023517a021c4d92fcd0ff32f1504a3202f87ef013c6a5d1158423ec1e82e6be`
+- Temporary Cube/Cylinder/Cube Engine BasicShapes `NoCollision` blockout remains replaceable art — **not final art**.
+
+### Fixed editor tooling
+
+- `expand_neurogenetics_mission_beat5` / `neurogenetics_mission_beat5_v1` — expand the exact NeuroGenetics DA from Beat 4 → Beat 5 contract; separate dual-approved `save_asset` lifecycle for the mission package.
+- `spawn_neuro_neural_signature_observation_node` / `neuro_neural_signature_observation_node_v1` — spawn/configure only `NeuralSignatureObservationNode_NeuroGenetics` on Neuro; separate dual-approved Neuro-only `save_maps` lifecycle.
+- Mission and map save lifecycles remain separate (no Save All; no map via `save_asset`).
+- Exact dirty / already-exact no-op / rollback contracts: node spawn dirties Neuro only until Neuro-only `save_maps`; mission expand dirties the mission package only until `save_asset`.
+- Native floor / AABB / nav / path / interaction / keepout checks remain fail-closed.
+- Exact nonphysical streaming / NavMesh metadata-volume classification preserved (physical meshes, BlockingVolume, hazards, traps, doors, gates, interactables remain fail-closed on AABB intersect).
+- Transient ledger `change_id` values are session-local only — do not record them as reusable actions.
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor Win64 Development -WaitMutex -NoHotReloadFromIDE` succeeded (V7A task-count correction): evidence `%TEMP%\ProjectOrganoid_NeuroBeat5_V7A_20260921-153851` exit 0 ~19.6s.
+- V7R evidence `%TEMP%\ProjectOrganoid_NeuroBeat5_V7R_20260921-155210` — seven serial functionals:
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_aafd8930-4222-d9a6-772c-5cb0587ab55a` (~6.29 s)
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_108c37b6-42b2-ec01-f4a7-93b7d4f71836` (~3.32 s)
+  - `NeuroResearchLoadCutoff_Functional` **173/173** — `ptr_d02f839c-4d78-9268-9e67-e89a3a2fc0eb` (~3.33 s)
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_9a03bdcf-4aee-fc82-bba0-cb985d5a26cd` (~3.33 s)
+  - `OpeningFoundation_Functional` **48/48** — `ptr_195fc9a0-4f50-a818-9bfd-0982c9e9ddea` (~8.33 s)
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_02521af8-4edd-2a9c-1a30-4992fea524a9` (~3.66 s)
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_0e2dbcdc-427a-fb74-0f2a-58947acbefad` (~3.33 s)
+  - **Total 764/764**
+- Initial V7 Signal failure was one stale test-only Beat 4 task-count expectation inside `saveload.no_production_da_mutation` (`Tasks.Num() == 3` while the real disk mission was already exact Beat 5 with four tasks). V7A corrected that assert to `== 4`; closed build succeeded; V7R fresh campaign then passed.
+- Fresh persistence proved exact Beat 1–5 mission + array + cutoff + terminal + observation node on reload before tests (complete Beat 1–5 proof).
+
+### Preservation
+
+- Neuro remains Emergency; Cryo remains Blackout.
+- Power panel / restoration path, Hosts, Researcher, Research Station, datapads, doors, hazards, archive, pursuer, and Cryo access remain untouched.
+- Mission and Neuro packages clean after V7R validation; SHAs unchanged through clean editor close (V8).
+- `PROJECT_ORGANOID_CANON.md` unchanged.
+
+### Mandatory next operational checkpoint
+
+- Beat 5 must be staged, committed, audited, and pushed first.
+- Immediately afterward, upgrade the development environment from UE 5.8.1 to latest stable UE 5.8.2 as a separate bounded checkpoint with: exact engine-version proof; closed-editor `ProjectOrganoidEditor` build; fresh full regression suite; no automatic content/map resave.
+- Do not begin `Obj_ExamineNeuralChangeEvidence` / Beat 6 before the UE 5.8.2 upgrade gate passes.
+
+### Next gameplay boundary
+
+- `Obj_ExamineNeuralChangeEvidence` is the next possible gameplay target only as a separately approved design slice after the UE 5.8.2 upgrade gate passes.
+- No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation.
+- Before any remote publication, perform exact staging/checkpoint and origin/outgoing audit with explicit authorization.

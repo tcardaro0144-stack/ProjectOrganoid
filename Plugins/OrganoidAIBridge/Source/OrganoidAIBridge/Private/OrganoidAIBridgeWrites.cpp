@@ -139,9 +139,11 @@ namespace
 		TEXT("create_neurogenetics_mission"),
 		TEXT("expand_neurogenetics_mission_beat3"),
 		TEXT("expand_neurogenetics_mission_beat4"),
+		TEXT("expand_neurogenetics_mission_beat5"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
+		TEXT("spawn_neuro_neural_signature_observation_node"),
 	};
 
 	const TSet<FString> HighRiskActions = {
@@ -181,9 +183,11 @@ namespace
 		TEXT("create_neurogenetics_mission"),
 		TEXT("expand_neurogenetics_mission_beat3"),
 		TEXT("expand_neurogenetics_mission_beat4"),
+		TEXT("expand_neurogenetics_mission_beat5"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
+		TEXT("spawn_neuro_neural_signature_observation_node"),
 	};
 
 	const TSet<FString> SpawnPropertyAllowlist = {
@@ -3112,9 +3116,11 @@ namespace
 #include "OrganoidAIBridgeNeuroGeneticsMission.inl"
 #include "OrganoidAIBridgeNeuroGeneticsMissionBeat3.inl"
 #include "OrganoidAIBridgeNeuroGeneticsMissionBeat4.inl"
+#include "OrganoidAIBridgeNeuroGeneticsMissionBeat5.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
+#include "OrganoidAIBridgeNeuroNeuralSignatureObservationNode.inl"
 
 	FString PreflightSpawnBlueprintActor(
 		const TSharedPtr<FJsonObject>& Args,
@@ -3739,6 +3745,10 @@ namespace
 		{
 			PreflightError = PreflightExpandNeuroGeneticsMissionBeat4(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("expand_neurogenetics_mission_beat5"))
+		{
+			PreflightError = PreflightExpandNeuroGeneticsMissionBeat5(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{
 			PreflightError = PreflightSpawnNeuroNeuralMappingArray(Args, Before, Proposed);
@@ -3750,6 +3760,10 @@ namespace
 		else if (Action == TEXT("spawn_neuro_neural_mapping_terminal"))
 		{
 			PreflightError = PreflightSpawnNeuroNeuralMappingTerminal(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_neuro_neural_signature_observation_node"))
+		{
+			PreflightError = PreflightSpawnNeuroNeuralSignatureObservationNode(Args, Before, Proposed);
 		}
 		else if (Action == TEXT("move_actor_to_level"))
 		{
@@ -3803,9 +3817,11 @@ namespace
 			|| Action == TEXT("create_neurogenetics_mission")
 			|| Action == TEXT("expand_neurogenetics_mission_beat3")
 			|| Action == TEXT("expand_neurogenetics_mission_beat4")
+			|| Action == TEXT("expand_neurogenetics_mission_beat5")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
-			|| Action == TEXT("spawn_neuro_neural_mapping_terminal"))
+			|| Action == TEXT("spawn_neuro_neural_mapping_terminal")
+			|| Action == TEXT("spawn_neuro_neural_signature_observation_node"))
 		{
 			Package = NeuroPackage;
 		}
@@ -4961,9 +4977,11 @@ namespace
 				|| Change->Action == TEXT("create_neurogenetics_mission")
 				|| Change->Action == TEXT("expand_neurogenetics_mission_beat3")
 				|| Change->Action == TEXT("expand_neurogenetics_mission_beat4")
+				|| Change->Action == TEXT("expand_neurogenetics_mission_beat5")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
-				|| Change->Action == TEXT("spawn_neuro_neural_mapping_terminal");
+				|| Change->Action == TEXT("spawn_neuro_neural_mapping_terminal")
+				|| Change->Action == TEXT("spawn_neuro_neural_signature_observation_node");
 			const bool bEpitopeOrAdminSession = PackagesEqual(SessionPackage, AdminPackage)
 				|| PackagesEqual(SessionPackage, EpitopePackage);
 			const bool bNeuroSession = PackagesEqual(SessionPackage, NeuroPackage)
@@ -5142,6 +5160,10 @@ namespace
 		{
 			return ExecuteExpandNeuroGeneticsMissionBeat4(*Change);
 		}
+		if (Change->Action == TEXT("expand_neurogenetics_mission_beat5"))
+		{
+			return ExecuteExpandNeuroGeneticsMissionBeat5(*Change);
+		}
 		if (Change->Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{
 			return ExecuteSpawnNeuroNeuralMappingArray(*Change);
@@ -5153,6 +5175,10 @@ namespace
 		if (Change->Action == TEXT("spawn_neuro_neural_mapping_terminal"))
 		{
 			return ExecuteSpawnNeuroNeuralMappingTerminal(*Change);
+		}
+		if (Change->Action == TEXT("spawn_neuro_neural_signature_observation_node"))
+		{
+			return ExecuteSpawnNeuroNeuralSignatureObservationNode(*Change);
 		}
 		if (Change->Action == TEXT("set_s20_light_intensity"))
 		{

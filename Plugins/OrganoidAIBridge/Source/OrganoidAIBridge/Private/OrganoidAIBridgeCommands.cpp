@@ -512,9 +512,11 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neurogenetics_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat3")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat4")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat5")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_signature_observation_node")));
 		Data->SetArrayField(TEXT("native_game_thread_actions"), NativeActions);
 		Data->SetStringField(TEXT("map_save"), TEXT("use save_maps; save_asset rejects map packages"));
 		Data->SetBoolField(TEXT("save_maps_admin_only_requires_epitope_persistent"), false);
@@ -575,9 +577,11 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neurogenetics_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat3")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat4")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat5")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_signature_observation_node")));
 		Data->SetArrayField(TEXT("spawn_actions"), SpawnActions);
 		return Ok(Data);
 	}
@@ -1786,9 +1790,11 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_neurogenetics_mission")
 		|| Normalized == TEXT("expand_neurogenetics_mission_beat3")
 		|| Normalized == TEXT("expand_neurogenetics_mission_beat4")
+		|| Normalized == TEXT("expand_neurogenetics_mission_beat5")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")
-		|| Normalized == TEXT("spawn_neuro_neural_mapping_terminal"))
+		|| Normalized == TEXT("spawn_neuro_neural_mapping_terminal")
+		|| Normalized == TEXT("spawn_neuro_neural_signature_observation_node"))
 	{
 		return Fail(
 			TEXT("needs_prepare"),

@@ -78,6 +78,11 @@ namespace
 	constexpr TCHAR FollowTitle[] = TEXT("Follow the neural signature");
 	constexpr TCHAR FollowDescription[] =
 		TEXT("Track the matching neural pattern deeper into the research wing.");
+	constexpr TCHAR FollowEventId[] = TEXT("Event_NeuralSignatureFollowed");
+	constexpr TCHAR ExamineObjectiveId[] = TEXT("Obj_ExamineNeuralChangeEvidence");
+	constexpr TCHAR ExamineTitle[] = TEXT("Examine the neural-change evidence");
+	constexpr TCHAR ExamineDescription[] =
+		TEXT("Inspect the research-wing evidence linked to the matching neural signature.");
 	constexpr TCHAR CubeMeshPath[] = TEXT("/Engine/BasicShapes/Cube.Cube");
 	constexpr TCHAR CylinderMeshPath[] = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 
@@ -633,12 +638,12 @@ namespace
 					: TEXT("null"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task_count_three"),
-				Mission->Tasks.Num() == 3,
-				TEXT("3"),
+				Record, TEXT("mission.task_count_four"),
+				Mission->Tasks.Num() == 4,
+				TEXT("4"),
 				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
-			const bool bTaskOk = Mission->Tasks.Num() == 3;
+			const bool bTaskOk = Mission->Tasks.Num() == 4;
 			const FProjectOrganoidMissionTaskDefinition* Task = bTaskOk ? &Mission->Tasks[0] : nullptr;
 			AssertTrue(
 				Record, TEXT("mission.task_objective_id"),
@@ -834,10 +839,17 @@ namespace
 					: TEXT("missing"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task3_event_triggers_empty"),
-				FollowTask && FollowTask->EventTriggers.Num() == 0,
-				TEXT("0"),
-				FollowTask ? FString::FromInt(FollowTask->EventTriggers.Num()) : TEXT("missing"),
+				Record, TEXT("mission.task3_event_followed"),
+				FollowTask && FollowTask->EventTriggers.Num() == 1
+					&& FollowTask->EventTriggers[0].EventId == FName(FollowEventId)
+					&& FollowTask->EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete,
+				TEXT("1x Event_NeuralSignatureFollowed Complete"),
+				FollowTask
+					? FString::Printf(
+						TEXT("%d x %s"),
+						FollowTask->EventTriggers.Num(),
+						FollowTask->EventTriggers.Num() > 0 ? *FollowTask->EventTriggers[0].EventId.ToString() : TEXT("n/a"))
+					: TEXT("missing"),
 				TEXT("DA"));
 			AssertTrue(
 				Record, TEXT("mission.task3_initially_incomplete"),
@@ -852,9 +864,42 @@ namespace
 					: TEXT("missing"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.no_fourth_task"),
-				Mission->Tasks.Num() == 3,
-				TEXT("3"),
+				Record, TEXT("mission.task4_objective_id"),
+				bTaskOk && Mission->Tasks[3].Objective.ObjectiveId == FName(ExamineObjectiveId),
+				ExamineObjectiveId,
+				bTaskOk ? Mission->Tasks[3].Objective.ObjectiveId.ToString() : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_title"),
+				bTaskOk && Mission->Tasks[3].Objective.Title.ToString() == ExamineTitle,
+				ExamineTitle,
+				bTaskOk ? Mission->Tasks[3].Objective.Title.ToString() : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_description"),
+				bTaskOk && Mission->Tasks[3].Objective.Description.ToString() == ExamineDescription,
+				ExamineDescription,
+				bTaskOk ? Mission->Tasks[3].Objective.Description.ToString() : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_prereq_follow"),
+				bTaskOk && Mission->Tasks[3].Objective.PrerequisiteObjectiveIds.Num() == 1
+					&& Mission->Tasks[3].Objective.PrerequisiteObjectiveIds[0] == FName(FollowObjectiveId),
+				FollowObjectiveId,
+				bTaskOk && Mission->Tasks[3].Objective.PrerequisiteObjectiveIds.Num() == 1
+					? Mission->Tasks[3].Objective.PrerequisiteObjectiveIds[0].ToString()
+					: TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_no_events"),
+				bTaskOk && Mission->Tasks[3].EventTriggers.Num() == 0,
+				TEXT("0"),
+				bTaskOk ? FString::FromInt(Mission->Tasks[3].EventTriggers.Num()) : TEXT("missing"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.no_fifth_task"),
+				Mission->Tasks.Num() == 4,
+				TEXT("4"),
 				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
 
@@ -1426,6 +1471,28 @@ namespace
 					? ObjectiveStateName(FollowAfterHandoff.State)
 					: TEXT("missing"),
 				FollowObjectiveId);
+			FProjectOrganoidObjective ExamineAfterHandoff;
+			const bool bHasExamine = Objectives->GetObjective(FName(ExamineObjectiveId), ExamineAfterHandoff);
+			AssertTrue(
+				Record, TEXT("ordered.examine_inactive_until_follow"),
+				bHasExamine
+					&& ExamineAfterHandoff.State == EProjectOrganoidObjectiveState::Inactive
+					&& CountActiveId(Objectives, FName(ExamineObjectiveId)) == 0
+					&& CountCompletedId(Objectives, FName(ExamineObjectiveId)) == 0,
+				TEXT("examine Inactive"),
+				bHasExamine
+					? ObjectiveStateName(ExamineAfterHandoff.State)
+					: TEXT("missing"),
+				ExamineObjectiveId);
+			AssertTrue(
+				Record, TEXT("ordered.trace_follow_examine_inactive"),
+				CountActiveId(Objectives, FName(TraceObjectiveId)) == 0
+					&& CountActiveId(Objectives, FName(FollowObjectiveId)) == 0
+					&& CountActiveId(Objectives, FName(ExamineObjectiveId)) == 0
+					&& CountActiveId(Objectives, FName(NextObjectiveId)) == 1,
+				TEXT("isolate Active; trace/follow/examine Inactive"),
+				TEXT("checked"),
+				TEXT("objectives"));
 
 			const int32 IsolateActiveBeforeDup = CountActiveId(Objectives, FName(NextObjectiveId));
 			const FName MissionBeforeDup = Objectives->GetActiveMissionId();

@@ -59,6 +59,12 @@ namespace
 	constexpr TCHAR FollowTitle[] = TEXT("Follow the neural signature");
 	constexpr TCHAR FollowDescription[] =
 		TEXT("Track the matching neural pattern deeper into the research wing.");
+	constexpr TCHAR FollowEvent[] = TEXT("Event_NeuralSignatureFollowed");
+
+	constexpr TCHAR ExamineId[] = TEXT("Obj_ExamineNeuralChangeEvidence");
+	constexpr TCHAR ExamineTitle[] = TEXT("Examine the neural-change evidence");
+	constexpr TCHAR ExamineDescription[] =
+		TEXT("Inspect the research-wing evidence linked to the matching neural signature.");
 
 	constexpr TCHAR ResearchFloorId[] = TEXT("Obj_InvestigateNeuroResearchFloor");
 	constexpr TCHAR DiagnosisEvent[] = TEXT("Event_NeuroPowerFailureDiagnosed");
@@ -73,6 +79,7 @@ namespace
 	constexpr TCHAR ArrayLabel[] = TEXT("NeuralMappingArray_NeuroGenetics");
 	constexpr TCHAR ArrayOrderedLabel[] = TEXT("NeuralMappingArray_NeuroGenetics_OrderedClone");
 	constexpr TCHAR TerminalLabel[] = TEXT("NeuralMappingTerminal_NeuroGenetics");
+	constexpr TCHAR ObservationNodeLabel[] = TEXT("NeuralSignatureObservationNode_NeuroGenetics");
 	constexpr TCHAR StationLabel[] = TEXT("ResearchStation_NeuroGenetics");
 	constexpr TCHAR PanelLabel[] = TEXT("PowerPanel_NeuroBackup");
 	constexpr TCHAR GateNoneLabel[] = TEXT("EmergencyCutoff_GateNone_Test");
@@ -770,22 +777,23 @@ namespace
 					: TEXT("null"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task_count_three"),
-				Mission->Tasks.Num() == 3,
-				TEXT("3"),
+				Record, TEXT("mission.task_count_four"),
+				Mission->Tasks.Num() == 4,
+				TEXT("4"),
 				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
-			if (Mission->Tasks.Num() != 3)
+			if (Mission->Tasks.Num() != 4)
 			{
 				FailAndStop(
 					Owner, Record,
-					TEXT("DA_Mission_NeuroGenetics is not exact Beat 4 (task count != 3). Require expand_neurogenetics_mission_beat4 + save before this test can pass."));
+					TEXT("DA_Mission_NeuroGenetics is not exact Beat 5 (task count != 4). Require expand_neurogenetics_mission_beat5 + save before this test can pass."));
 				return;
 			}
 
 			const FProjectOrganoidMissionTaskDefinition& Task1 = Mission->Tasks[0];
 			const FProjectOrganoidMissionTaskDefinition& Task2 = Mission->Tasks[1];
 			const FProjectOrganoidMissionTaskDefinition& Task3 = Mission->Tasks[2];
+			const FProjectOrganoidMissionTaskDefinition& Task4 = Mission->Tasks[3];
 			AssertTrue(
 				Record, TEXT("mission.task1_objective_id"),
 				Task1.Objective.ObjectiveId == FName(IsolateId),
@@ -968,10 +976,16 @@ namespace
 					: FString::FromInt(Task3.Objective.PrerequisiteObjectiveIds.Num()),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task3_event_triggers_empty"),
-				Task3.EventTriggers.Num() == 0,
-				TEXT("0"),
-				FString::FromInt(Task3.EventTriggers.Num()),
+				Record, TEXT("mission.task3_event_followed"),
+				Task3.EventTriggers.Num() == 1
+					&& Task3.EventTriggers[0].EventId == FName(FollowEvent)
+					&& Task3.EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete
+					&& (Task3.EventTriggers[0].ObjectiveId.IsNone()
+						|| Task3.EventTriggers[0].ObjectiveId == FName(FollowId)),
+				TEXT("Event_NeuralSignatureFollowed/Complete"),
+				Task3.EventTriggers.Num() == 1
+					? Task3.EventTriggers[0].EventId.ToString()
+					: FString::FromInt(Task3.EventTriggers.Num()),
 				TEXT("DA"));
 			AssertTrue(
 				Record, TEXT("mission.task3_initially_incomplete"),
@@ -984,9 +998,42 @@ namespace
 					Task3.Objective.CurrentProgress),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.no_fourth_task"),
-				Mission->Tasks.Num() == 3,
-				TEXT("3"),
+				Record, TEXT("mission.task4_objective_id"),
+				Task4.Objective.ObjectiveId == FName(ExamineId),
+				ExamineId,
+				Task4.Objective.ObjectiveId.ToString(),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_title"),
+				Task4.Objective.Title.ToString() == ExamineTitle,
+				ExamineTitle,
+				Task4.Objective.Title.ToString(),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_description"),
+				Task4.Objective.Description.ToString() == ExamineDescription,
+				ExamineDescription,
+				Task4.Objective.Description.ToString(),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_prereq_follow"),
+				Task4.Objective.PrerequisiteObjectiveIds.Num() == 1
+					&& Task4.Objective.PrerequisiteObjectiveIds[0] == FName(FollowId),
+				FollowId,
+				Task4.Objective.PrerequisiteObjectiveIds.Num() == 1
+					? Task4.Objective.PrerequisiteObjectiveIds[0].ToString()
+					: FString::FromInt(Task4.Objective.PrerequisiteObjectiveIds.Num()),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.task4_no_events"),
+				Task4.EventTriggers.Num() == 0,
+				TEXT("0"),
+				FString::FromInt(Task4.EventTriggers.Num()),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("mission.no_fifth_task"),
+				Mission->Tasks.Num() == 4,
+				TEXT("4"),
 				FString::FromInt(Mission->Tasks.Num()),
 				TEXT("DA"));
 
@@ -1542,6 +1589,31 @@ namespace
 				CutoffLabel);
 
 			// ---- F. Ordered OpeningFoundation → NeuroGenetics handoff (NRFA-style) ----
+
+			const TArray<AActor*> ObservationMatches = OrganoidPlaytestActions::FindActorsByLabel(World, ObservationNodeLabel);
+			AssertTrue(
+				Record, TEXT("map.observation_unique"),
+				ObservationMatches.Num() == 1,
+				TEXT("1"),
+				FString::FromInt(ObservationMatches.Num()),
+				ObservationNodeLabel);
+			AProjectOrganoidInspectableInstrument* ObservationNode = ObservationMatches.Num() == 1
+				? Cast<AProjectOrganoidInspectableInstrument>(ObservationMatches[0])
+				: nullptr;
+			AssertTrue(
+				Record, TEXT("map.observation_present_exact"),
+				ObservationNode != nullptr
+					&& ObservationNode->GetClass() == AProjectOrganoidInspectableInstrument::StaticClass()
+					&& !ObservationNode->bHasBeenInspected
+					&& ObservationNode->RequiredActiveObjectiveId == FName(FollowId)
+					&& ObservationNode->ObjectiveEventId == FName(FollowEvent)
+					&& ObservationNode->CompletedObjectiveIdForReplayGuard == FName(FollowId),
+				TEXT("exact uninspected Follow-gated node"),
+				ObservationNode ? TEXT("present") : TEXT("missing"),
+				ObservationNodeLabel);
+			const int32 ObservationEventsBefore = ObservationNode ? ObservationNode->ObjectiveEventFireCount : -1;
+			const int32 ObservationLinesBefore = ObservationNode ? ObservationNode->InspectionNotificationCount : -1;
+
 			Objectives->LoadDefaultMission();
 			AssertTrue(
 				Record, TEXT("ordered.reseeds_opening"),
@@ -1560,7 +1632,7 @@ namespace
 				Record, TEXT("ordered.real_da_loaded"),
 				RealMission != nullptr
 					&& RealMission->MissionId == FName(MissionId)
-					&& RealMission->Tasks.Num() == 3
+					&& RealMission->Tasks.Num() == 4
 					&& FSoftObjectPath(RealMission).ToString() == MissionSoftPath,
 				MissionSoftPath,
 				RealMission ? FSoftObjectPath(RealMission).ToString() : TEXT("null"),
@@ -1634,7 +1706,7 @@ namespace
 				Record, TEXT("ordered.real_da_drives_handoff"),
 				Objectives->GetActiveMissionId() == FName(MissionId)
 					&& LoadPersistedMissionAsset() != nullptr
-					&& LoadPersistedMissionAsset()->Tasks.Num() == 3,
+					&& LoadPersistedMissionAsset()->Tasks.Num() == 4,
 				MissionId,
 				Objectives->GetActiveMissionId().ToString(),
 				TEXT("DA"));
@@ -1672,6 +1744,13 @@ namespace
 					CountActiveId(Objectives, FName(FollowId)),
 					CountCompletedId(Objectives, FName(FollowId))),
 				FollowId);
+			AssertTrue(
+				Record, TEXT("ordered.examine_inactive"),
+				CountActiveId(Objectives, FName(ExamineId)) == 0
+					&& CountCompletedId(Objectives, FName(ExamineId)) == 0,
+				TEXT("Inactive"),
+				TEXT("Inactive"),
+				ExamineId);
 
 			const int32 OpeningCompletedCount = LiveOpeningProbe
 				? LiveOpeningProbe->OpeningFoundationCompletedCount
@@ -1758,6 +1837,22 @@ namespace
 					CountActiveId(Objectives, FName(FollowId)),
 					CountCompletedId(Objectives, FName(FollowId))),
 				FollowId);
+			AssertTrue(
+				Record, TEXT("cutoff.examine_still_inactive"),
+				CountActiveId(Objectives, FName(ExamineId)) == 0
+					&& CountCompletedId(Objectives, FName(ExamineId)) == 0,
+				TEXT("Inactive"),
+				TEXT("Inactive"),
+				ExamineId);
+			AssertTrue(
+				Record, TEXT("cutoff.observation_untouched"),
+				ObservationNode
+					&& !ObservationNode->bHasBeenInspected
+					&& ObservationNode->ObjectiveEventFireCount == ObservationEventsBefore
+					&& ObservationNode->InspectionNotificationCount == ObservationLinesBefore,
+				TEXT("uninspected/no event/no line"),
+				TEXT("checked"),
+				ObservationNodeLabel);
 			AssertTrue(
 				Record, TEXT("cutoff.terminal_still_uninspected"),
 				Terminal && !Terminal->bHasBeenInspected
@@ -1872,7 +1967,7 @@ namespace
 				Record, TEXT("saveload.no_transient_mission_da"),
 				LoadPersistedMissionAsset() == Mission
 					&& FSoftObjectPath(Mission).ToString() == MissionSoftPath
-					&& Mission->Tasks.Num() == 3,
+					&& Mission->Tasks.Num() == 4,
 				MissionSoftPath,
 				FSoftObjectPath(Mission).ToString(),
 				TEXT("DA"));
