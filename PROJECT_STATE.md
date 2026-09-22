@@ -2568,3 +2568,70 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 - `Obj_ExamineNeuralChangeEvidence` is the next possible gameplay target only as a separately approved design slice after the UE 5.8.2 upgrade gate passes.
 - No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation.
 - Before any remote publication, perform exact staging/checkpoint and origin/outgoing audit with explicit authorization.
+
+---
+
+## 2026-09-22 — Unreal Engine 5.8.3 upgrade validation
+
+### Supersession
+
+- Epic Games Launcher offered **UE 5.8.3** as the current stable 5.8 hotfix for this install.
+- The earlier operational instruction targeting **UE 5.8.2** (recorded under the Beat 5 mandatory next checkpoint) is **superseded**.
+- The validated development engine target is now **UE 5.8.3**.
+
+### Exact engine identity
+
+- Engine root: `C:\Users\tomca\Desktop\UE_5.8`
+- `Engine\Build\Build.version`:
+  - MajorVersion `5`
+  - MinorVersion `8`
+  - PatchVersion `3`
+  - Changelist `58210709`
+  - CompatibleChangelist `55116800`
+  - BranchName `++UE5+Release-5.8`
+  - IsPromotedBuild `1`
+- Runtime product string observed in U2: `++UE5+Release-5.8-CL-58210709`
+- `ProjectOrganoid.uproject` `EngineAssociation` remains `5.8` (unchanged).
+- No project conversion, no EngineAssociation edit, and no content/map resave for the upgrade.
+
+### Closed-editor build (U1)
+
+- Evidence: `%TEMP%\ProjectOrganoid_UE583_U1_20260922-103132`
+- Exact command:
+  - `C:\Users\tomca\Desktop\UE_5.8\Engine\Build\BatchFiles\Build.bat ProjectOrganoidEditor Win64 Development -Project="C:\Users\tomca\Documents\Unreal Projects\ProjectOrganoid_Local_20260910-115018\ProjectOrganoid.uproject" -WaitMutex -NoHotReloadFromIDE`
+- Result: exit `0` / `Result: Succeeded` (~98 seconds).
+- Editor modules linked: `ProjectOrganoid` and `ProjectOrganoidPlaytest`.
+- Unreal remained closed; no Live Coding; no source/content/map mutation from the build.
+
+### Fresh runtime validation (U2)
+
+- Evidence: `%TEMP%\ProjectOrganoid_UE583_U2_20260922-103901`
+- Fresh direct launch: verified `UnrealEditor.exe` from the 5.8.3 root with `ProjectOrganoid.uproject`, `/Game/Maps/Lvl_Epitope`, `-log`.
+- Runtime identity: product/CL `++UE5+Release-5.8-CL-58210709`; bridge `0.5.9`; persistent `Lvl_Epitope`; Admin+Neuro loaded/visible; PIE stopped; dirty packages `[]`.
+- No conversion / resave-all / plugin-migration pressure observed.
+- Fresh persistence: exact four-task Beat 5 mission; unique array / cutoff / terminal / observation node at exact transforms; all initially uninspected; keep-list unchanged; mission and Neuro disk hashes unchanged; Git clean before tests.
+- Seven serial functionals (no retry):
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_0acc5d7e-495f-69a9-bb49-a3a3afcaecf7`
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_1da2f1f8-4869-758e-18c1-d2a25010986c`
+  - `NeuroResearchLoadCutoff_Functional` **173/173** — `ptr_1ffa9da2-462c-fad7-1331-5a9f34df3da2`
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_81304864-4ef9-ea6d-5316-58a4a3820d05`
+  - `OpeningFoundation_Functional` **48/48** — `ptr_ffb8773e-40be-65b3-1e96-62945a80d80c`
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_e8222a76-4f86-5e1e-22ca-19b9c65ebf6b`
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_09ad4dd6-4a41-ef9d-1ca5-b6b215d0e069`
+  - **Total 764/764**
+- Beat 1–5 path under 5.8.3: exact-once notifications and mission transitions; save/load reconstruction; all four mission tasks and persisted actors; Emergency/Blackout preservation; complete keep-list protection; no behavior or serialization regression relative to the pre-upgrade Beat 5 campaign.
+
+### Preservation
+
+- Mission SHA-256: `9a7015a21f75a3ed4fed0781436aacae5479a42cf835b8bd3532847c8ef1c611`
+- Neuro map SHA-256: `5023517a021c4d92fcd0ff32f1504a3202f87ef013c6a5d1158423ec1e82e6be`
+- No content/map resave during U1/U2/U3.
+- `PROJECT_ORGANOID_CANON.md` unchanged.
+- Working tree/index were clean immediately before this additive `PROJECT_STATE.md` append.
+
+### Next boundary
+
+- **UE 5.8.3** is now the proven development engine for ProjectOrganoid.
+- The engine-upgrade gate is **complete**; no additional engine-upgrade task remains pending.
+- `Obj_ExamineNeuralChangeEvidence` / Beat 6 may begin only as a separately approved design slice.
+- No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation is authorized by this section.
