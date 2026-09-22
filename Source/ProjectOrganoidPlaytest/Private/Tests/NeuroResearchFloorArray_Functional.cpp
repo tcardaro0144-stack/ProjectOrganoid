@@ -631,9 +631,10 @@ namespace
 				Mission->MissionDescription.ToString(),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.next_null"),
-				!Mission->NextMissionAsset.ToSoftObjectPath().IsValid(),
-				TEXT("null"),
+				Record, TEXT("mission.next_power_restore"),
+				Mission->NextMissionAsset.ToSoftObjectPath().ToString()
+					== TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore.DA_Mission_NeuroPowerRestore"),
+				TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore.DA_Mission_NeuroPowerRestore"),
 				Mission->NextMissionAsset.ToSoftObjectPath().IsValid()
 					? Mission->NextMissionAsset.ToSoftObjectPath().ToString()
 					: TEXT("null"),

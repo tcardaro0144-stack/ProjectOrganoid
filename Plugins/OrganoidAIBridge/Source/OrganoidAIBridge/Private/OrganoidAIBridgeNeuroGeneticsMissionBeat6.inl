@@ -169,9 +169,17 @@
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
 			if (Soft.ToSoftObjectPath().IsValid())
 			{
-				return FString::Printf(
-					TEXT("NextMissionAsset must be null, got '%s'"),
-					*Soft.ToSoftObjectPath().ToString());
+				// Beat 7 may soft-link DA_Mission_NeuroPowerRestore; null remains valid Beat 6.
+				static const TCHAR* AllowedNext =
+					TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore.DA_Mission_NeuroPowerRestore");
+				const FString LiveNext = Soft.ToSoftObjectPath().ToString();
+				if (!LiveNext.Equals(AllowedNext, ESearchCase::CaseSensitive))
+				{
+					return FString::Printf(
+						TEXT("NextMissionAsset must be null or '%s', got '%s'"),
+						AllowedNext,
+						*LiveNext);
+				}
 			}
 		}
 		else
@@ -281,15 +289,7 @@
 			return Error;
 		}
 
-		FProperty* NextProp = FindInstanceProperty(Asset, TEXT("NextMissionAsset"));
-		if (FSoftObjectProperty* SoftProp = CastField<FSoftObjectProperty>(NextProp))
-		{
-			SoftProp->SetPropertyValue_InContainer(Asset, FSoftObjectPtr());
-		}
-		else
-		{
-			return TEXT("NextMissionAsset soft property missing.");
-		}
+		// Do not clear NextMissionAsset — Beat 7 soft-links DA_Mission_NeuroPowerRestore.
 
 		FProperty* TasksProp = FindInstanceProperty(Asset, TEXT("Tasks"));
 		FArrayProperty* ArrayProp = CastField<FArrayProperty>(TasksProp);

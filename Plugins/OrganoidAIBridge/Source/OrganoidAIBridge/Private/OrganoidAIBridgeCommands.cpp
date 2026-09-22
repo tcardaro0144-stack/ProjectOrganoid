@@ -514,6 +514,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat4")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat5")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat6")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_power_restore_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neurogenetics_next_mission_power_restore")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_backup_power_restore")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
@@ -581,6 +584,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat4")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat5")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("expand_neurogenetics_mission_beat6")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_power_restore_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neurogenetics_next_mission_power_restore")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_backup_power_restore")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
@@ -1796,6 +1802,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("expand_neurogenetics_mission_beat4")
 		|| Normalized == TEXT("expand_neurogenetics_mission_beat5")
 		|| Normalized == TEXT("expand_neurogenetics_mission_beat6")
+		|| Normalized == TEXT("create_neuro_power_restore_mission")
+		|| Normalized == TEXT("set_neurogenetics_next_mission_power_restore")
+		|| Normalized == TEXT("configure_neuro_backup_power_restore")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_terminal")

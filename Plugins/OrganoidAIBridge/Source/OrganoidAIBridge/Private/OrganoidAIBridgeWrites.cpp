@@ -141,6 +141,9 @@ namespace
 		TEXT("expand_neurogenetics_mission_beat4"),
 		TEXT("expand_neurogenetics_mission_beat5"),
 		TEXT("expand_neurogenetics_mission_beat6"),
+		TEXT("create_neuro_power_restore_mission"),
+		TEXT("set_neurogenetics_next_mission_power_restore"),
+		TEXT("configure_neuro_backup_power_restore"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -187,6 +190,9 @@ namespace
 		TEXT("expand_neurogenetics_mission_beat4"),
 		TEXT("expand_neurogenetics_mission_beat5"),
 		TEXT("expand_neurogenetics_mission_beat6"),
+		TEXT("create_neuro_power_restore_mission"),
+		TEXT("set_neurogenetics_next_mission_power_restore"),
+		TEXT("configure_neuro_backup_power_restore"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -3122,6 +3128,9 @@ namespace
 #include "OrganoidAIBridgeNeuroGeneticsMissionBeat4.inl"
 #include "OrganoidAIBridgeNeuroGeneticsMissionBeat5.inl"
 #include "OrganoidAIBridgeNeuroGeneticsMissionBeat6.inl"
+#include "OrganoidAIBridgeNeuroPowerRestoreMission.inl"
+#include "OrganoidAIBridgeNeuroGeneticsNextPowerRestore.inl"
+#include "OrganoidAIBridgeNeuroBackupPowerRestore.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
@@ -3759,6 +3768,18 @@ namespace
 		{
 			PreflightError = PreflightExpandNeuroGeneticsMissionBeat6(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_power_restore_mission"))
+		{
+			PreflightError = PreflightCreateNeuroPowerRestoreMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neurogenetics_next_mission_power_restore"))
+		{
+			PreflightError = PreflightSetNeuroGeneticsNextMissionPowerRestore(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_neuro_backup_power_restore"))
+		{
+			PreflightError = PreflightConfigureNeuroBackupPowerRestore(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{
 			PreflightError = PreflightSpawnNeuroNeuralMappingArray(Args, Before, Proposed);
@@ -3833,6 +3854,9 @@ namespace
 			|| Action == TEXT("expand_neurogenetics_mission_beat4")
 			|| Action == TEXT("expand_neurogenetics_mission_beat5")
 			|| Action == TEXT("expand_neurogenetics_mission_beat6")
+			|| Action == TEXT("create_neuro_power_restore_mission")
+			|| Action == TEXT("set_neurogenetics_next_mission_power_restore")
+			|| Action == TEXT("configure_neuro_backup_power_restore")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
 			|| Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -4995,6 +5019,9 @@ namespace
 				|| Change->Action == TEXT("expand_neurogenetics_mission_beat4")
 				|| Change->Action == TEXT("expand_neurogenetics_mission_beat5")
 				|| Change->Action == TEXT("expand_neurogenetics_mission_beat6")
+				|| Change->Action == TEXT("create_neuro_power_restore_mission")
+				|| Change->Action == TEXT("set_neurogenetics_next_mission_power_restore")
+				|| Change->Action == TEXT("configure_neuro_backup_power_restore")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -5185,6 +5212,18 @@ namespace
 		if (Change->Action == TEXT("expand_neurogenetics_mission_beat6"))
 		{
 			return ExecuteExpandNeuroGeneticsMissionBeat6(*Change);
+		}
+		if (Change->Action == TEXT("create_neuro_power_restore_mission"))
+		{
+			return ExecuteCreateNeuroPowerRestoreMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neurogenetics_next_mission_power_restore"))
+		{
+			return ExecuteSetNeuroGeneticsNextMissionPowerRestore(*Change);
+		}
+		if (Change->Action == TEXT("configure_neuro_backup_power_restore"))
+		{
+			return ExecuteConfigureNeuroBackupPowerRestore(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{

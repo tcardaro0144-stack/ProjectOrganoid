@@ -5,16 +5,20 @@
 #include "CoreMinimal.h"
 #include "ProjectOrganoidInteractable.h"
 #include "ProjectOrganoidPowerTypes.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidPowerPanel.generated.h"
 
 class UStaticMeshComponent;
 class UPointLightComponent;
 class AProjectOrganoidCharacter;
+class UProjectOrganoidObjectiveSubsystem;
 
 /**
  *  Self-powered breaker. Default path restores a sector on interact.
  *  Optional discovery-before-restore path reports emergency status and fires a
  *  one-shot discovery event without changing sector power (Neuro campaign).
+ *  When RequiredActiveObjectiveId is set, discovery-only applies until that
+ *  objective is Active; then one interact restores power and fires SuccessObjectiveEventId.
  */
 UCLASS(Blueprintable)
 class PROJECTORGANOID_API AProjectOrganoidPowerPanel : public AProjectOrganoidInteractable
@@ -44,14 +48,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Power")
 	bool bHasBeenEngaged = false;
 
-	/** Fired only on successful restore-on-interact (default path). */
+	/** Fired only on successful restore-on-interact (default path / gated restore). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power")
 	FName SuccessObjectiveEventId = NAME_None;
 
 	/**
 	 * When true, interact reports FailureStatusReport and fires DiscoveryObjectiveEventId
-	 * once without SetSectorPowerState / restore engagement. Default false preserves
-	 * existing restore-on-interact panels.
+	 * once without SetSectorPowerState / restore engagement — unless RequiredActiveObjectiveId
+	 * is Active, in which case a single interact restores power directly.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Discovery")
 	bool bDiscoverPowerFailureBeforeRestore = false;
@@ -80,6 +84,39 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Power|Discovery")
 	int32 StatusReportCount = 0;
 
+	/**
+	 * Optional gate: when set, restore + SuccessObjectiveEventId require this objective Active.
+	 * None preserves legacy restore-on-interact / discovery-only behavior.
+	 * Completed objective re-applies RestoredState on BeginPlay (save/reload persistence).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Restore")
+	FName RequiredActiveObjectiveId = NAME_None;
+
+	/** Prompt while RequiredActiveObjectiveId is Active and restore has not engaged. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Restore")
+	FText ActiveRestorePrompt = FText::FromString(TEXT("Restore NeuroGenetics power"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Restore")
+	FText RestoreSuccessNotificationSpeaker = FText::FromString(TEXT("Nathan"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Restore")
+	FText RestoreSuccessNotificationText = FText::FromString(
+		TEXT("NeuroGenetics is back online. Cryo is still dark, but I can work with this."));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power|Restore", meta = (ClampMin = "0.0"))
+	float RestoreSuccessNotificationDurationSeconds = 6.0f;
+
+	/** Test / diagnostics: how many first-restore HUD lines were presented. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Power|Restore|Diagnostics", Transient)
+	int32 RestoreSuccessNotificationCount = 0;
+
+	/** Test / diagnostics: how many times SuccessObjectiveEventId was fired. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Power|Restore|Diagnostics", Transient)
+	int32 SuccessEventFireCount = 0;
+
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	virtual bool CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const override;
 	virtual bool Interact_Implementation(AProjectOrganoidCharacter* Interactor) override;
 
@@ -89,11 +126,24 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Power|Discovery")
 	void BP_OnPowerFailureStatusReported(AProjectOrganoidCharacter* Interactor, const FText& StatusReport, bool bFirstDiscovery);
 
+	void RefreshPrompt();
+
 protected:
 
 	void NotifyObjectiveEvent(FName EventId) const;
-	void RefreshPrompt();
 	bool InteractDiscoverPowerFailure(AProjectOrganoidCharacter* Interactor);
 	bool InteractRestorePower(AProjectOrganoidCharacter* Interactor);
+	bool InteractReviewOnly(AProjectOrganoidCharacter* Interactor);
 	void ReportFailureStatus(AProjectOrganoidCharacter* Interactor, bool bFirstDiscovery);
+	void PresentRestoreSuccessNotification(AProjectOrganoidCharacter* Interactor);
+	void SyncCompletedRestoreFromObjectives();
+	void BindObjectivePromptRefresh();
+	void UnbindObjectivePromptRefresh();
+	UFUNCTION()
+	void HandleObjectiveChangedForPrompt(const FProjectOrganoidObjective& Objective);
+	UProjectOrganoidObjectiveSubsystem* GetObjectiveSubsystem() const;
+	bool IsRequiredObjectiveActive() const;
+	bool IsRequiredObjectiveCompleted() const;
+
+	bool bBoundObjectivePromptRefresh = false;
 };

@@ -865,9 +865,10 @@ namespace
 				Fixture->MissionDescription.ToString(),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.next_null"),
-				!Fixture->NextMissionAsset.ToSoftObjectPath().IsValid(),
-				TEXT("null"),
+				Record, TEXT("mission.next_power_restore"),
+				Fixture->NextMissionAsset.ToSoftObjectPath().ToString()
+					== TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore.DA_Mission_NeuroPowerRestore"),
+				TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore.DA_Mission_NeuroPowerRestore"),
 				Fixture->NextMissionAsset.ToSoftObjectPath().IsValid()
 					? Fixture->NextMissionAsset.ToSoftObjectPath().ToString()
 					: TEXT("null"),
@@ -1652,10 +1653,24 @@ namespace
 				FString::FromInt(CountCompletedId(Objectives, FName(ExamineId))),
 				ExamineId);
 			AssertTrue(
-				Record, TEXT("mission.complete"),
-				Objectives->IsMissionComplete(FName(MissionId)),
-				TEXT("true"),
-				BoolText(Objectives->IsMissionComplete(FName(MissionId))),
+				Record, TEXT("mission.neurogenetics_tasks_complete"),
+				CountCompletedId(Objectives, FName(IsolateId)) == 1
+					&& CountCompletedId(Objectives, FName(TraceId)) == 1
+					&& CountCompletedId(Objectives, FName(FollowId)) == 1
+					&& CountCompletedId(Objectives, FName(ExamineId)) == 1,
+				TEXT("4/4"),
+				FString::Printf(
+					TEXT("%d/%d/%d/%d"),
+					CountCompletedId(Objectives, FName(IsolateId)),
+					CountCompletedId(Objectives, FName(TraceId)),
+					CountCompletedId(Objectives, FName(FollowId)),
+					CountCompletedId(Objectives, FName(ExamineId))),
+				TEXT("mission"));
+			AssertTrue(
+				Record, TEXT("mission.handoff_power_restore_current"),
+				Objectives->GetActiveMissionId() == TEXT("Mission_NeuroPowerRestore"),
+				TEXT("Mission_NeuroPowerRestore"),
+				Objectives->GetActiveMissionId().ToString(),
 				TEXT("mission"));
 			AssertTrue(
 				Record, TEXT("instrument.review_prompt_after"),
@@ -1760,13 +1775,27 @@ namespace
 				TEXT("Blackout"),
 				PowerStateName(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)),
 				TEXT("Power"));
+			// Beat 7: after Examine handoff, Event_NeuroPowerRestored is owned by Mission_NeuroPowerRestore.
+			// Completing it marks the restore objective done; the map panel syncs Neuro Online (Cryo stays Blackout).
 			const int32 RestoreHandled = Objectives->TriggerEvent(FName(RestoreEvent));
 			AssertTrue(
-				Record, TEXT("preserve.restore_event_unhandled"),
-				RestoreHandled == 0,
-				TEXT("0"),
+				Record, TEXT("preserve.restore_event_owned_by_next_mission"),
+				RestoreHandled == 1,
+				TEXT("1"),
 				FString::FromInt(RestoreHandled),
 				RestoreEvent);
+			AssertTrue(
+				Record, TEXT("preserve.neuro_online_after_restore_event_sync"),
+				Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online,
+				TEXT("Online"),
+				PowerStateName(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)),
+				TEXT("Power"));
+			AssertTrue(
+				Record, TEXT("preserve.cryo_blackout_after_restore_event"),
+				Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Blackout,
+				TEXT("Blackout"),
+				PowerStateName(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)),
+				TEXT("Power"));
 
 			AssertTrue(
 				Record, TEXT("preserve.station_untouched"),

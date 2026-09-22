@@ -31,7 +31,7 @@ namespace
 
 	constexpr TCHAR ExpectedStatus[] = TEXT("PRIMARY FEED OFFLINE — EMERGENCY BACKUP ACTIVE");
 	constexpr TCHAR ExpectedInspectPrompt[] = TEXT("Inspect Power Controls");
-	constexpr TCHAR ExpectedReviewPrompt[] = TEXT("Review Power Status");
+	constexpr TCHAR ExpectedReviewPrompt[] = TEXT("Review backup power status");
 	constexpr TCHAR DiscoveryEvent[] = TEXT("Event_NeuroPowerFailureDiscovered");
 	constexpr TCHAR RestoreEvent[] = TEXT("Event_NeuroPowerRestored");
 	constexpr TCHAR ObjectiveId[] = TEXT("Obj_InvestigateNeuroPowerFailure");

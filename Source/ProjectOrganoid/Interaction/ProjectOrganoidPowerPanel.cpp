@@ -2,6 +2,8 @@
 
 #include "ProjectOrganoidPowerPanel.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
@@ -9,6 +11,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -38,6 +41,62 @@ AProjectOrganoidPowerPanel::AProjectOrganoidPowerPanel()
 	StatusLight->SetCastShadows(false);
 }
 
+void AProjectOrganoidPowerPanel::BeginPlay()
+{
+	Super::BeginPlay();
+	BindObjectivePromptRefresh();
+	SyncCompletedRestoreFromObjectives();
+	RefreshPrompt();
+}
+
+void AProjectOrganoidPowerPanel::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindObjectivePromptRefresh();
+	Super::EndPlay(EndPlayReason);
+}
+
+void AProjectOrganoidPowerPanel::BindObjectivePromptRefresh()
+{
+	if (bBoundObjectivePromptRefresh || RequiredActiveObjectiveId.IsNone())
+	{
+		return;
+	}
+
+	if (UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem())
+	{
+		Objectives->OnObjectiveActivated.AddDynamic(this, &AProjectOrganoidPowerPanel::HandleObjectiveChangedForPrompt);
+		Objectives->OnObjectiveCompleted.AddDynamic(this, &AProjectOrganoidPowerPanel::HandleObjectiveChangedForPrompt);
+		bBoundObjectivePromptRefresh = true;
+	}
+}
+
+void AProjectOrganoidPowerPanel::UnbindObjectivePromptRefresh()
+{
+	if (!bBoundObjectivePromptRefresh)
+	{
+		return;
+	}
+
+	if (UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem())
+	{
+		Objectives->OnObjectiveActivated.RemoveDynamic(this, &AProjectOrganoidPowerPanel::HandleObjectiveChangedForPrompt);
+		Objectives->OnObjectiveCompleted.RemoveDynamic(this, &AProjectOrganoidPowerPanel::HandleObjectiveChangedForPrompt);
+	}
+	bBoundObjectivePromptRefresh = false;
+}
+
+void AProjectOrganoidPowerPanel::HandleObjectiveChangedForPrompt(const FProjectOrganoidObjective& Objective)
+{
+	if (Objective.ObjectiveId == RequiredActiveObjectiveId)
+	{
+		if (Objective.State == EProjectOrganoidObjectiveState::Completed)
+		{
+			SyncCompletedRestoreFromObjectives();
+		}
+		RefreshPrompt();
+	}
+}
+
 bool AProjectOrganoidPowerPanel::CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const
 {
 	if (!Super::CanInteract_Implementation(Interactor))
@@ -47,7 +106,7 @@ bool AProjectOrganoidPowerPanel::CanInteract_Implementation(AProjectOrganoidChar
 
 	if (bDiscoverPowerFailureBeforeRestore)
 	{
-		// Discovery panels stay reviewable; restore engagement is not used on this path.
+		// Discovery / gated-restore panels stay reviewable after engagement.
 		return true;
 	}
 
@@ -68,6 +127,27 @@ bool AProjectOrganoidPowerPanel::Interact_Implementation(AProjectOrganoidCharact
 
 	if (bDiscoverPowerFailureBeforeRestore)
 	{
+		if (!RequiredActiveObjectiveId.IsNone())
+		{
+			if (bHasBeenEngaged || IsRequiredObjectiveCompleted())
+			{
+				return InteractReviewOnly(Interactor);
+			}
+
+			if (IsRequiredObjectiveActive())
+			{
+				// First Active interact restores directly — no redundant discovery step.
+				if (!bHasDiscoveredPowerFailure)
+				{
+					bHasDiscoveredPowerFailure = true;
+				}
+				return InteractRestorePower(Interactor);
+			}
+
+			// Objective not yet Active: discovery / review only; never restore or fire Success.
+			return InteractDiscoverPowerFailure(Interactor);
+		}
+
 		return InteractDiscoverPowerFailure(Interactor);
 	}
 
@@ -90,6 +170,13 @@ bool AProjectOrganoidPowerPanel::InteractDiscoverPowerFailure(AProjectOrganoidCh
 	return true;
 }
 
+bool AProjectOrganoidPowerPanel::InteractReviewOnly(AProjectOrganoidCharacter* Interactor)
+{
+	ReportFailureStatus(Interactor, false);
+	RefreshPrompt();
+	return true;
+}
+
 bool AProjectOrganoidPowerPanel::InteractRestorePower(AProjectOrganoidCharacter* Interactor)
 {
 	UWorld* World = GetWorld();
@@ -98,14 +185,22 @@ bool AProjectOrganoidPowerPanel::InteractRestorePower(AProjectOrganoidCharacter*
 		return false;
 	}
 
+	if (bHasBeenEngaged)
+	{
+		RefreshPrompt();
+		return true;
+	}
+
 	if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
 	{
 		Power->SetSectorPowerState(PowerSector, RestoredState);
 	}
 
 	bHasBeenEngaged = true;
-	RefreshPrompt();
 	NotifyObjectiveEvent(SuccessObjectiveEventId);
+	++SuccessEventFireCount;
+	PresentRestoreSuccessNotification(Interactor);
+	RefreshPrompt();
 	BP_OnPowerPanelEngaged(Interactor, RestoredState);
 	return true;
 }
@@ -134,13 +229,148 @@ void AProjectOrganoidPowerPanel::ReportFailureStatus(AProjectOrganoidCharacter* 
 	BP_OnPowerFailureStatusReported(Interactor, FailureStatusReport, bFirstDiscovery);
 }
 
+void AProjectOrganoidPowerPanel::PresentRestoreSuccessNotification(AProjectOrganoidCharacter* Interactor)
+{
+	APlayerController* PC = Interactor ? Cast<APlayerController>(Interactor->GetController()) : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	AProjectOrganoidGameMode* GameMode = World->GetAuthGameMode<AProjectOrganoidGameMode>();
+	if (!GameMode)
+	{
+		return;
+	}
+
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode->GetHUDControllerForPlayer(PC);
+	if (!HUDController)
+	{
+		return;
+	}
+
+	if (HUDController->ShowTransientNotification(
+			RestoreSuccessNotificationSpeaker,
+			RestoreSuccessNotificationText,
+			RestoreSuccessNotificationDurationSeconds))
+	{
+		++RestoreSuccessNotificationCount;
+	}
+}
+
+void AProjectOrganoidPowerPanel::SyncCompletedRestoreFromObjectives()
+{
+	if (RequiredActiveObjectiveId.IsNone() || !IsRequiredObjectiveCompleted())
+	{
+		return;
+	}
+
+	bHasBeenEngaged = true;
+	bHasDiscoveredPowerFailure = true;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			Power->SetSectorPowerState(PowerSector, RestoredState);
+		}
+	}
+}
+
+UProjectOrganoidObjectiveSubsystem* AProjectOrganoidPowerPanel::GetObjectiveSubsystem() const
+{
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		return GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	}
+	return nullptr;
+}
+
+bool AProjectOrganoidPowerPanel::IsRequiredObjectiveActive() const
+{
+	if (RequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(RequiredActiveObjectiveId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Active;
+}
+
+bool AProjectOrganoidPowerPanel::IsRequiredObjectiveCompleted() const
+{
+	if (RequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(RequiredActiveObjectiveId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Completed;
+}
+
 void AProjectOrganoidPowerPanel::RefreshPrompt()
 {
-	if (bDiscoverPowerFailureBeforeRestore && bHasDiscoveredPowerFailure)
+	if (bDiscoverPowerFailureBeforeRestore)
 	{
-		InteractionPrompt = ReviewPrompt.IsEmpty()
-			? FText::FromString(TEXT("Review Power Status"))
-			: ReviewPrompt;
+		if (bHasBeenEngaged || IsRequiredObjectiveCompleted())
+		{
+			InteractionPrompt = ReviewPrompt.IsEmpty()
+				? FText::FromString(TEXT("Review Power Status"))
+				: ReviewPrompt;
+			bIsInteractable = true;
+			if (StatusLight)
+			{
+				StatusLight->SetLightColor(FLinearColor(0.2f, 0.85f, 0.35f));
+			}
+			return;
+		}
+
+		if (!RequiredActiveObjectiveId.IsNone() && IsRequiredObjectiveActive())
+		{
+			InteractionPrompt = ActiveRestorePrompt.IsEmpty()
+				? FText::FromString(TEXT("Restore NeuroGenetics power"))
+				: ActiveRestorePrompt;
+			bIsInteractable = true;
+			return;
+		}
+
+		if (bHasDiscoveredPowerFailure)
+		{
+			InteractionPrompt = ReviewPrompt.IsEmpty()
+				? FText::FromString(TEXT("Review Power Status"))
+				: ReviewPrompt;
+			bIsInteractable = true;
+			return;
+		}
+
 		bIsInteractable = true;
 		return;
 	}

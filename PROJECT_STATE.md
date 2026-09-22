@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-22 (Neuro Beat 6 V1 validated — Obj_ExamineNeuralChangeEvidence + NeuralChangeEvidenceInstrument_NeuroGenetics; 904/904. Not staged/committed/pushed.)_
+_Last updated: 2026-09-22 (Neuro Beat 7 V1 validated — Mission_NeuroPowerRestore + PowerPanel_NeuroBackup restore; 1019/1019. Not staged/committed/pushed.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -2716,3 +2716,79 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 - Beat 6 V1 is implemented, persisted, and validated.
 - Do not begin Beat 7 until separately authorized.
 - No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation.
+
+---
+
+## Neuro Beat 7 V1 — Backup Power Restore (2026-09-22)
+
+**Status:** implemented, persisted, validated. Changes left **unstaged**. No commit / no push / no Beat 8.
+
+**Baseline:** `main` / HEAD / `origin/main` = `2fa7d647766c2a531bc8926d93ead5f96e99ee3f`
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Gameplay slice
+
+- New mission asset: `/Game/Data/Missions/DA_Mission_NeuroPowerRestore`
+  - Mission ID: `Mission_NeuroPowerRestore`
+  - Title: `Restore NeuroGenetics Power`
+  - Exactly one Main task: `Obj_RestoreNeuroLabPower` (autoactivate, target 1, no cross-mission prereq)
+  - Complete event: `Event_NeuroPowerRestored`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroGenetics.NextMissionAsset` → `DA_Mission_NeuroPowerRestore`
+  - Completing `Obj_ExamineNeuralChangeEvidence` completes NeuroGenetics and activates PowerRestore + restore objective
+- Panel: `PowerPanel_NeuroBackup` (`AProjectOrganoidPowerPanel`)
+  - Required active: `Obj_RestoreNeuroLabPower`
+  - Before Active: discovery/review only — no Online, no `Event_NeuroPowerRestored`
+  - While Active: one interact restores NeuroGenetics Emergency → Online (discovered or not; no redundant discovery)
+  - Cryo remains Blackout
+  - Nathan 6.0s: `NeuroGenetics is back online. Cryo is still dark, but I can work with this.`
+  - Completed prompt: `Review backup power status`; replay does not re-fire event/line
+  - Completed-objective BeginPlay sync re-applies Neuro Online for save/reload
+
+### Exclusions (unchanged)
+
+No Cryo unlock / Neuro→Cryo transition; no targeting tutorial; no RS campaign intro; no pursuer; no transformed-scientist fight; no Host mutation; no Node Zero / Sterling / vaccine; no Admin or `Lvl_Epitope` save; Cryo Blackout persistence preserved.
+
+### Bridge / persistence
+
+Dual-approved change IDs (session-local; do not reuse):
+- create mission: `chg_ee849c70-4092-b968-60ff-278573fa934d` (`create_neuro_power_restore_mission` / `neuro_power_restore_mission_v1`)
+- set next: `chg_fe22d037-4b98-eebc-c03b-0f933c44ec8b` (`set_neurogenetics_next_mission_power_restore`)
+- save PowerRestore: `chg_55816dbf-4c0e-d852-4d39-a0a805bcb9cd` (`save_asset`)
+- save NeuroGenetics: `chg_56750757-45e8-1c1c-603c-86a26ae076a4` (`save_asset`)
+- configure panel: `chg_2c9bb878-42f6-eb67-5252-1ba534e9d226` (`configure_neuro_backup_power_restore` / `neuro_backup_power_restore_v1`)
+- Neuro-only map save: `chg_3e4acec4-4f9f-a72e-1de4-d0a55027b6e8` (`save_maps` Neuro-only)
+- Approvals: user `Tom Cardaro` + second_review `Arena`
+
+### Validation
+
+- Targeted: `NeuroRestoreLabPower_Functional` **112/112** — `ptr_175b6d87-4c4a-df3d-db66-c58d2e02f81a` (also `ptr_40534fa0…` in full suite)
+- Full established regression + Beat 7 (exact once):
+  - `NeuroRestoreLabPower_Functional` **112/112** — `ptr_40534fa0-4840-7a7a-81bd-48a2eaf7d10e`
+  - `NeuroExamineNeuralChangeEvidence_Functional` **143/143** — `ptr_f83b1b80-48c4-0311-54a4-c79735ac4ced` (stale `IsMissionComplete` / restore-event asserts updated for NextMission handoff)
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_7240d7d7-4bec-00e7-b864-92839eeeb770`
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_42bc8aa7-4ab1-0024-51e9-06b597fb187c`
+  - `NeuroResearchLoadCutoff_Functional` **173/173** — `ptr_c7327e30-45d8-da29-bc1d-2b8d5ced0bc2`
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_3ad6cfd7-4102-1957-4fc5-d09494059707`
+  - `OpeningFoundation_Functional` **48/48** — `ptr_ea56aaf5-40d4-d2aa-2460-769fcb1b73bc`
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_69ff1af0-4bdd-8c3e-4648-df96f277e16e`
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_f314f78c-418a-86ea-f60e-12a9a1d48ab0` (Review prompt → `Review backup power status`)
+  - **Total 1019/1019** (prior Beat 6 suite 904 + Beat 7 112 + Examine assert net +3)
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroGenetics.uasset` SHA-256: `2a1eede694dcf8752c808fca9c561366c6a0a3aa2935be9a75ce6bbb6ecc640e`
+- `Content/Data/Missions/DA_Mission_NeuroPowerRestore.uasset` SHA-256: `4d5849ea7c4d5d586b6f8f808d0bfca5fd9f0569d873a6b9f81fd5d5ba37ffa0`
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `9db9950202e9639e2f9b63664ca4648da06db6009f89ce874ad4c61ee19bad01`
+
+### Preservation / audit
+
+- Clean editor close: no UnrealEditor / UBT / LiveCoding / ShaderCompileWorker remaining
+- Canon + `EngineAssociation` unchanged
+- Evidence only under `%TEMP%\ProjectOrganoid_NeuroBeat7_V1_20260922-132319`
+- Index empty; changes left **unstaged** (no commit / no push)
+
+### Next boundary
+
+- Beat 7 V1 is implemented, persisted, and validated.
+- Do not begin Beat 8 until separately authorized.
