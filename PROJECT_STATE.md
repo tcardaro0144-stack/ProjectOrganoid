@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-19 (Neuro Beats 1–2 validated — DA_Mission_NeuroGenetics + NeuralMappingArray_NeuroGenetics + NRFA 98/98. Not staged/committed/pushed.)_
+_Last updated: 2026-09-22 (Neuro Beat 6 V1 validated — Obj_ExamineNeuralChangeEvidence + NeuralChangeEvidenceInstrument_NeuroGenetics; 904/904. Not staged/committed/pushed.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -2635,3 +2635,84 @@ Gameplay implementation and validation complete. Checkpoint is **not** staged, c
 - The engine-upgrade gate is **complete**; no additional engine-upgrade task remains pending.
 - `Obj_ExamineNeuralChangeEvidence` / Beat 6 may begin only as a separately approved design slice.
 - No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation is authorized by this section.
+
+---
+
+## 2026-09-22 — NeuroGenetics Beat 6 V1 (`Obj_ExamineNeuralChangeEvidence`)
+
+### Baseline
+
+- Branch: `main`
+- HEAD / origin/main: `723b80f5490b0d7105709273492521744ae58ba7`
+- Engine: UE **5.8.3** at `C:\Users\tomca\Desktop\UE_5.8` (CL `58210709`)
+- `EngineAssociation` remains `5.8`
+- Evidence: `%TEMP%\ProjectOrganoid_NeuroBeat6_V1_20260922-114911`
+- No commit / no push / no Beat 7 / no Live Coding / no Save All / canon untouched
+
+### Gameplay slice
+
+- Objective: `Obj_ExamineNeuralChangeEvidence`
+- Complete event: `Event_NeuralChangeEvidenceExamined` (Task 4 Complete EventTriggers only; Tasks 1–3 unchanged)
+- Dedicated actor: `NeuralChangeEvidenceInstrument_NeuroGenetics`
+- Class: `/Script/ProjectOrganoid.ProjectOrganoidInspectableInstrument`
+- Required active / replay guard: `Obj_ExamineNeuralChangeEvidence`
+- Active prompt: `Examine neural-change evidence`
+- Completed prompt: `Review neural-change evidence`
+- Speaker: Nathan
+- Inspection response (U+2019): `These patterns match across multiple subjects. Epitope wasn’t documenting isolated changes; they were tracking the same neural adaptation.`
+- Notification duration: **8.0** seconds
+- Post-completion: existing last-task mission semantics complete `Mission_NeuroGenetics` — no Cryo unlock, power restore, pursuer, RS tutorial, door/Host/campaign side effects
+
+### World placement (live spatial survey)
+
+- Target package only: `/Game/Maps/Epitope/SL_Epitope_NeuroGenetics`
+- Transform: location `(500, -2520, -1100)`, rotation `(0, 90, 0)` (yaw 90 faces approach from observation node), scale `(1,1,1)`
+- Initial candidate `(500,-2450,-1100)` rejected: peer margin vs `NeuralSignatureObservationNode_NeuroGenetics` was **0** (required ≥50; interaction ranges 175+175)
+- Floor: `NeuroGenetics_FloorPlate` (impact normal +Z); approach capsule clear; native nav path from observation node length **420**, points **2**
+- Clearances: observation peer distance **420** / margin **70**; nearest dressing `Neuro_Lab_Bench_2` ~523.5; south wall `Wall_Perimeter_South_0` ~635.9; Hosts/doors outside keepout
+- Temporary Cube/Cylinder/Cube Engine BasicShapes `NoCollision` blockout — **not final art**
+
+### Bridge / persistence
+
+- Closed-editor builds: initial Beat 6 compile Succeeded; spatial-constant rebuild Succeeded (~15s); FloorArray assert-fix rebuild Succeeded (~9.7s)
+- Dual-approved change IDs (session-local; do not reuse):
+  - expand mission: `chg_eb998e82-4cc1-5f09-a562-54846b6fab1f` (`expand_neurogenetics_mission_beat6` / `neurogenetics_mission_beat6_v1`)
+  - save mission: `chg_7c444515-4cb9-c3b3-53cd-e08ea5f573b4` (`save_asset` → `/Game/Data/Missions/DA_Mission_NeuroGenetics` only)
+  - spawn instrument: `chg_3972e312-4dab-42f2-974d-2598572432b8` (`spawn_neuro_neural_change_evidence_instrument` / `neuro_neural_change_evidence_instrument_v1`)
+  - Neuro save: `chg_9ec44fa9-4f23-02cf-4c73-0098755c12c0` (`save_maps` Neuro-only)
+- Approvals: user `Tom Cardaro` + second_review `Arena`
+- Actions: `expand_neurogenetics_mission_beat6`, `spawn_neuro_neural_change_evidence_instrument`
+
+### Validation
+
+- Targeted: `NeuroExamineNeuralChangeEvidence_Functional` **140/140** — `ptr_338a1643-41dd-6feb-b3de-fb90a2478429`
+- Full established regression + Beat 6 (assertion totals):
+  - `NeuroExamineNeuralChangeEvidence_Functional` **140/140** — `ptr_5bbb3e39-4352-82d2-e07f-eeaa894582e9`
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_bef660f6-4bce-c5d4-e4fa-d181703b5da4`
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_769cc614-4e23-4356-affd-638f1ed21165`
+  - `NeuroResearchLoadCutoff_Functional` **173/173** — `ptr_1ec1a265-4392-d0ae-e720-92bfa2053b08`
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_4068837c-4348-cd98-d85a-4794657940c3` (test-only fix: Task4 EventId must compare to `Event_NeuralChangeEvidenceExamined`, not the objective id)
+  - `OpeningFoundation_Functional` **48/48** — `ptr_30687194-4d9c-fe5f-ae19-f5b52e57beba` (first serial attempt `ptr_e8a981da…` lost PIE environmentally at WaitPieStopped with 45/45 asserts already green; recovered once after PIE idle)
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_e05e12c6-49ea-0aa7-3304-7b80bd3db0ec`
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_23af401c-4a16-f579-61de-0ca959ef5d8c`
+  - **Total 904/904** (prior Beat 5 suite 764 + new Beat 6 140)
+- Beat 1–5 + Emergency/Blackout + keep-list + mission transitions + OpeningFoundation remain intact
+
+### Persisted asset hashes
+
+- Mission `Content/Data/Missions/DA_Mission_NeuroGenetics.uasset` SHA-256: `936bf47faab9edb2536b275b12d89586fd43043ef3e425447a91c3348b290de0`
+- Neuro map `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `2b7bd3331c1ee248e7a1d0724990b2e9acb3821812a37af299cba96465195a5b`
+- Admin / `Lvl_Epitope` hashes unchanged vs pre-mutation
+
+### Preservation / audit
+
+- Clean editor close proven: no UnrealEditor / UBT / LiveCodingConsole / ShaderCompileWorker remaining
+- `PROJECT_ORGANOID_CANON.md` unchanged; `EngineAssociation` unchanged
+- Evidence only under `%TEMP%` (no Beat 6 evidence files in the repository)
+- Index empty; changes left **unstaged** (no commit / no push)
+
+### Next boundary
+
+- Beat 6 V1 is implemented, persisted, and validated.
+- Do not begin Beat 7 until separately authorized.
+- No automatic power restoration, Cryo unlock, pursuer, Research Station tutorial, or complete Neuro revelation.

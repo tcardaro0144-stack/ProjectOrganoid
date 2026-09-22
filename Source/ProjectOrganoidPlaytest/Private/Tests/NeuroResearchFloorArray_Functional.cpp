@@ -80,6 +80,7 @@ namespace
 		TEXT("Track the matching neural pattern deeper into the research wing.");
 	constexpr TCHAR FollowEventId[] = TEXT("Event_NeuralSignatureFollowed");
 	constexpr TCHAR ExamineObjectiveId[] = TEXT("Obj_ExamineNeuralChangeEvidence");
+	constexpr TCHAR ExamineEventId[] = TEXT("Event_NeuralChangeEvidenceExamined");
 	constexpr TCHAR ExamineTitle[] = TEXT("Examine the neural-change evidence");
 	constexpr TCHAR ExamineDescription[] =
 		TEXT("Inspect the research-wing evidence linked to the matching neural signature.");
@@ -891,10 +892,14 @@ namespace
 					: TEXT("missing"),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task4_no_events"),
-				bTaskOk && Mission->Tasks[3].EventTriggers.Num() == 0,
-				TEXT("0"),
-				bTaskOk ? FString::FromInt(Mission->Tasks[3].EventTriggers.Num()) : TEXT("missing"),
+				Record, TEXT("mission.task4_event_examined"),
+				bTaskOk && Mission->Tasks[3].EventTriggers.Num() == 1
+					&& Mission->Tasks[3].EventTriggers[0].EventId == FName(ExamineEventId)
+					&& Mission->Tasks[3].EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete,
+				TEXT("Event_NeuralChangeEvidenceExamined/Complete"),
+				bTaskOk && Mission->Tasks[3].EventTriggers.Num() == 1
+					? Mission->Tasks[3].EventTriggers[0].EventId.ToString()
+					: (bTaskOk ? FString::FromInt(Mission->Tasks[3].EventTriggers.Num()) : TEXT("missing")),
 				TEXT("DA"));
 			AssertTrue(
 				Record, TEXT("mission.no_fifth_task"),

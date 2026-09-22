@@ -29,8 +29,8 @@
 
 namespace
 {
-	constexpr TCHAR TestId[] = TEXT("NeuroFollowNeuralSignature_Functional");
-	constexpr TCHAR DisplayName[] = TEXT("Neuro Follow Neural Signature Functional");
+	constexpr TCHAR TestId[] = TEXT("NeuroExamineNeuralChangeEvidence_Functional");
+	constexpr TCHAR DisplayName[] = TEXT("Neuro Examine Neural Change Evidence Functional");
 	constexpr TCHAR MapPackage[] = TEXT("/Game/Maps/Lvl_Epitope");
 	constexpr TCHAR AdminPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	constexpr TCHAR NeuroPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_NeuroGenetics");
@@ -65,11 +65,14 @@ namespace
 	constexpr TCHAR ExamineTitle[] = TEXT("Examine the neural-change evidence");
 	constexpr TCHAR ExamineDescription[] =
 		TEXT("Inspect the research-wing evidence linked to the matching neural signature.");
+	constexpr TCHAR ExamineEvent[] = TEXT("Event_NeuralChangeEvidenceExamined");
 
 	constexpr TCHAR RestoreEvent[] = TEXT("Event_NeuroPowerRestored");
 
 	constexpr TCHAR NodeLabel[] = TEXT("NeuralSignatureObservationNode_NeuroGenetics");
-	constexpr TCHAR NodeReloadLabel[] = TEXT("NeuralSignatureObservationNode_NeuroGenetics_ReloadClone");
+	constexpr TCHAR InstrumentLabel[] = TEXT("NeuralChangeEvidenceInstrument_NeuroGenetics");
+	constexpr TCHAR InstrumentReloadLabel[] = TEXT("NeuralChangeEvidenceInstrument_NeuroGenetics_ReloadClone");
+	constexpr TCHAR InstrumentWrongGateLabel[] = TEXT("NeuralChangeEvidenceInstrument_WrongGateClone");
 	constexpr TCHAR StationLabel[] = TEXT("ResearchStation_NeuroGenetics");
 	constexpr TCHAR PanelLabel[] = TEXT("PowerPanel_NeuroBackup");
 	constexpr TCHAR ArrayLabel[] = TEXT("NeuralMappingArray_NeuroGenetics");
@@ -86,18 +89,27 @@ namespace
 	constexpr TCHAR PadFailureLabel[] = TEXT("DataPad_NeuroResearchFailure");
 	constexpr TCHAR CheckpointLabel[] = TEXT("Checkpoint_NeuroAirlock");
 
-	constexpr TCHAR InspectPrompt[] = TEXT("Follow Neural Signature");
-	constexpr TCHAR ReviewPrompt[] = TEXT("Neural Signature Located");
+	constexpr TCHAR NodeInspectPrompt[] = TEXT("Follow Neural Signature");
+	constexpr TCHAR NodeReviewPrompt[] = TEXT("Neural Signature Located");
+	constexpr TCHAR InstrumentInspectPrompt[] = TEXT("Examine neural-change evidence");
+	constexpr TCHAR InstrumentReviewPrompt[] = TEXT("Review neural-change evidence");
 	constexpr TCHAR ExpectedSpeaker[] = TEXT("Nathan");
-	// Exact line: one ASCII \u2019 escape (wasn't).
 	constexpr TCHAR ObservationLine[] =
 		TEXT("The signature continues into the research wing. Epitope wasn\u2019t just recording the damage. They were studying the same change in every subject.");
 	constexpr TCHAR ObservationRendered[] =
 		TEXT("Nathan: The signature continues into the research wing. Epitope wasn\u2019t just recording the damage. They were studying the same change in every subject.");
+	constexpr TCHAR EvidenceLine[] =
+		TEXT("These patterns match across multiple subjects. Epitope wasn\u2019t documenting isolated changes; they were tracking the same neural adaptation.");
+	constexpr TCHAR EvidenceRendered[] =
+		TEXT("Nathan: These patterns match across multiple subjects. Epitope wasn\u2019t documenting isolated changes; they were tracking the same neural adaptation.");
 
 	constexpr float NodeInteractionRange = 175.0f;
 	constexpr float NodeNotifySeconds = 4.0f;
 	const FVector NodeLocation(500.0f, -2100.0f, -1100.0f);
+	constexpr float InstrumentInteractionRange = 175.0f;
+	constexpr float InstrumentNotifySeconds = 8.0f;
+	const FVector InstrumentLocation(500.0f, -2520.0f, -1100.0f);
+	const FRotator InstrumentRotation(0.0f, 90.0f, 0.0f);
 
 	constexpr TCHAR CubeMeshPath[] = TEXT("/Engine/BasicShapes/Cube.Cube");
 	constexpr TCHAR CylinderMeshPath[] = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
@@ -228,7 +240,7 @@ namespace
 		return Found.Num() == 1 ? Found[0]->GetActorLocation() : FVector::ZeroVector;
 	}
 
-	class FNeuroFollowNeuralSignatureFunctional : public IOrganoidPlaytestCase
+	class FNeuroExamineNeuralChangeEvidenceFunctional : public IOrganoidPlaytestCase
 	{
 	public:
 		virtual FString GetTestId() const override { return TestId; }
@@ -567,8 +579,8 @@ namespace
 			Actor->RequiredActiveObjectiveId = FName(FollowId);
 			Actor->ObjectiveEventId = FName(FollowEvent);
 			Actor->CompletedObjectiveIdForReplayGuard = FName(FollowId);
-			Actor->InspectionPrompt = FText::FromString(InspectPrompt);
-			Actor->ReviewPrompt = FText::FromString(ReviewPrompt);
+			Actor->InspectionPrompt = FText::FromString(NodeInspectPrompt);
+			Actor->ReviewPrompt = FText::FromString(NodeReviewPrompt);
 			Actor->SpeakerLabel = FText::FromString(ExpectedSpeaker);
 			Actor->InspectionResponseText = FText::FromString(ObservationLine);
 			Actor->NotificationDurationSeconds = NodeNotifySeconds;
@@ -599,6 +611,68 @@ namespace
 			ConfigureObservationNode(Actor);
 			Actor->FinishSpawning(Xform);
 			ConfigureObservationNode(Actor);
+			Track(Actor);
+			return Actor;
+		}
+
+		void ConfigureEvidenceInstrument(AProjectOrganoidInspectableInstrument* Actor) const
+		{
+			if (!Actor)
+			{
+				return;
+			}
+			Actor->SetActorLocation(InstrumentLocation);
+			Actor->SetActorRotation(InstrumentRotation);
+			Actor->SetActorScale3D(FVector::OneVector);
+			Actor->InteractionRange = InstrumentInteractionRange;
+			Actor->RequiredActiveObjectiveId = FName(ExamineId);
+			Actor->ObjectiveEventId = FName(ExamineEvent);
+			Actor->CompletedObjectiveIdForReplayGuard = FName(ExamineId);
+			Actor->InspectionPrompt = FText::FromString(InstrumentInspectPrompt);
+			Actor->ReviewPrompt = FText::FromString(InstrumentReviewPrompt);
+			Actor->SpeakerLabel = FText::FromString(ExpectedSpeaker);
+			Actor->InspectionResponseText = FText::FromString(EvidenceLine);
+			Actor->NotificationDurationSeconds = InstrumentNotifySeconds;
+			Actor->bHasBeenInspected = false;
+			Actor->InspectionNotificationCount = 0;
+			Actor->ObjectiveEventFireCount = 0;
+			ApplyPresentationMesh(Actor->PedestalMesh, CubeMeshPath, NodePedestalRel, NodePedestalScale);
+			ApplyPresentationMesh(Actor->ColumnMesh, CylinderMeshPath, NodeColumnRel, NodeColumnScale);
+			ApplyPresentationMesh(Actor->ArrayHeadMesh, CubeMeshPath, NodeHeadRel, NodeHeadScale);
+			Actor->RefreshPrompt();
+		}
+
+		AProjectOrganoidInspectableInstrument* SpawnConfiguredInstrument(
+			UWorld* World,
+			const FName& Label,
+			FName RequiredActiveOverride = NAME_None)
+		{
+			if (!World)
+			{
+				return nullptr;
+			}
+			const FTransform Xform(InstrumentRotation, InstrumentLocation, FVector::OneVector);
+			AProjectOrganoidInspectableInstrument* Actor =
+				World->SpawnActorDeferred<AProjectOrganoidInspectableInstrument>(
+					AProjectOrganoidInspectableInstrument::StaticClass(), Xform);
+			if (!Actor)
+			{
+				return nullptr;
+			}
+			Actor->SetActorLabel(Label.ToString());
+			ConfigureEvidenceInstrument(Actor);
+			if (!RequiredActiveOverride.IsNone())
+			{
+				Actor->RequiredActiveObjectiveId = RequiredActiveOverride;
+				Actor->RefreshPrompt();
+			}
+			Actor->FinishSpawning(Xform);
+			ConfigureEvidenceInstrument(Actor);
+			if (!RequiredActiveOverride.IsNone())
+			{
+				Actor->RequiredActiveObjectiveId = RequiredActiveOverride;
+				Actor->RefreshPrompt();
+			}
 			Track(Actor);
 			return Actor;
 		}
@@ -747,7 +821,7 @@ namespace
 				PowerStateName(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)),
 				TEXT("Power"));
 
-			// ---- A. Persisted Beat 5 four-task mission ----
+			// ---- A. Persisted Beat 6 four-task mission ----
 			UProjectOrganoidObjectiveDataAsset* Fixture = LoadPersistedMissionAsset();
 			AssertTrue(
 				Record, TEXT("mission.loaded_persisted"),
@@ -757,7 +831,7 @@ namespace
 				TEXT("DA"));
 			if (!Fixture)
 			{
-				FailAndStop(Owner, Record, TEXT("DA_Mission_NeuroGenetics missing. Require expand_neurogenetics_mission_beat5 + save."));
+				FailAndStop(Owner, Record, TEXT("DA_Mission_NeuroGenetics missing. Require expand_neurogenetics_mission_beat6 + save."));
 				return;
 			}
 			AssertTrue(
@@ -806,7 +880,7 @@ namespace
 				TEXT("DA"));
 			if (Fixture->Tasks.Num() != 4)
 			{
-				FailAndStop(Owner, Record, TEXT("DA_Mission_NeuroGenetics is not exact Beat 5 (task count != 4)."));
+				FailAndStop(Owner, Record, TEXT("DA_Mission_NeuroGenetics is not exact Beat 6 (task count != 4)."));
 				return;
 			}
 
@@ -915,7 +989,7 @@ namespace
 			AssertTrue(
 				Record, TEXT("mission.task4_event_examined"),
 				Task4.EventTriggers.Num() == 1
-					&& Task4.EventTriggers[0].EventId == FName(TEXT("Event_NeuralChangeEvidenceExamined"))
+					&& Task4.EventTriggers[0].EventId == FName(ExamineEvent)
 					&& Task4.EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete,
 				TEXT("Event_NeuralChangeEvidenceExamined/Complete"),
 				Task4.EventTriggers.Num() == 1
@@ -1010,14 +1084,14 @@ namespace
 				NodeLabel);
 			AssertTrue(
 				Record, TEXT("node.inspect_prompt"),
-				Node->InspectionPrompt.ToString() == InspectPrompt,
-				InspectPrompt,
+				Node->InspectionPrompt.ToString() == NodeInspectPrompt,
+				NodeInspectPrompt,
 				Node->InspectionPrompt.ToString(),
 				NodeLabel);
 			AssertTrue(
 				Record, TEXT("node.review_prompt"),
-				Node->ReviewPrompt.ToString() == ReviewPrompt,
-				ReviewPrompt,
+				Node->ReviewPrompt.ToString() == NodeReviewPrompt,
+				NodeReviewPrompt,
 				Node->ReviewPrompt.ToString(),
 				NodeLabel);
 			AssertTrue(
@@ -1084,7 +1158,87 @@ namespace
 				TEXT("checked"),
 				TEXT("map"));
 
-			// ---- C. Before prerequisites: node gated ----
+			const TArray<AActor*> InstrumentMatches = OrganoidPlaytestActions::FindActorsByLabel(World, InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("map.instrument_unique"),
+				InstrumentMatches.Num() == 1,
+				TEXT("1"),
+				FString::FromInt(InstrumentMatches.Num()),
+				InstrumentLabel);
+			AProjectOrganoidInspectableInstrument* Instrument = InstrumentMatches.Num() == 1
+				? Cast<AProjectOrganoidInspectableInstrument>(InstrumentMatches[0])
+				: nullptr;
+			if (!Instrument)
+			{
+				FailAndStop(Owner, Record, TEXT("NeuralChangeEvidenceInstrument_NeuroGenetics missing. Require spawn + save."));
+				return;
+			}
+			AssertTrue(
+				Record, TEXT("instrument.class_native"),
+				Instrument->GetClass() == AProjectOrganoidInspectableInstrument::StaticClass(),
+				TEXT("ProjectOrganoidInspectableInstrument"),
+				Instrument->GetClass() ? Instrument->GetClass()->GetName() : TEXT("null"),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.transform"),
+				VecNear(Instrument->GetActorLocation(), InstrumentLocation)
+					&& RotNear(Instrument->GetActorRotation(), InstrumentRotation),
+				TEXT("(500,-2520,-1100)/(0,90,0)"),
+				FString::Printf(
+					TEXT("(%s)/(%s)"),
+					*Instrument->GetActorLocation().ToCompactString(),
+					*Instrument->GetActorRotation().ToCompactString()),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.required_active_examine"),
+				Instrument->RequiredActiveObjectiveId == FName(ExamineId),
+				ExamineId,
+				Instrument->RequiredActiveObjectiveId.ToString(),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.objective_event_examined"),
+				Instrument->ObjectiveEventId == FName(ExamineEvent),
+				ExamineEvent,
+				Instrument->ObjectiveEventId.ToString(),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.replay_guard_examine"),
+				Instrument->CompletedObjectiveIdForReplayGuard == FName(ExamineId),
+				ExamineId,
+				Instrument->CompletedObjectiveIdForReplayGuard.ToString(),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.inspect_prompt"),
+				Instrument->InspectionPrompt.ToString() == InstrumentInspectPrompt,
+				InstrumentInspectPrompt,
+				Instrument->InspectionPrompt.ToString(),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.review_prompt"),
+				Instrument->ReviewPrompt.ToString() == InstrumentReviewPrompt,
+				InstrumentReviewPrompt,
+				Instrument->ReviewPrompt.ToString(),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.range_175"),
+				FMath::IsNearlyEqual(Instrument->InteractionRange, InstrumentInteractionRange, 0.01f),
+				TEXT("175"),
+				FString::SanitizeFloat(Instrument->InteractionRange),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.line_exact"),
+				Instrument->InspectionResponseText.ToString() == EvidenceLine,
+				EvidenceLine,
+				Instrument->InspectionResponseText.ToString(),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("instrument.notify_8"),
+				FMath::IsNearlyEqual(Instrument->NotificationDurationSeconds, InstrumentNotifySeconds, 0.01f),
+				TEXT("8"),
+				FString::SanitizeFloat(Instrument->NotificationDurationSeconds),
+				InstrumentLabel);
+
+			// ---- C. Before prerequisites: node + instrument gated ----
 			HUD->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);
 			const int32 PreEvents = Node->ObjectiveEventFireCount;
 			const int32 PreLines = Node->InspectionNotificationCount;
@@ -1127,6 +1281,56 @@ namespace
 				TEXT("no observation line"),
 				Decoy->GetLastResourceNotification().ToString(),
 				TEXT("HUD"));
+
+			const int32 PreInstrumentEvents = Instrument->ObjectiveEventFireCount;
+			const int32 PreInstrumentLines = Instrument->InspectionNotificationCount;
+			const bool bInstrumentCanBefore = Instrument->CanInteract(Character);
+			const bool bInstrumentInteractBefore = Instrument->Interact(Character);
+			AssertTrue(
+				Record, TEXT("pre.instrument_can_false"),
+				!bInstrumentCanBefore,
+				TEXT("false"),
+				BoolText(bInstrumentCanBefore),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("pre.instrument_interact_rejected"),
+				!bInstrumentInteractBefore,
+				TEXT("false"),
+				BoolText(bInstrumentInteractBefore),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("pre.instrument_no_examine_event"),
+				Instrument->ObjectiveEventFireCount == PreInstrumentEvents,
+				TEXT("0"),
+				FString::FromInt(Instrument->ObjectiveEventFireCount - PreInstrumentEvents),
+				InstrumentLabel);
+
+			AProjectOrganoidInspectableInstrument* WrongGateInstrument =
+				SpawnConfiguredInstrument(World, FName(InstrumentWrongGateLabel), FName(FollowId));
+			AssertTrue(
+				Record, TEXT("unrelated.wrong_gate_spawned"),
+				WrongGateInstrument != nullptr,
+				TEXT("spawned"),
+				WrongGateInstrument ? TEXT("spawned") : TEXT("null"),
+				InstrumentWrongGateLabel);
+			if (WrongGateInstrument)
+			{
+				const int32 WrongEventsBefore = WrongGateInstrument->ObjectiveEventFireCount;
+				const bool bWrongInteract = WrongGateInstrument->Interact(Character);
+				AssertTrue(
+					Record, TEXT("unrelated.wrong_gate_rejected"),
+					!bWrongInteract,
+					TEXT("false"),
+					BoolText(bWrongInteract),
+					InstrumentWrongGateLabel);
+				AssertTrue(
+					Record, TEXT("unrelated.no_examine_event"),
+					WrongGateInstrument->ObjectiveEventFireCount == WrongEventsBefore,
+					TEXT("0"),
+					FString::FromInt(WrongGateInstrument->ObjectiveEventFireCount - WrongEventsBefore),
+					InstrumentWrongGateLabel);
+				WrongGateInstrument->Destroy();
+			}
 
 			// ---- D. OpeningFoundation → diagnosis → array → cutoff → terminal ----
 			Objectives->LoadDefaultMission();
@@ -1363,8 +1567,8 @@ namespace
 				TEXT("HUD"));
 			AssertTrue(
 				Record, TEXT("node.review_prompt_after"),
-				Node->GetInteractionPrompt().ToString() == ReviewPrompt,
-				ReviewPrompt,
+				Node->GetInteractionPrompt().ToString() == NodeReviewPrompt,
+				NodeReviewPrompt,
 				Node->GetInteractionPrompt().ToString(),
 				NodeLabel);
 			AssertTrue(
@@ -1390,157 +1594,158 @@ namespace
 				BoolText(Objectives->IsMissionComplete(FName(MissionId))),
 				TEXT("mission"));
 
-			// ---- F. Repeat ----
-			const int32 RepeatEventsBefore = Node->ObjectiveEventFireCount;
-			const int32 RepeatLinesBefore = Node->InspectionNotificationCount;
-			const int32 ExamineActiveBefore = CountActiveId(Objectives, FName(ExamineId));
-			const bool bRepeat = Node->Interact(Character);
+			// ---- F. Evidence instrument interaction ----
+			HUD->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);
 			AssertTrue(
-				Record, TEXT("repeat.interact_ok"),
-				bRepeat,
+				Record, TEXT("instrument.can_after_examine_active"),
+				Instrument->CanInteract(Character),
 				TEXT("true"),
-				BoolText(bRepeat),
-				NodeLabel);
+				BoolText(Instrument->CanInteract(Character)),
+				InstrumentLabel);
+			const int32 InstrumentEventsBefore = Instrument->ObjectiveEventFireCount;
+			const int32 InstrumentLinesBefore = Instrument->InspectionNotificationCount;
+			const bool bInstrumentInteract = Instrument->Interact(Character);
 			AssertTrue(
-				Record, TEXT("repeat.no_event_replay"),
-				Node->ObjectiveEventFireCount == RepeatEventsBefore,
-				TEXT("0"),
-				FString::FromInt(Node->ObjectiveEventFireCount - RepeatEventsBefore),
-				NodeLabel);
+				Record, TEXT("instrument.interact_accepted"),
+				bInstrumentInteract,
+				TEXT("true"),
+				BoolText(bInstrumentInteract),
+				InstrumentLabel);
 			AssertTrue(
-				Record, TEXT("repeat.no_line_replay"),
-				Node->InspectionNotificationCount == RepeatLinesBefore,
-				TEXT("0"),
-				FString::FromInt(Node->InspectionNotificationCount - RepeatLinesBefore),
-				NodeLabel);
-			AssertTrue(
-				Record, TEXT("repeat.follow_completed"),
-				CountCompletedId(Objectives, FName(FollowId)) == 1,
+				Record, TEXT("instrument.event_once"),
+				Instrument->ObjectiveEventFireCount == InstrumentEventsBefore + 1,
 				TEXT("1"),
-				FString::FromInt(CountCompletedId(Objectives, FName(FollowId))),
-				FollowId);
+				FString::FromInt(Instrument->ObjectiveEventFireCount - InstrumentEventsBefore),
+				InstrumentLabel);
 			AssertTrue(
-				Record, TEXT("repeat.examine_active"),
-				CountActiveId(Objectives, FName(ExamineId)) == 1,
-				TEXT("1"),
-				FString::FromInt(CountActiveId(Objectives, FName(ExamineId))),
+				Record, TEXT("instrument.nathan_exact_owned_hud"),
+				HUD->GetLastResourceNotification().ToString() == EvidenceRendered,
+				EvidenceRendered,
+				HUD->GetLastResourceNotification().ToString(),
+				TEXT("HUD"));
+			AssertTrue(
+				Record, TEXT("instrument.examine_completed_once"),
+				CountCompletedId(Objectives, FName(ExamineId)) == 1
+					&& CountActiveId(Objectives, FName(ExamineId)) == 0,
+				TEXT("completed=1 active=0"),
+				FString::Printf(
+					TEXT("active=%d completed=%d"),
+					CountActiveId(Objectives, FName(ExamineId)),
+					CountCompletedId(Objectives, FName(ExamineId))),
 				ExamineId);
 			AssertTrue(
-				Record, TEXT("repeat.no_duplicate_activation"),
-				CountActiveId(Objectives, FName(ExamineId)) == ExamineActiveBefore
-					&& CountActiveId(Objectives, FName(ExamineId)) == 1
+				Record, TEXT("mission.tasks_one_to_three_completed"),
+				CountCompletedId(Objectives, FName(IsolateId)) == 1
+					&& CountCompletedId(Objectives, FName(TraceId)) == 1
 					&& CountCompletedId(Objectives, FName(FollowId)) == 1,
-				TEXT("examine_active=1 follow_completed=1"),
+				TEXT("3/3"),
 				FString::Printf(
-					TEXT("examine_active=%d follow_completed=%d"),
-					CountActiveId(Objectives, FName(ExamineId)),
+					TEXT("%d/%d/%d"),
+					CountCompletedId(Objectives, FName(IsolateId)),
+					CountCompletedId(Objectives, FName(TraceId)),
 					CountCompletedId(Objectives, FName(FollowId))),
 				TEXT("objectives"));
+			AssertTrue(
+				Record, TEXT("mission.no_incomplete_task4"),
+				CountCompletedId(Objectives, FName(ExamineId)) == 1,
+				TEXT("1"),
+				FString::FromInt(CountCompletedId(Objectives, FName(ExamineId))),
+				ExamineId);
+			AssertTrue(
+				Record, TEXT("mission.complete"),
+				Objectives->IsMissionComplete(FName(MissionId)),
+				TEXT("true"),
+				BoolText(Objectives->IsMissionComplete(FName(MissionId))),
+				TEXT("mission"));
+			AssertTrue(
+				Record, TEXT("instrument.review_prompt_after"),
+				Instrument->GetInteractionPrompt().ToString() == InstrumentReviewPrompt,
+				InstrumentReviewPrompt,
+				Instrument->GetInteractionPrompt().ToString(),
+				InstrumentLabel);
+
+			const int32 InstrumentRepeatEvents = Instrument->ObjectiveEventFireCount;
+			const int32 InstrumentRepeatLines = Instrument->InspectionNotificationCount;
+			const bool bInstrumentRepeat = Instrument->Interact(Character);
+			AssertTrue(
+				Record, TEXT("repeat.instrument_interact_ok"),
+				bInstrumentRepeat,
+				TEXT("true"),
+				BoolText(bInstrumentRepeat),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("repeat.no_examine_event_replay"),
+				Instrument->ObjectiveEventFireCount == InstrumentRepeatEvents,
+				TEXT("0"),
+				FString::FromInt(Instrument->ObjectiveEventFireCount - InstrumentRepeatEvents),
+				InstrumentLabel);
+			AssertTrue(
+				Record, TEXT("repeat.no_line_replay"),
+				Instrument->InspectionNotificationCount == InstrumentRepeatLines,
+				TEXT("0"),
+				FString::FromInt(Instrument->InspectionNotificationCount - InstrumentRepeatLines),
+				InstrumentLabel);
 
 			// ---- G. Save/load reconstruction ----
 			UProjectOrganoidSaveGame* SaveGame = NewObject<UProjectOrganoidSaveGame>(GetTransientPackage());
 			Objectives->CaptureObjectivesToSaveGame(SaveGame);
 			AssertTrue(
-				Record, TEXT("saveload.isolate_persisted"),
-				SaveGame->CompletedObjectiveIds.Contains(FName(IsolateId)),
+				Record, TEXT("saveload.examine_persisted"),
+				SaveGame->CompletedObjectiveIds.Contains(FName(ExamineId)),
 				TEXT("true"),
-				BoolText(SaveGame->CompletedObjectiveIds.Contains(FName(IsolateId))),
-				TEXT("save"));
-			AssertTrue(
-				Record, TEXT("saveload.trace_persisted"),
-				SaveGame->CompletedObjectiveIds.Contains(FName(TraceId)),
-				TEXT("true"),
-				BoolText(SaveGame->CompletedObjectiveIds.Contains(FName(TraceId))),
-				TEXT("save"));
-			AssertTrue(
-				Record, TEXT("saveload.follow_persisted"),
-				SaveGame->CompletedObjectiveIds.Contains(FName(FollowId)),
-				TEXT("true"),
-				BoolText(SaveGame->CompletedObjectiveIds.Contains(FName(FollowId))),
+				BoolText(SaveGame->CompletedObjectiveIds.Contains(FName(ExamineId))),
 				TEXT("save"));
 
 			Objectives->ApplyObjectivesFromSaveGame(SaveGame);
 			AssertTrue(
-				Record, TEXT("saveload.isolate_completed"),
-				CountCompletedId(Objectives, FName(IsolateId)) == 1,
+				Record, TEXT("saveload.examine_completed"),
+				CountCompletedId(Objectives, FName(ExamineId)) == 1,
 				TEXT("1"),
-				FString::FromInt(CountCompletedId(Objectives, FName(IsolateId))),
-				IsolateId);
-			AssertTrue(
-				Record, TEXT("saveload.trace_completed"),
-				CountCompletedId(Objectives, FName(TraceId)) == 1,
-				TEXT("1"),
-				FString::FromInt(CountCompletedId(Objectives, FName(TraceId))),
-				TraceId);
-			AssertTrue(
-				Record, TEXT("saveload.follow_completed"),
-				CountCompletedId(Objectives, FName(FollowId)) == 1,
-				TEXT("1"),
-				FString::FromInt(CountCompletedId(Objectives, FName(FollowId))),
-				FollowId);
-			AssertTrue(
-				Record, TEXT("saveload.examine_active"),
-				CountActiveId(Objectives, FName(ExamineId)) == 1,
-				TEXT("1"),
-				FString::FromInt(CountActiveId(Objectives, FName(ExamineId))),
+				FString::FromInt(CountCompletedId(Objectives, FName(ExamineId))),
 				ExamineId);
 
 			AProjectOrganoidInspectableInstrument* Reloaded =
-				SpawnConfiguredNode(World, FName(NodeReloadLabel));
+				SpawnConfiguredInstrument(World, FName(InstrumentReloadLabel));
 			AssertTrue(
 				Record, TEXT("saveload.reload_spawned"),
 				Reloaded != nullptr,
 				TEXT("spawned"),
 				Reloaded ? TEXT("spawned") : TEXT("null"),
-				NodeReloadLabel);
+				InstrumentReloadLabel);
 			if (!Reloaded)
 			{
-				FailAndStop(Owner, Record, TEXT("Failed to spawn identically configured observation-node reload clone."));
+				FailAndStop(Owner, Record, TEXT("Failed to spawn identically configured evidence-instrument reload clone."));
 				return;
 			}
 			AssertTrue(
 				Record, TEXT("saveload.starts_review"),
-				Reloaded->GetInteractionPrompt().ToString() == ReviewPrompt,
-				ReviewPrompt,
+				Reloaded->GetInteractionPrompt().ToString() == InstrumentReviewPrompt,
+				InstrumentReviewPrompt,
 				Reloaded->GetInteractionPrompt().ToString(),
-				NodeReloadLabel);
-			AssertTrue(
-				Record, TEXT("saveload.not_marked_without_interact"),
-				!Reloaded->bHasBeenInspected,
-				TEXT("false"),
-				BoolText(Reloaded->bHasBeenInspected),
-				NodeReloadLabel);
-			AssertTrue(
-				Record, TEXT("saveload.no_disk_path_mutation"),
-				Fixture != nullptr
-					&& Fixture->Tasks.Num() == 4
-					&& FSoftObjectPath(Fixture).ToString() == MissionSoftPath
-					&& !PackageIsDirty(MissionPackage),
-				TEXT("persisted Beat5 clean"),
-				FSoftObjectPath(Fixture).ToString(),
-				TEXT("DA"));
-
+				InstrumentReloadLabel);
 			const int32 ReloadEventsBefore = Reloaded->ObjectiveEventFireCount;
-			const int32 ReloadLinesBefore = Reloaded->InspectionNotificationCount;
 			const bool bReloadInteract = Reloaded->Interact(Character);
 			AssertTrue(
 				Record, TEXT("saveload.review_interact"),
 				bReloadInteract,
 				TEXT("true"),
 				BoolText(bReloadInteract),
-				NodeReloadLabel);
+				InstrumentReloadLabel);
 			AssertTrue(
 				Record, TEXT("saveload.no_event_replay"),
 				Reloaded->ObjectiveEventFireCount == ReloadEventsBefore,
 				TEXT("0"),
 				FString::FromInt(Reloaded->ObjectiveEventFireCount - ReloadEventsBefore),
-				NodeReloadLabel);
+				InstrumentReloadLabel);
 			AssertTrue(
-				Record, TEXT("saveload.no_line_replay"),
-				Reloaded->InspectionNotificationCount == ReloadLinesBefore,
-				TEXT("0"),
-				FString::FromInt(Reloaded->InspectionNotificationCount - ReloadLinesBefore),
-				NodeReloadLabel);
+				Record, TEXT("saveload.no_disk_path_mutation"),
+				Fixture != nullptr
+					&& Fixture->Tasks.Num() == 4
+					&& FSoftObjectPath(Fixture).ToString() == MissionSoftPath
+					&& !PackageIsDirty(MissionPackage),
+				TEXT("persisted Beat6 clean"),
+				FSoftObjectPath(Fixture).ToString(),
+				TEXT("DA"));
 
 			// ---- H. Preservation ----
 			AssertTrue(
@@ -1695,9 +1900,9 @@ namespace
 		}
 	};
 
-	struct FNeuroFollowNeuralSignatureAutoRegister
+	struct FNeuroExamineNeuralChangeEvidenceAutoRegister
 	{
-		FNeuroFollowNeuralSignatureAutoRegister()
+		FNeuroExamineNeuralChangeEvidenceAutoRegister()
 		{
 			FOrganoidPlaytestCatalogEntry Entry;
 			Entry.TestId = TestId;
@@ -1705,11 +1910,11 @@ namespace
 			Entry.MapPackage = MapPackage;
 			Entry.Factory = []() -> TSharedRef<IOrganoidPlaytestCase>
 			{
-				return MakeShared<FNeuroFollowNeuralSignatureFunctional>();
+				return MakeShared<FNeuroExamineNeuralChangeEvidenceFunctional>();
 			};
 			FOrganoidPlaytestRegistry::Register(Entry);
 		}
 	};
 
-	static FNeuroFollowNeuralSignatureAutoRegister GRegisterNeuroFollowNeuralSignature;
+	static FNeuroExamineNeuralChangeEvidenceAutoRegister GRegisterNeuroExamineNeuralChangeEvidence;
 }

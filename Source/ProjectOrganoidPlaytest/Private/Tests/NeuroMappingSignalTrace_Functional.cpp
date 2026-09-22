@@ -1115,10 +1115,14 @@ namespace
 					: FString::FromInt(Task4.Objective.PrerequisiteObjectiveIds.Num()),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("mission.task4_no_events"),
-				Task4.EventTriggers.Num() == 0,
-				TEXT("0"),
-				FString::FromInt(Task4.EventTriggers.Num()),
+				Record, TEXT("mission.task4_event_examined"),
+				Task4.EventTriggers.Num() == 1
+					&& Task4.EventTriggers[0].EventId == FName(TEXT("Event_NeuralChangeEvidenceExamined"))
+					&& Task4.EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Complete,
+				TEXT("Event_NeuralChangeEvidenceExamined/Complete"),
+				Task4.EventTriggers.Num() == 1
+					? Task4.EventTriggers[0].EventId.ToString()
+					: FString::FromInt(Task4.EventTriggers.Num()),
 				TEXT("DA"));
 			AssertTrue(
 				Record, TEXT("mission.no_fifth_task"),
