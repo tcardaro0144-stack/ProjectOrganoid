@@ -142,6 +142,7 @@ bool UProjectOrganoidResearchStationWidget::EquipUnlockedAdaptation(UProjectOrga
 	const bool bOk = BoundStation->TryEquipUnlockedAdaptation(BoundCharacter, AdaptationData);
 	if (bOk)
 	{
+		BoundStation->NotifyCampaignAdaptationEquipped(BoundCharacter, AdaptationData);
 		RefreshPresentation();
 	}
 	return bOk;

@@ -56,6 +56,10 @@ namespace NeuroTargetingWhyFunctional
 	constexpr TCHAR TargetingMissionPackage[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy");
 	constexpr TCHAR TargetingMissionSoftPath[] =
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy.DA_Mission_NeuroTargetingWhy");
+	constexpr TCHAR StationIntroMissionSoftPath[] =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroResearchStationIntro.DA_Mission_NeuroResearchStationIntro");
+	constexpr TCHAR StationIntroMissionId[] = TEXT("Mission_NeuroResearchStationIntro");
+	constexpr TCHAR StationIntroObjectiveId[] = TEXT("Obj_EquipNeuralSlow");
 
 	constexpr TCHAR NeuroGeneticsMissionId[] = TEXT("Mission_NeuroGenetics");
 	constexpr TCHAR RestoreMissionId[] = TEXT("Mission_NeuroPowerRestore");
@@ -554,7 +558,14 @@ namespace NeuroTargetingWhyFunctional
 			}
 			AssertTrue(Record, TEXT("asset.targeting_mission_id"), TargetingDA->MissionId == FName(TargetingMissionId), TargetingMissionId, TargetingDA->MissionId.ToString(), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.targeting_title"), TargetingDA->MissionTitle.ToString() == TargetingMissionTitle, TargetingMissionTitle, TargetingDA->MissionTitle.ToString(), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.targeting_next_null"), TargetingDA->NextMissionAsset.IsNull(), TEXT("null"), TargetingDA->NextMissionAsset.IsNull() ? TEXT("null") : TargetingDA->NextMissionAsset.ToString(), TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("asset.targeting_next_station_intro"),
+				TargetingDA->NextMissionAsset.ToSoftObjectPath().ToString() == StationIntroMissionSoftPath,
+				StationIntroMissionSoftPath,
+				TargetingDA->NextMissionAsset.IsNull()
+					? TEXT("null")
+					: TargetingDA->NextMissionAsset.ToSoftObjectPath().ToString(),
+				TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.targeting_task_count"), TargetingDA->Tasks.Num() == 1, TEXT("1"), FString::FromInt(TargetingDA->Tasks.Num()), TEXT("DA"));
 			if (TargetingDA->Tasks.Num() == 1)
 			{
@@ -1462,11 +1473,17 @@ namespace NeuroTargetingWhyFunctional
 				FString::FromInt(CountCompletedId(Objectives, FName(TargetingObjectiveId))),
 				TargetingObjectiveId);
 			AssertTrue(
-				Record, TEXT("valid.mission_complete"),
-				Objectives->IsMissionComplete(FName(TargetingMissionId)),
-				TEXT("true"),
-				BoolText(Objectives->IsMissionComplete(FName(TargetingMissionId))),
-				TargetingMissionId);
+				Record, TEXT("handoff.station_intro_current"),
+				Objectives->GetActiveMissionId() == FName(StationIntroMissionId),
+				StationIntroMissionId,
+				Objectives->GetActiveMissionId().ToString(),
+				TEXT("mission"));
+			AssertTrue(
+				Record, TEXT("handoff.equip_objective_active"),
+				CountActiveId(Objectives, FName(StationIntroObjectiveId)) == 1,
+				TEXT("1"),
+				FString::FromInt(CountActiveId(Objectives, FName(StationIntroObjectiveId))),
+				StationIntroObjectiveId);
 
 			FireTacticalWeakPoint(Character, Researcher, EProjectOrganoidWeakPointType::LocomotorNerves, true, 25.0f);
 			AssertTrue(Record, TEXT("replay.event_still_one"), Researcher->LessonSuccessEventFireCount == 1, TEXT("1"), FString::FromInt(Researcher->LessonSuccessEventFireCount), ResearcherLabel);

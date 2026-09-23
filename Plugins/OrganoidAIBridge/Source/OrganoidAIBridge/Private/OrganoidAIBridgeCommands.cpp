@@ -520,6 +520,10 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_targeting_why_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_power_restore_next_targeting_why")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_researcher_targeting_why")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_research_station_intro_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_targeting_why_next_research_station")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_research_station_intro")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neural_slow_adaptation_asset")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
@@ -593,6 +597,10 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_targeting_why_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_power_restore_next_targeting_why")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_researcher_targeting_why")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_research_station_intro_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_targeting_why_next_research_station")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_research_station_intro")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neural_slow_adaptation_asset")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
@@ -1814,6 +1822,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_neuro_targeting_why_mission")
 		|| Normalized == TEXT("set_neuro_power_restore_next_targeting_why")
 		|| Normalized == TEXT("configure_neuro_researcher_targeting_why")
+		|| Normalized == TEXT("create_neuro_research_station_intro_mission")
+		|| Normalized == TEXT("set_neuro_targeting_why_next_research_station")
+		|| Normalized == TEXT("configure_neuro_research_station_intro")
+		|| Normalized == TEXT("create_neural_slow_adaptation_asset")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_terminal")

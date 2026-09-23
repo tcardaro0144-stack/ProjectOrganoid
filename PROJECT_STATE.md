@@ -2891,3 +2891,113 @@ Dual-approved change IDs (session-local; do not reuse). Approvals: user `Tom Car
 
 - Beat 8 V1 is implemented, persisted, and validated.
 - Do not begin Beat 9 until separately authorized.
+
+---
+
+## Neuro Beat 9 V1 — Research Station intro (2026-09-23)
+
+**Status:** implemented, persisted, validated. Changes left **unstaged**. No commit / no push / no Beat 10.
+
+**Baseline:** `main` / HEAD / published = `e7bf74bb8869f7c0d8c4712e0314ab88b89cdc77`
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Gameplay slice
+
+- New mission asset: `/Game/Data/Missions/DA_Mission_NeuroResearchStationIntro`
+  - Mission ID: `Mission_NeuroResearchStationIntro`
+  - Title: `Use the Research Station`
+  - Description: `Mount the neural adaptation at the NeuroGenetics Research Station.`
+  - Exactly one Main task: `Obj_EquipNeuralSlow` (autoactivate, target 1, no prerequisite)
+  - Title: `Equip Neural Slow`
+  - Complete event: `Event_NeuralSlowEquipped`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroTargetingWhy.NextMissionAsset` → `DA_Mission_NeuroResearchStationIntro`
+  - Completing TargetingWhy activates the intro mission and `Obj_EquipNeuralSlow`
+- New adaptation asset: `/Game/Data/Adaptations/DA_Adaptation_NeuralSlow`
+  - Class: `UProjectOrganoidBiologicalAdaptation_NeuralSlow`
+  - Constructor defaults only: id `NeuralSlow`, PE 20, cooldown 8, range 800, duration 4, speed multiplier 0.6
+- Station: `ResearchStation_NeuroGenetics` remains `AProjectOrganoidResearchStation` at `(800, -1600, -1100)`, yaw 180, prompt `Use Research Station`
+  - Required active objective `Obj_EquipNeuralSlow`
+  - Unlock and credit adaptation: `DA_Adaptation_NeuralSlow`
+  - Success event `Event_NeuralSlowEquipped`
+  - Replay guard `Obj_EquipNeuralSlow`
+  - Nathan, 7.0s, once: `Neural Slow is mounted. Research Stations can swap unlocked adaptations without spending SOT.`
+- Before the objective is Active, the station opens normally and grants no Neural Slow unlock, event, or credit.
+- While a Researcher is in Pursue or Attack, interaction is blocked and grants no credit. Production Search/clear releases the lock. The Researcher is not killed, despawned, teleported, or disabled.
+- The first valid interaction with this station unlocks only Neural Slow. Stabilized Barrel and other adaptations stay unchanged. SOT and PE do not decrease. The widget opens through the production path.
+- Real Equip Neural Slow equips the data asset, fires `Event_NeuralSlowEquipped` once, shows the Nathan line once, and completes the one-task mission.
+- A wrong station, failed equip, barrel action, unequip/remove, or a different adaptation does not earn credit. Repeat open/equip does not replay the event or line.
+- Already unlocked but unequipped still requires a real equip. Already equipped away from the station does not complete on load; visiting this station reconciles once.
+- Save/load keeps Neural Slow unlocked and equipped, keeps mission completion, and does not replay the event. Neuro remains Online. Cryo remains Blackout.
+
+### Missing asset
+
+`Resolve()` loads `/Game/Data/Adaptations/DA_Adaptation_NeuralSlow.DA_Adaptation_NeuralSlow` and falls back to the class default only when that load fails. The package was absent, so the first intro test equipped the class default and campaign credit correctly refused it. The class default was not adopted as the save identity. The missing data asset was created and saved at that path. `Resolve()` then returned the persisted asset.
+
+### Bridge / persistence
+
+Dual-approved change IDs (session-local; do not reuse). Approvals: user `Tom Cardaro` + second_review `Arena`.
+- create intro mission: `chg_5708063b-4752-9e2e-682d-bfab44793385`
+- set TargetingWhy next: `chg_89ef7dfe-482e-b667-273a-2b868f8279fc`
+- configure station: `chg_c397e18b-4112-b206-e159-3db1e9df90e7`
+- save intro mission: `chg_096ae47f-49a4-744f-b279-25b4cf31de7a`
+- save TargetingWhy: `chg_bf4be1d4-42da-347a-b6d9-f493ee42295a`
+- Neuro-only map save: `chg_a1d1095c-4db4-3b9b-02b3-8ba94e2d5a95`
+- create Neural Slow asset: `chg_bdb3babb-4fc6-2037-9e9e-77b3c057ec5d`
+- save Neural Slow asset: `chg_8e8f2e67-4061-e86e-4a1a-95bfcced2a45`
+- No Save All. No Admin, `Lvl_Epitope`, Cryo, or navigation save.
+
+### Validation
+
+Preserved station results, not rerun in the final checkpoint:
+- `NeuroResearchStationIntro_Functional` **91/91** — `ptr_7286fda5-4979-9b76-38b5-d5bc07990b84`
+- `ResearchStation_Functional` **58/58** — `ptr_d80006f2-4568-3e43-fbc8-b8b466af235f`
+- `NeuroResearchStationPlacement_Functional` **49/49** — `ptr_479414ff-4a47-ae72-d842-b1a64dc768a3`
+- Station subtotal **198/198**
+
+Checkpoint, each once:
+- `BiologicalAdaptation_Functional` **59/59** — `ptr_816f785d-4124-a42a-b37d-5c98dc834437`
+- `NeuroTargetingWhy_Functional` **74/74** — `ptr_32834ed9-4935-5b6a-e0a7-0c9f480df071`
+- `NeuroRestoreLabPower_Functional` **116/116** — `ptr_84c95080-418b-7d5a-d5e7-97ac26959239`
+- `NeuroExamineNeuralChangeEvidence_Functional` **143/143** — `ptr_fb412987-4cce-0a9b-c0c7-94b54f258468`
+- `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_eae35ae4-4c72-122f-3468-a195296390f8`
+- `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_c49f4c43-40a4-4a6d-3c83-60b4d2cd07a6`
+- `NeuroResearchLoadCutoff_Functional` **173/173** — `ptr_15f166d1-437c-0b46-408e-849f6d566cf9`
+- `NeuroResearchFloorArray_Functional` **127/127** — `ptr_af23e45f-459f-6713-00c9-9b8bf308c419`
+- `OpeningFoundation_Functional` **48/48** — `ptr_0821d63f-4c6a-7888-661b-09ba4c8d1a49`
+- `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_cbddc431-43b0-6051-f87a-5f95d20a851b`
+- `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_9f445849-4d4a-a1bb-a759-fdbbdc9d707d`
+- `PETactical_Functional` **18/18** — `ptr_5309da31-42eb-656c-4f48-faa64b3132bd`
+- `HostCombatLoop_Functional` **33/33** — `ptr_2d5e583d-4811-bad4-1a4a-669683561606`
+- Newly run subtotal **1207/1207**
+- **Combined total 1405/1405**
+
+`NeuroTargetingWhy_Functional` is 74 rather than the Beat 8 count of 73 because the handoff now expects `DA_Mission_NeuroResearchStationIntro`.
+
+### Persisted asset hashes
+
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009`
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `150e60ca986b1469c14d32036f928d0df0cca0e33610632af0e796ea71690f08`
+- `Content/Data/Missions/DA_Mission_NeuroTargetingWhy.uasset` SHA-256: `9497d81c8211b7b34af10abb302f65673de8f1d8da7a6266580f2738569587be`
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `0c0a470934a725d5799e1d3aeddb93b25febbcb7347902bfd500695f1a1e979f`
+
+### Preservation / audit
+
+- Dirty packages before close: `[]`. No additional save.
+- Clean editor close via main-window close: no UnrealEditor, UnrealBuildTool, LiveCodingConsole, or ShaderCompileWorker remaining. Bridge unreachable.
+- Canon, `EngineAssociation`, Admin, `Lvl_Epitope`, and Cryo unchanged.
+- Navigation data, audio, camera/POV, and the testing-bot left-click workaround were not modified.
+- The Neural Slow asset exists once. It is not a redirector and does not store the class-default object path. The Neuro map stores the data-asset path.
+- Index empty; changes left **unstaged** (no commit / no push)
+
+### Deferred issues (not fixed)
+
+1. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder. This is implementation drift and requires a future camera conversion.
+2. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+3. Persistent beep begins at reception and continues through gameplay; source remains unresolved.
+4. Testing-bot simulated-left-click workaround remains and should be removed when the beep is correctly fixed.
+
+### Next boundary
+
+- Beat 9 V1 is implemented, persisted, and validated.
+- Do not begin Beat 10 until separately authorized.

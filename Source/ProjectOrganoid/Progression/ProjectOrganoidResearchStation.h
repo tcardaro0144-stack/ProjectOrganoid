@@ -3,14 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ProjectOrganoidBiologicalAdaptationTypes.h"
 #include "ProjectOrganoidInteractable.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidWeaponModTypes.h"
 #include "ProjectOrganoidResearchStation.generated.h"
 
 class AProjectOrganoidCharacter;
 class UProjectOrganoidResearchStationWidget;
 class UProjectOrganoidWeaponModData;
-class UProjectOrganoidBiologicalAdaptationData;
 class UStaticMeshComponent;
 
 /**
@@ -72,8 +73,63 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ResearchStation|Adaptations")
 	bool TryUnequipAdaptation(AProjectOrganoidCharacter* Character);
 
+	/**
+	 * Called by the station widget only after TryEquipUnlockedAdaptation returns success.
+	 * Default-off. No credit unless the campaign contract is configured and the equipped
+	 * adaptation matches CampaignCreditAdaptation.
+	 */
+	void NotifyCampaignAdaptationEquipped(
+		AProjectOrganoidCharacter* Character,
+		UProjectOrganoidBiologicalAdaptationData* AdaptationData);
+
+	/**
+	 * Optional campaign contract (default off). When CampaignRequiredActiveObjectiveId is None,
+	 * the station keeps its existing free-remount behavior: no unlock, no objective event.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	FName CampaignRequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	TSoftObjectPtr<UProjectOrganoidBiologicalAdaptationData> CampaignUnlockAdaptation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	TSoftObjectPtr<UProjectOrganoidBiologicalAdaptationData> CampaignCreditAdaptation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	FName CampaignSuccessObjectiveEventId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	FName CampaignReplayGuardObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	FText CampaignSuccessNotificationSpeaker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign")
+	FText CampaignSuccessNotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Campaign", meta = (ClampMin = "0.0"))
+	float CampaignSuccessNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|Campaign")
+	int32 CampaignSuccessNotificationCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|Campaign")
+	int32 CampaignSuccessEventFireCount = 0;
+
 protected:
 
 	UPROPERTY()
 	TObjectPtr<UProjectOrganoidResearchStationWidget> ActiveStationWidget;
+
+	bool IsCampaignContractConfigured() const;
+	bool IsCampaignObjectiveInState(FName ObjectiveId, EProjectOrganoidObjectiveState State) const;
+	bool IsCampaignObjectiveActive() const;
+	bool IsCampaignReplayGuardCompleted() const;
+	bool AdaptationMatchesSoft(
+		const TSoftObjectPtr<UProjectOrganoidBiologicalAdaptationData>& Soft,
+		const UProjectOrganoidBiologicalAdaptationData* AdaptationData) const;
+	void ApplyCampaignUnlockIfActive(AProjectOrganoidCharacter* Interactor);
+	void TryReconcileCampaignIfAlreadyEquipped(AProjectOrganoidCharacter* Interactor);
+	void AwardCampaignEquipCredit(AProjectOrganoidCharacter* Interactor);
+	void PresentCampaignSuccessNotification(AProjectOrganoidCharacter* Interactor);
 };

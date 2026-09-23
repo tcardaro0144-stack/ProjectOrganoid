@@ -147,6 +147,10 @@ namespace
 		TEXT("create_neuro_targeting_why_mission"),
 		TEXT("set_neuro_power_restore_next_targeting_why"),
 		TEXT("configure_neuro_researcher_targeting_why"),
+		TEXT("create_neuro_research_station_intro_mission"),
+		TEXT("set_neuro_targeting_why_next_research_station"),
+		TEXT("configure_neuro_research_station_intro"),
+		TEXT("create_neural_slow_adaptation_asset"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -199,6 +203,10 @@ namespace
 		TEXT("create_neuro_targeting_why_mission"),
 		TEXT("set_neuro_power_restore_next_targeting_why"),
 		TEXT("configure_neuro_researcher_targeting_why"),
+		TEXT("create_neuro_research_station_intro_mission"),
+		TEXT("set_neuro_targeting_why_next_research_station"),
+		TEXT("configure_neuro_research_station_intro"),
+		TEXT("create_neural_slow_adaptation_asset"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -3140,6 +3148,10 @@ namespace
 #include "OrganoidAIBridgeNeuroTargetingWhyMission.inl"
 #include "OrganoidAIBridgeNeuroPowerRestoreNextTargetingWhy.inl"
 #include "OrganoidAIBridgeNeuroResearcherTargetingWhy.inl"
+#include "OrganoidAIBridgeNeuroResearchStationIntroMission.inl"
+#include "OrganoidAIBridgeNeuroTargetingWhyNextResearchStation.inl"
+#include "OrganoidAIBridgeNeuroResearchStationIntro.inl"
+#include "OrganoidAIBridgeNeuralSlowAdaptationAsset.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
@@ -3801,6 +3813,22 @@ namespace
 		{
 			PreflightError = PreflightConfigureNeuroResearcherTargetingWhy(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_research_station_intro_mission"))
+		{
+			PreflightError = PreflightCreateNeuroResearchStationIntroMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neuro_targeting_why_next_research_station"))
+		{
+			PreflightError = PreflightSetNeuroTargetingWhyNextResearchStation(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_neuro_research_station_intro"))
+		{
+			PreflightError = PreflightConfigureNeuroResearchStationIntro(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_neural_slow_adaptation_asset"))
+		{
+			PreflightError = PreflightCreateNeuralSlowAdaptationAsset(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{
 			PreflightError = PreflightSpawnNeuroNeuralMappingArray(Args, Before, Proposed);
@@ -3881,6 +3909,9 @@ namespace
 			|| Action == TEXT("create_neuro_targeting_why_mission")
 			|| Action == TEXT("set_neuro_power_restore_next_targeting_why")
 			|| Action == TEXT("configure_neuro_researcher_targeting_why")
+			|| Action == TEXT("create_neuro_research_station_intro_mission")
+			|| Action == TEXT("set_neuro_targeting_why_next_research_station")
+			|| Action == TEXT("configure_neuro_research_station_intro")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
 			|| Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -3899,6 +3930,10 @@ namespace
 			|| Action == TEXT("save_admin_block4_navmesh_prerequisite"))
 		{
 			Package = AdminPackage;
+		}
+		else if (Action == TEXT("create_neural_slow_adaptation_asset"))
+		{
+			Package = NeuralSlowAdaptationPackage;
 		}
 		else if (Action == TEXT("trim_spine_landing_admin"))
 		{
@@ -5049,6 +5084,10 @@ namespace
 				|| Change->Action == TEXT("create_neuro_targeting_why_mission")
 				|| Change->Action == TEXT("set_neuro_power_restore_next_targeting_why")
 				|| Change->Action == TEXT("configure_neuro_researcher_targeting_why")
+				|| Change->Action == TEXT("create_neuro_research_station_intro_mission")
+				|| Change->Action == TEXT("set_neuro_targeting_why_next_research_station")
+				|| Change->Action == TEXT("configure_neuro_research_station_intro")
+				|| Change->Action == TEXT("create_neural_slow_adaptation_asset")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -5263,6 +5302,22 @@ namespace
 		if (Change->Action == TEXT("configure_neuro_researcher_targeting_why"))
 		{
 			return ExecuteConfigureNeuroResearcherTargetingWhy(*Change);
+		}
+		if (Change->Action == TEXT("create_neuro_research_station_intro_mission"))
+		{
+			return ExecuteCreateNeuroResearchStationIntroMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neuro_targeting_why_next_research_station"))
+		{
+			return ExecuteSetNeuroTargetingWhyNextResearchStation(*Change);
+		}
+		if (Change->Action == TEXT("configure_neuro_research_station_intro"))
+		{
+			return ExecuteConfigureNeuroResearchStationIntro(*Change);
+		}
+		if (Change->Action == TEXT("create_neural_slow_adaptation_asset"))
+		{
+			return ExecuteCreateNeuralSlowAdaptationAsset(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{

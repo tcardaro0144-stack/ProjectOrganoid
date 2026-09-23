@@ -1,14 +1,16 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidResearchStation.h"
+#include "ProjectOrganoidBiologicalAdaptationComponent.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidEncounterPresenceSubsystem.h"
+#include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidGameplayHUDController.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidResearchStationWidget.h"
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeaponModComponent.h"
-#include "ProjectOrganoidBiologicalAdaptationComponent.h"
-#include "ProjectOrganoidBiologicalAdaptationTypes.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
@@ -65,6 +67,8 @@ bool AProjectOrganoidResearchStation::Interact_Implementation(AProjectOrganoidCh
 		return false;
 	}
 
+	ApplyCampaignUnlockIfActive(Interactor);
+	TryReconcileCampaignIfAlreadyEquipped(Interactor);
 	return OpenResearchStationUI(Interactor) != nullptr;
 }
 
@@ -191,4 +195,173 @@ bool AProjectOrganoidResearchStation::TryUnequipAdaptation(AProjectOrganoidChara
 
 	UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = Character->GetBiologicalAdaptationComponent();
 	return AdaptComp && AdaptComp->UnequipAdaptation();
+}
+
+bool AProjectOrganoidResearchStation::IsCampaignContractConfigured() const
+{
+	return !CampaignRequiredActiveObjectiveId.IsNone()
+		&& !CampaignUnlockAdaptation.IsNull()
+		&& !CampaignCreditAdaptation.IsNull()
+		&& !CampaignSuccessObjectiveEventId.IsNone()
+		&& !CampaignReplayGuardObjectiveId.IsNone();
+}
+
+bool AProjectOrganoidResearchStation::IsCampaignObjectiveInState(
+	FName ObjectiveId,
+	EProjectOrganoidObjectiveState State) const
+{
+	if (ObjectiveId.IsNone())
+	{
+		return false;
+	}
+
+	const UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance)
+	{
+		return false;
+	}
+
+	const UProjectOrganoidObjectiveSubsystem* Objectives = GameInstance->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	return Objectives->GetObjective(ObjectiveId, Objective) && Objective.State == State;
+}
+
+bool AProjectOrganoidResearchStation::IsCampaignObjectiveActive() const
+{
+	return IsCampaignObjectiveInState(CampaignRequiredActiveObjectiveId, EProjectOrganoidObjectiveState::Active);
+}
+
+bool AProjectOrganoidResearchStation::IsCampaignReplayGuardCompleted() const
+{
+	return IsCampaignObjectiveInState(CampaignReplayGuardObjectiveId, EProjectOrganoidObjectiveState::Completed);
+}
+
+bool AProjectOrganoidResearchStation::AdaptationMatchesSoft(
+	const TSoftObjectPtr<UProjectOrganoidBiologicalAdaptationData>& Soft,
+	const UProjectOrganoidBiologicalAdaptationData* AdaptationData) const
+{
+	if (!AdaptationData || Soft.IsNull())
+	{
+		return false;
+	}
+
+	if (Soft.Get() == AdaptationData)
+	{
+		return true;
+	}
+
+	if (Soft.ToSoftObjectPath() == FSoftObjectPath(AdaptationData))
+	{
+		return true;
+	}
+
+	return Soft.LoadSynchronous() == AdaptationData;
+}
+
+void AProjectOrganoidResearchStation::ApplyCampaignUnlockIfActive(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor || !IsCampaignContractConfigured() || !IsCampaignObjectiveActive() || IsCampaignReplayGuardCompleted())
+	{
+		return;
+	}
+
+	UProjectOrganoidBiologicalAdaptationData* UnlockData = CampaignUnlockAdaptation.LoadSynchronous();
+	UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = Interactor->GetBiologicalAdaptationComponent();
+	if (!UnlockData || !AdaptComp || AdaptComp->IsAdaptationUnlocked(UnlockData))
+	{
+		return;
+	}
+
+	AdaptComp->UnlockAdaptation(UnlockData);
+}
+
+void AProjectOrganoidResearchStation::TryReconcileCampaignIfAlreadyEquipped(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor
+		|| !IsCampaignContractConfigured()
+		|| CampaignSuccessEventFireCount > 0
+		|| !IsCampaignObjectiveActive()
+		|| IsCampaignReplayGuardCompleted())
+	{
+		return;
+	}
+
+	UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = Interactor->GetBiologicalAdaptationComponent();
+	if (!AdaptComp || !AdaptationMatchesSoft(CampaignCreditAdaptation, AdaptComp->GetEquippedAdaptation()))
+	{
+		return;
+	}
+
+	AwardCampaignEquipCredit(Interactor);
+}
+
+void AProjectOrganoidResearchStation::NotifyCampaignAdaptationEquipped(
+	AProjectOrganoidCharacter* Character,
+	UProjectOrganoidBiologicalAdaptationData* AdaptationData)
+{
+	if (!Character
+		|| !IsCampaignContractConfigured()
+		|| CampaignSuccessEventFireCount > 0
+		|| !IsCampaignObjectiveActive()
+		|| IsCampaignReplayGuardCompleted()
+		|| !AdaptationMatchesSoft(CampaignCreditAdaptation, AdaptationData))
+	{
+		return;
+	}
+
+	AwardCampaignEquipCredit(Character);
+}
+
+void AProjectOrganoidResearchStation::AwardCampaignEquipCredit(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor || CampaignSuccessObjectiveEventId.IsNone() || CampaignSuccessEventFireCount > 0)
+	{
+		return;
+	}
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GameInstance->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(CampaignSuccessObjectiveEventId);
+		}
+	}
+
+	++CampaignSuccessEventFireCount;
+	PresentCampaignSuccessNotification(Interactor);
+}
+
+void AProjectOrganoidResearchStation::PresentCampaignSuccessNotification(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor || CampaignSuccessNotificationText.IsEmpty() || CampaignSuccessNotificationDurationSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
+	UWorld* World = GetWorld();
+	if (!PC || !World)
+	{
+		return;
+	}
+
+	AProjectOrganoidGameMode* GameMode = World->GetAuthGameMode<AProjectOrganoidGameMode>();
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (!HUDController)
+	{
+		return;
+	}
+
+	if (HUDController->ShowTransientNotification(
+			CampaignSuccessNotificationSpeaker,
+			CampaignSuccessNotificationText,
+			CampaignSuccessNotificationDurationSeconds))
+	{
+		++CampaignSuccessNotificationCount;
+	}
 }
