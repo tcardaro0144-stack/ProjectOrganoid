@@ -16,7 +16,10 @@
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidStatsSubsystem.h"
+#include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "CollisionQueryParams.h"
 #include "CollisionShape.h"
 #include "Engine/World.h"
@@ -97,6 +100,7 @@ void AProjectOrganoidHostBase::BeginPlay()
 	SyncHostPerception();
 	EnsureHostAIController();
 	BindHostPerceptionToController();
+	SyncLessonCompletedFromObjectives();
 
 	if (HostPerception)
 	{
@@ -142,6 +146,11 @@ void AProjectOrganoidHostBase::SyncHostPerception()
 bool AProjectOrganoidHostBase::ActivateEncounter()
 {
 	if (IsEncounterActivated())
+	{
+		return false;
+	}
+
+	if (!CanOpenEncounterActivationGate())
 	{
 		return false;
 	}
@@ -616,6 +625,7 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 		{
 			DestroyWeakPoint(EProjectOrganoidWeakPointType::LocomotorNerves);
 		}
+		TryAwardBiologicalTargetingLesson(HitInfo, DamageCauser);
 		break;
 	case EProjectOrganoidWeakPointType::OpticalNodes:
 		ApplyOpticalNodeReaction();
@@ -623,6 +633,7 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 		{
 			DestroyWeakPoint(EProjectOrganoidWeakPointType::OpticalNodes);
 		}
+		TryAwardBiologicalTargetingLesson(HitInfo, DamageCauser);
 		break;
 	case EProjectOrganoidWeakPointType::OrganoidCore:
 		ApplyBioCoreReaction(HitInfo.bTriggeredIncapacitation);
@@ -630,6 +641,7 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 		{
 			DestroyWeakPoint(EProjectOrganoidWeakPointType::OrganoidCore);
 		}
+		TryAwardBiologicalTargetingLesson(HitInfo, DamageCauser);
 		break;
 	default:
 		SetStaggered(true);
@@ -641,6 +653,7 @@ void AProjectOrganoidHostBase::ApplyOrganoidHit_Implementation(const FProjectOrg
 		SetDismembered(true);
 		ApplyLocomotorNerveReaction();
 		DestroyWeakPoint(EProjectOrganoidWeakPointType::LocomotorNerves);
+		TryAwardBiologicalTargetingLesson(HitInfo, DamageCauser);
 	}
 
 	if (HitInfo.bTriggeredIncapacitation)
@@ -1093,6 +1106,245 @@ void AProjectOrganoidHostBase::HandleDeath()
 		if (UProjectOrganoidStatsSubsystem* Stats = GI->GetSubsystem<UProjectOrganoidStatsSubsystem>())
 		{
 			Stats->RecordHostKill(1);
+		}
+	}
+}
+
+bool AProjectOrganoidHostBase::IsLessonContractConfigured() const
+{
+	return !RequiredActiveObjectiveId.IsNone()
+		&& RequiredLessonWeakPoint != EProjectOrganoidWeakPointType::None
+		&& !LessonSuccessObjectiveEventId.IsNone();
+}
+
+bool AProjectOrganoidHostBase::IsLessonObjectiveActive() const
+{
+	if (RequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	if (!GI)
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(RequiredActiveObjectiveId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Active;
+}
+
+bool AProjectOrganoidHostBase::IsLessonReplayGuardCompleted() const
+{
+	const FName GuardId = LessonCompletedObjectiveReplayGuardId.IsNone()
+		? RequiredActiveObjectiveId
+		: LessonCompletedObjectiveReplayGuardId;
+	if (GuardId.IsNone())
+	{
+		return false;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	if (!GI)
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(GuardId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Completed;
+}
+
+bool AProjectOrganoidHostBase::CanOpenEncounterActivationGate() const
+{
+	if (!IsLessonContractConfigured())
+	{
+		return true;
+	}
+
+	if (IsLessonReplayGuardCompleted() || LessonSuccessEventFireCount > 0)
+	{
+		return false;
+	}
+
+	return IsLessonObjectiveActive();
+}
+
+bool AProjectOrganoidHostBase::HasAppliedLessonWeakPointEffect(const FProjectOrganoidBallisticHit& HitInfo) const
+{
+	if (HitInfo.WeakPoint != RequiredLessonWeakPoint)
+	{
+		return false;
+	}
+
+	switch (RequiredLessonWeakPoint)
+	{
+	case EProjectOrganoidWeakPointType::LocomotorNerves:
+	{
+		if (bIsStaggered || bLocomotorNervesDestroyed || bIsDismembered)
+		{
+			return true;
+		}
+		if (const UWorld* World = GetWorld())
+		{
+			return World->GetTimerManager().IsTimerActive(LocomotorSlowTimer);
+		}
+		return false;
+	}
+	case EProjectOrganoidWeakPointType::OpticalNodes:
+		return bIsBlinded;
+	case EProjectOrganoidWeakPointType::OrganoidCore:
+		return bIsStaggered || bIsIncapacitated;
+	default:
+		return false;
+	}
+}
+
+void AProjectOrganoidHostBase::TryAwardBiologicalTargetingLesson(
+	const FProjectOrganoidBallisticHit& HitInfo,
+	AActor* DamageCauser)
+{
+	if (!IsLessonContractConfigured())
+	{
+		return;
+	}
+
+	if (LessonSuccessEventFireCount > 0 || IsLessonReplayGuardCompleted())
+	{
+		return;
+	}
+
+	if (!IsLessonObjectiveActive())
+	{
+		return;
+	}
+
+	if (bLessonRequiresTacticalMode && !HitInfo.bTacticalModeHit)
+	{
+		return;
+	}
+
+	if (HitInfo.WeakPoint != RequiredLessonWeakPoint)
+	{
+		return;
+	}
+
+	if (!HasAppliedLessonWeakPointEffect(HitInfo))
+	{
+		return;
+	}
+
+	NotifyLessonObjectiveEvent(LessonSuccessObjectiveEventId);
+	++LessonSuccessEventFireCount;
+	PresentLessonSuccessNotification(DamageCauser);
+}
+
+void AProjectOrganoidHostBase::NotifyLessonObjectiveEvent(FName EventId) const
+{
+	if (EventId.IsNone())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(EventId);
+		}
+	}
+}
+
+void AProjectOrganoidHostBase::PresentLessonSuccessNotification(AActor* DamageCauser)
+{
+	if (LessonSuccessNotificationText.IsEmpty() || LessonSuccessNotificationDurationSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	AProjectOrganoidCharacter* Character = Cast<AProjectOrganoidCharacter>(DamageCauser);
+	if (!Character)
+	{
+		if (APawn* Pawn = Cast<APawn>(DamageCauser))
+		{
+			Character = Cast<AProjectOrganoidCharacter>(Pawn);
+		}
+	}
+	if (!Character)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			Character = Cast<AProjectOrganoidCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+		}
+	}
+
+	APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	AProjectOrganoidGameMode* GameMode = World->GetAuthGameMode<AProjectOrganoidGameMode>();
+	if (!GameMode)
+	{
+		return;
+	}
+
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode->GetHUDControllerForPlayer(PC);
+	if (!HUDController)
+	{
+		return;
+	}
+
+	if (HUDController->ShowTransientNotification(
+			LessonSuccessNotificationSpeaker,
+			LessonSuccessNotificationText,
+			LessonSuccessNotificationDurationSeconds))
+	{
+		++LessonSuccessNotificationCount;
+	}
+}
+
+void AProjectOrganoidHostBase::SyncLessonCompletedFromObjectives()
+{
+	if (!IsLessonContractConfigured())
+	{
+		return;
+	}
+
+	if (IsLessonReplayGuardCompleted())
+	{
+		// Persist-completed lesson: never rearm encounter or re-fire credit.
+		if (LessonSuccessEventFireCount == 0)
+		{
+			LessonSuccessEventFireCount = 1;
 		}
 	}
 }

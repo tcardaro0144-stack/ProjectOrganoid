@@ -1,55 +1,55 @@
-	// Fixed Neuro Power Restore mission — create_neuro_power_restore_mission / neuro_power_restore_mission_v1.
-	const TCHAR* NeuroPowerRestoreMissionSpec = TEXT("neuro_power_restore_mission_v1");
-	const TCHAR* NeuroPowerRestoreMissionAction = TEXT("create_neuro_power_restore_mission");
-	const TCHAR* NeuroPowerRestoreMissionPackage = TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore");
-	const TCHAR* NeuroPowerRestoreMissionObjectPath =
-		TEXT("/Game/Data/Missions/DA_Mission_NeuroPowerRestore.DA_Mission_NeuroPowerRestore");
-	const TCHAR* NeuroPowerRestoreMissionAssetName = TEXT("DA_Mission_NeuroPowerRestore");
-	const TCHAR* NeuroPowerRestoreMissionId = TEXT("Mission_NeuroPowerRestore");
-	const TCHAR* NeuroPowerRestoreMissionTitle = TEXT("Restore NeuroGenetics Power");
-	const TCHAR* NeuroPowerRestoreMissionDescription =
-		TEXT("Bring the NeuroGenetics research wing back online using its backup power panel.");
-	const TCHAR* NeuroPowerRestoreObjectiveId = TEXT("Obj_RestoreNeuroLabPower");
-	const TCHAR* NeuroPowerRestoreObjectiveTitle = TEXT("Restore NeuroGenetics power");
-	const TCHAR* NeuroPowerRestoreObjectiveDescription =
-		TEXT("Use the backup panel to bring the NeuroGenetics sector online.");
-	const TCHAR* NeuroPowerRestoreEventId = TEXT("Event_NeuroPowerRestored");
+	// Fixed Neuro Targeting Why mission — create_neuro_targeting_why_mission / neuro_targeting_why_mission_v1.
+	const TCHAR* NeuroTargetingWhyMissionSpec = TEXT("neuro_targeting_why_mission_v1");
+	const TCHAR* NeuroTargetingWhyMissionAction = TEXT("create_neuro_targeting_why_mission");
+	const TCHAR* NeuroTargetingWhyMissionPackage = TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy");
+	const TCHAR* NeuroTargetingWhyMissionObjectPath =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy.DA_Mission_NeuroTargetingWhy");
+	const TCHAR* NeuroTargetingWhyMissionAssetName = TEXT("DA_Mission_NeuroTargetingWhy");
+	const TCHAR* NeuroTargetingWhyMissionId = TEXT("Mission_NeuroTargetingWhy");
+	const TCHAR* NeuroTargetingWhyMissionTitle = TEXT("Target the Nervous System");
+	const TCHAR* NeuroTargetingWhyMissionDescription =
+		TEXT("Apply the neural evidence against a live Host using tactical biological targeting.");
+	const TCHAR* NeuroTargetingWhyObjectiveId = TEXT("Obj_ImpairHostLocomotorNerves");
+	const TCHAR* NeuroTargetingWhyObjectiveTitle = TEXT("Impair the Host’s locomotor nerves");
+	const TCHAR* NeuroTargetingWhyObjectiveDescription =
+		TEXT("Use tactical mode (RMB) and hit the Researcher Host’s Locomotor Nerves.");
+	const TCHAR* NeuroTargetingWhyEventId = TEXT("Event_NeuroLocomotorTargetDemonstrated");
 
-	UObject* FindNeuroPowerRestoreMissionAssetExact()
+	UObject* FindNeuroTargetingWhyMissionAssetExact()
 	{
-		if (UObject* Found = StaticFindObject(nullptr, nullptr, NeuroPowerRestoreMissionObjectPath))
+		if (UObject* Found = StaticFindObject(nullptr, nullptr, NeuroTargetingWhyMissionObjectPath))
 		{
 			return Found;
 		}
-		return StaticLoadObject(UObject::StaticClass(), nullptr, NeuroPowerRestoreMissionObjectPath);
+		return StaticLoadObject(UObject::StaticClass(), nullptr, NeuroTargetingWhyMissionObjectPath);
 	}
 
-	TSharedRef<FJsonObject> NeuroPowerRestoreMissionProposedState(bool bAlreadyExact)
+	TSharedRef<FJsonObject> NeuroTargetingWhyMissionProposedState(bool bAlreadyExact)
 	{
 		TSharedRef<FJsonObject> Task = MakeShared<FJsonObject>();
-		Task->SetStringField(TEXT("objective_id"), NeuroPowerRestoreObjectiveId);
-		Task->SetStringField(TEXT("title"), NeuroPowerRestoreObjectiveTitle);
-		Task->SetStringField(TEXT("description"), NeuroPowerRestoreObjectiveDescription);
+		Task->SetStringField(TEXT("objective_id"), NeuroTargetingWhyObjectiveId);
+		Task->SetStringField(TEXT("title"), NeuroTargetingWhyObjectiveTitle);
+		Task->SetStringField(TEXT("description"), NeuroTargetingWhyObjectiveDescription);
 		Task->SetStringField(TEXT("category"), TEXT("Main"));
 		Task->SetNumberField(TEXT("target_count"), 1);
 		Task->SetBoolField(TEXT("b_auto_activate"), true);
 		Task->SetArrayField(TEXT("prerequisite_objective_ids"), TArray<TSharedPtr<FJsonValue>>());
-		Task->SetStringField(TEXT("complete_event"), NeuroPowerRestoreEventId);
+		Task->SetStringField(TEXT("complete_event"), NeuroTargetingWhyEventId);
 
 		TArray<TSharedPtr<FJsonValue>> Tasks;
 		Tasks.Add(MakeShared<FJsonValueObject>(Task));
 
 		TSharedRef<FJsonObject> Mission = MakeShared<FJsonObject>();
-		Mission->SetStringField(TEXT("mission_id"), NeuroPowerRestoreMissionId);
-		Mission->SetStringField(TEXT("mission_title"), NeuroPowerRestoreMissionTitle);
-		Mission->SetStringField(TEXT("mission_description"), NeuroPowerRestoreMissionDescription);
+		Mission->SetStringField(TEXT("mission_id"), NeuroTargetingWhyMissionId);
+		Mission->SetStringField(TEXT("mission_title"), NeuroTargetingWhyMissionTitle);
+		Mission->SetStringField(TEXT("mission_description"), NeuroTargetingWhyMissionDescription);
 		Mission->SetField(TEXT("next_mission_asset"), MakeShared<FJsonValueNull>());
 		Mission->SetArrayField(TEXT("tasks"), Tasks);
 		Mission->SetBoolField(TEXT("already_exact"), bAlreadyExact);
 		return Mission;
 	}
 
-	FString NeuroPowerRestoreMissionRejectClientOverrides(const TSharedPtr<FJsonObject>& Args)
+	FString NeuroTargetingWhyMissionRejectClientOverrides(const TSharedPtr<FJsonObject>& Args)
 	{
 		if (!Args.IsValid())
 		{
@@ -68,15 +68,15 @@
 				return FString::Printf(TEXT("Client override '%s' rejected. Spec is locked."), Key);
 			}
 		}
-		const FString Spec = GetString(Args, TEXT("spec"), NeuroPowerRestoreMissionSpec);
-		if (!Spec.Equals(NeuroPowerRestoreMissionSpec, ESearchCase::CaseSensitive))
+		const FString Spec = GetString(Args, TEXT("spec"), NeuroTargetingWhyMissionSpec);
+		if (!Spec.Equals(NeuroTargetingWhyMissionSpec, ESearchCase::CaseSensitive))
 		{
-			return FString::Printf(TEXT("spec must be '%s'."), NeuroPowerRestoreMissionSpec);
+			return FString::Printf(TEXT("spec must be '%s'."), NeuroTargetingWhyMissionSpec);
 		}
 		return TEXT("");
 	}
 
-	FString NeuroPowerRestoreMissionMismatchReason(UObject* Asset)
+	FString NeuroTargetingWhyMissionMismatchReason(UObject* Asset)
 	{
 		if (!Asset)
 		{
@@ -86,38 +86,38 @@
 		{
 			return FString::Printf(TEXT("class '%s' is not UProjectOrganoidObjectiveDataAsset"), *ClassName(Asset));
 		}
-		if (!PackagesEqual(Asset->GetOutermost() ? Asset->GetOutermost()->GetName() : FString(), NeuroPowerRestoreMissionPackage))
+		if (!PackagesEqual(Asset->GetOutermost() ? Asset->GetOutermost()->GetName() : FString(), NeuroTargetingWhyMissionPackage))
 		{
 			return FString::Printf(
 				TEXT("owning package '%s' is not %s"),
 				Asset->GetOutermost() ? *Asset->GetOutermost()->GetName() : TEXT(""),
-				NeuroPowerRestoreMissionPackage);
+				NeuroTargetingWhyMissionPackage);
 		}
-		if (!Asset->GetName().Equals(NeuroPowerRestoreMissionAssetName, ESearchCase::CaseSensitive))
+		if (!Asset->GetName().Equals(NeuroTargetingWhyMissionAssetName, ESearchCase::CaseSensitive))
 		{
-			return FString::Printf(TEXT("asset name '%s' is not DA_Mission_NeuroPowerRestore"), *Asset->GetName());
+			return FString::Printf(TEXT("asset name '%s' is not DA_Mission_NeuroTargetingWhy"), *Asset->GetName());
 		}
-		if (!Asset->GetPathName().Equals(NeuroPowerRestoreMissionObjectPath, ESearchCase::CaseSensitive))
+		if (!Asset->GetPathName().Equals(NeuroTargetingWhyMissionObjectPath, ESearchCase::CaseSensitive))
 		{
 			return FString::Printf(TEXT("object path '%s' is not exact"), *Asset->GetPathName());
 		}
 
 		FProperty* MissionIdProp = FindInstanceProperty(Asset, TEXT("MissionId"));
 		FString MissionIdError;
-		if (!PropertyMatchesJson(Asset, MissionIdProp, MakeShared<FJsonValueString>(NeuroPowerRestoreMissionId), MissionIdError))
+		if (!PropertyMatchesJson(Asset, MissionIdProp, MakeShared<FJsonValueString>(NeuroTargetingWhyMissionId), MissionIdError))
 		{
 			return FString::Printf(TEXT("MissionId: %s"), *MissionIdError);
 		}
 		FProperty* TitleProp = FindInstanceProperty(Asset, TEXT("MissionTitle"));
 		FString TitleError;
-		if (!PropertyMatchesJson(Asset, TitleProp, MakeShared<FJsonValueString>(NeuroPowerRestoreMissionTitle), TitleError))
+		if (!PropertyMatchesJson(Asset, TitleProp, MakeShared<FJsonValueString>(NeuroTargetingWhyMissionTitle), TitleError))
 		{
 			return FString::Printf(TEXT("MissionTitle: %s"), *TitleError);
 		}
 		FProperty* DescProp = FindInstanceProperty(Asset, TEXT("MissionDescription"));
 		FString DescError;
 		if (!PropertyMatchesJson(
-				Asset, DescProp, MakeShared<FJsonValueString>(NeuroPowerRestoreMissionDescription), DescError))
+				Asset, DescProp, MakeShared<FJsonValueString>(NeuroTargetingWhyMissionDescription), DescError))
 		{
 			return FString::Printf(TEXT("MissionDescription: %s"), *DescError);
 		}
@@ -128,17 +128,9 @@
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
 			if (Soft.ToSoftObjectPath().IsValid())
 			{
-				// Beat 8 may soft-link DA_Mission_NeuroTargetingWhy; null remains valid Beat 7.
-				static const TCHAR* AllowedNext =
-					TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy.DA_Mission_NeuroTargetingWhy");
-				const FString LiveNext = Soft.ToSoftObjectPath().ToString();
-				if (!LiveNext.Equals(AllowedNext, ESearchCase::CaseSensitive))
-				{
-					return FString::Printf(
-						TEXT("NextMissionAsset must be null or '%s', got '%s'"),
-						AllowedNext,
-						*LiveNext);
-				}
+				return FString::Printf(
+					TEXT("NextMissionAsset must be null, got '%s'"),
+					*Soft.ToSoftObjectPath().ToString());
 			}
 		}
 		else
@@ -166,14 +158,14 @@
 		if (const FString Task0Error = NeuroGeneticsMissionBeat3ReadTaskObjectiveMismatch(
 				Helper.GetRawPtr(0),
 				TaskStruct,
-				NeuroPowerRestoreObjectiveId,
-				NeuroPowerRestoreObjectiveTitle,
-				NeuroPowerRestoreObjectiveDescription,
+				NeuroTargetingWhyObjectiveId,
+				NeuroTargetingWhyObjectiveTitle,
+				NeuroTargetingWhyObjectiveDescription,
 				true,
 				0,
 				nullptr,
 				1,
-				NeuroPowerRestoreEventId);
+				NeuroTargetingWhyEventId);
 			!Task0Error.IsEmpty())
 		{
 			return FString::Printf(TEXT("Tasks[0]: %s"), *Task0Error);
@@ -181,23 +173,23 @@
 		return TEXT("");
 	}
 
-	FString ApplyNeuroPowerRestoreMissionDefaults(UObject* Asset)
+	FString ApplyNeuroTargetingWhyMissionDefaults(UObject* Asset)
 	{
 		if (!Asset)
 		{
 			return TEXT("Asset is null.");
 		}
-		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionId"), NeuroPowerRestoreMissionId); !Error.IsEmpty())
+		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionId"), NeuroTargetingWhyMissionId); !Error.IsEmpty())
 		{
 			return Error;
 		}
-		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionTitle"), NeuroPowerRestoreMissionTitle);
+		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionTitle"), NeuroTargetingWhyMissionTitle);
 			!Error.IsEmpty())
 		{
 			return Error;
 		}
 		if (const FString Error =
-				SetNamedPropertyFromString(Asset, TEXT("MissionDescription"), NeuroPowerRestoreMissionDescription);
+				SetNamedPropertyFromString(Asset, TEXT("MissionDescription"), NeuroTargetingWhyMissionDescription);
 			!Error.IsEmpty())
 		{
 			return Error;
@@ -229,13 +221,13 @@
 
 		TArray<FName> NoPrereqs;
 		TArray<FName> Events;
-		Events.Add(FName(NeuroPowerRestoreEventId));
+		Events.Add(FName(NeuroTargetingWhyEventId));
 		if (const FString Task0Error = NeuroGeneticsMissionBeat3WriteTaskObjective(
 				Helper.GetRawPtr(0),
 				TaskStruct,
-				NeuroPowerRestoreObjectiveId,
-				NeuroPowerRestoreObjectiveTitle,
-				NeuroPowerRestoreObjectiveDescription,
+				NeuroTargetingWhyObjectiveId,
+				NeuroTargetingWhyObjectiveTitle,
+				NeuroTargetingWhyObjectiveDescription,
 				true,
 				NoPrereqs,
 				Events);
@@ -246,7 +238,7 @@
 		return TEXT("");
 	}
 
-	FString CleanupCreatedNeuroPowerRestoreMissionAsset(
+	FString CleanupCreatedNeuroTargetingWhyMissionAsset(
 		UObject* Asset, bool bPackageWasDirtyBefore, TArray<FString>& OutRestored)
 	{
 		OutRestored.Reset();
@@ -271,7 +263,7 @@
 		return TEXT("");
 	}
 
-	FString CreateNeuroPowerRestoreMissionAsset(UObject*& OutAsset, bool& bOutCreatedNow, bool& bOutPackageWasDirtyBefore)
+	FString CreateNeuroTargetingWhyMissionAsset(UObject*& OutAsset, bool& bOutCreatedNow, bool& bOutPackageWasDirtyBefore)
 	{
 		OutAsset = nullptr;
 		bOutCreatedNow = false;
@@ -283,26 +275,26 @@
 			return FString::Printf(TEXT("Failed to load mission class '%s'."), NeuroGeneticsMissionClassPath);
 		}
 
-		UPackage* ExistingPackage = FindPackage(nullptr, NeuroPowerRestoreMissionPackage);
+		UPackage* ExistingPackage = FindPackage(nullptr, NeuroTargetingWhyMissionPackage);
 		bOutPackageWasDirtyBefore = ExistingPackage && ExistingPackage->IsDirty();
 
-		UPackage* Package = CreatePackage(NeuroPowerRestoreMissionPackage);
+		UPackage* Package = CreatePackage(NeuroTargetingWhyMissionPackage);
 		if (!Package)
 		{
-			return FString::Printf(TEXT("Failed to create package '%s'."), NeuroPowerRestoreMissionPackage);
+			return FString::Printf(TEXT("Failed to create package '%s'."), NeuroTargetingWhyMissionPackage);
 		}
 
 		UObject* Asset = NewObject<UObject>(
-			Package, MissionClass, NeuroPowerRestoreMissionAssetName, RF_Public | RF_Standalone | RF_Transactional);
+			Package, MissionClass, NeuroTargetingWhyMissionAssetName, RF_Public | RF_Standalone | RF_Transactional);
 		if (!Asset)
 		{
-			return TEXT("NewObject failed for DA_Mission_NeuroPowerRestore.");
+			return TEXT("NewObject failed for DA_Mission_NeuroTargetingWhy.");
 		}
 
-		if (const FString ApplyError = ApplyNeuroPowerRestoreMissionDefaults(Asset); !ApplyError.IsEmpty())
+		if (const FString ApplyError = ApplyNeuroTargetingWhyMissionDefaults(Asset); !ApplyError.IsEmpty())
 		{
 			TArray<FString> Restored;
-			CleanupCreatedNeuroPowerRestoreMissionAsset(Asset, bOutPackageWasDirtyBefore, Restored);
+			CleanupCreatedNeuroTargetingWhyMissionAsset(Asset, bOutPackageWasDirtyBefore, Restored);
 			return ApplyError;
 		}
 
@@ -313,11 +305,11 @@
 		return TEXT("");
 	}
 
-	FString GuardNeuroPowerRestoreMissionEditorContext()
+	FString GuardNeuroTargetingWhyMissionEditorContext()
 	{
 		if (!IsInGameThread())
 		{
-			return TEXT("create_neuro_power_restore_mission must run on the game thread.");
+			return TEXT("create_neuro_targeting_why_mission must run on the game thread.");
 		}
 		if (GetPieWorld())
 		{
@@ -326,33 +318,33 @@
 		return TEXT("");
 	}
 
-	FString PreflightCreateNeuroPowerRestoreMission(
+	FString PreflightCreateNeuroTargetingWhyMission(
 		const TSharedPtr<FJsonObject>& Args,
 		TSharedRef<FJsonObject> Before,
 		TSharedRef<FJsonObject> Proposed)
 	{
-		if (const FString ContextError = GuardNeuroPowerRestoreMissionEditorContext(); !ContextError.IsEmpty())
+		if (const FString ContextError = GuardNeuroTargetingWhyMissionEditorContext(); !ContextError.IsEmpty())
 		{
 			return ContextError;
 		}
 		if (GetBool(Args, TEXT("save"), false) || GetBool(Args, TEXT("save_all"), false))
 		{
-			return TEXT("save must be false. create_neuro_power_restore_mission does not save.");
+			return TEXT("save must be false. create_neuro_targeting_why_mission does not save.");
 		}
-		if (const FString OverrideError = NeuroPowerRestoreMissionRejectClientOverrides(Args); !OverrideError.IsEmpty())
+		if (const FString OverrideError = NeuroTargetingWhyMissionRejectClientOverrides(Args); !OverrideError.IsEmpty())
 		{
 			return OverrideError;
 		}
 
-		UObject* Existing = FindNeuroPowerRestoreMissionAssetExact();
+		UObject* Existing = FindNeuroTargetingWhyMissionAssetExact();
 		bool bAlreadyExact = false;
 		if (Existing)
 		{
-			const FString Mismatch = NeuroPowerRestoreMissionMismatchReason(Existing);
+			const FString Mismatch = NeuroTargetingWhyMissionMismatchReason(Existing);
 			if (!Mismatch.IsEmpty())
 			{
 				return FString::Printf(
-					TEXT("DA_Mission_NeuroPowerRestore exists but mismatches locked contract: %s. Fail closed — no opportunistic repair."),
+					TEXT("DA_Mission_NeuroTargetingWhy exists but mismatches locked contract: %s. Fail closed — no opportunistic repair."),
 					*Mismatch);
 			}
 			bAlreadyExact = true;
@@ -362,39 +354,39 @@
 			return FString::Printf(TEXT("Mission class '%s' unresolved."), NeuroGeneticsMissionClassPath);
 		}
 
-		Before->SetStringField(TEXT("spec"), NeuroPowerRestoreMissionSpec);
-		Before->SetStringField(TEXT("action"), NeuroPowerRestoreMissionAction);
-		Before->SetStringField(TEXT("object_path"), NeuroPowerRestoreMissionObjectPath);
-		Before->SetStringField(TEXT("package"), NeuroPowerRestoreMissionPackage);
+		Before->SetStringField(TEXT("spec"), NeuroTargetingWhyMissionSpec);
+		Before->SetStringField(TEXT("action"), NeuroTargetingWhyMissionAction);
+		Before->SetStringField(TEXT("object_path"), NeuroTargetingWhyMissionObjectPath);
+		Before->SetStringField(TEXT("package"), NeuroTargetingWhyMissionPackage);
 		Before->SetBoolField(TEXT("exists"), Existing != nullptr);
 		Before->SetBoolField(TEXT("already_exact"), bAlreadyExact);
 
-		Proposed->SetStringField(TEXT("spec"), NeuroPowerRestoreMissionSpec);
-		Proposed->SetStringField(TEXT("action"), NeuroPowerRestoreMissionAction);
-		Proposed->SetStringField(TEXT("object_path"), NeuroPowerRestoreMissionObjectPath);
-		Proposed->SetStringField(TEXT("package"), NeuroPowerRestoreMissionPackage);
-		Proposed->SetStringField(TEXT("asset_name"), NeuroPowerRestoreMissionAssetName);
+		Proposed->SetStringField(TEXT("spec"), NeuroTargetingWhyMissionSpec);
+		Proposed->SetStringField(TEXT("action"), NeuroTargetingWhyMissionAction);
+		Proposed->SetStringField(TEXT("object_path"), NeuroTargetingWhyMissionObjectPath);
+		Proposed->SetStringField(TEXT("package"), NeuroTargetingWhyMissionPackage);
+		Proposed->SetStringField(TEXT("asset_name"), NeuroTargetingWhyMissionAssetName);
 		Proposed->SetStringField(TEXT("class"), NeuroGeneticsMissionClassName);
-		Proposed->SetObjectField(TEXT("mission"), NeuroPowerRestoreMissionProposedState(bAlreadyExact));
+		Proposed->SetObjectField(TEXT("mission"), NeuroTargetingWhyMissionProposedState(bAlreadyExact));
 		Proposed->SetBoolField(TEXT("already_exact"), bAlreadyExact);
 		Proposed->SetBoolField(TEXT("will_mutate"), !bAlreadyExact);
 		Proposed->SetBoolField(TEXT("saves"), false);
 		return TEXT("");
 	}
 
-	TSharedRef<FJsonObject> ExecuteCreateNeuroPowerRestoreMission(FBridgeChange& Change)
+	TSharedRef<FJsonObject> ExecuteCreateNeuroTargetingWhyMission(FBridgeChange& Change)
 	{
 		if (!IsInGameThread())
 		{
 			return FailAudit(
 				TEXT("wrong_thread"),
-				TEXT("create_neuro_power_restore_mission must run on the game thread. ZERO writes."),
+				TEXT("create_neuro_targeting_why_mission must run on the game thread. ZERO writes."),
 				MakeShared<FBridgeChange>(Change));
 		}
 
 		TSharedRef<FJsonObject> Before = MakeShared<FJsonObject>();
 		TSharedRef<FJsonObject> Proposed = MakeShared<FJsonObject>();
-		const FString PreflightError = PreflightCreateNeuroPowerRestoreMission(Change.Args, Before, Proposed);
+		const FString PreflightError = PreflightCreateNeuroTargetingWhyMission(Change.Args, Before, Proposed);
 		if (!PreflightError.IsEmpty())
 		{
 			Change.Status = TEXT("execute_aborted_preflight");
@@ -404,8 +396,8 @@
 				MakeShared<FBridgeChange>(Change));
 		}
 
-		UObject* Existing = FindNeuroPowerRestoreMissionAssetExact();
-		if (Existing && NeuroPowerRestoreMissionMismatchReason(Existing).IsEmpty())
+		UObject* Existing = FindNeuroTargetingWhyMissionAssetExact();
+		if (Existing && NeuroTargetingWhyMissionMismatchReason(Existing).IsEmpty())
 		{
 			Change.bExecuted = true;
 			Change.ExecutedAt = NowIso();
@@ -413,10 +405,10 @@
 			Change.Status = TEXT("executed_noop");
 			Change.After = MakeShared<FJsonObject>();
 			Change.After->SetStringField(TEXT("result"), TEXT("already_exact_noop"));
-			Change.After->SetStringField(TEXT("object_path"), NeuroPowerRestoreMissionObjectPath);
+			Change.After->SetStringField(TEXT("object_path"), NeuroTargetingWhyMissionObjectPath);
 			Change.After->SetBoolField(TEXT("created"), false);
 			Change.After->SetBoolField(TEXT("save_performed"), false);
-			Change.After->SetObjectField(TEXT("mission"), NeuroPowerRestoreMissionProposedState(true));
+			Change.After->SetObjectField(TEXT("mission"), NeuroTargetingWhyMissionProposedState(true));
 			Change.After->SetArrayField(
 				TEXT("dirty_packages"), DirtyPackageJsonArray(CollectDirtyPackageNamesSorted()));
 			LogAudit(TEXT("execute"), Change);
@@ -427,7 +419,7 @@
 			Change.Status = TEXT("execute_aborted_preflight");
 			return FailAudit(
 				TEXT("mismatch"),
-				TEXT("DA_Mission_NeuroPowerRestore exists but is not exact. Fail closed. ZERO writes."),
+				TEXT("DA_Mission_NeuroTargetingWhy exists but is not exact. Fail closed. ZERO writes."),
 				MakeShared<FBridgeChange>(Change));
 		}
 
@@ -437,8 +429,8 @@
 		bool bPackageWasDirtyBefore = false;
 		{
 			const FScopedTransaction Transaction(
-				NSLOCTEXT("OrganoidAIBridge", "CreateNeuroPowerRestoreMission", "Create Neuro Power Restore Mission DataAsset"));
-			if (const FString CreateError = CreateNeuroPowerRestoreMissionAsset(Created, bCreatedNow, bPackageWasDirtyBefore);
+				NSLOCTEXT("OrganoidAIBridge", "CreateNeuroTargetingWhyMission", "Create Neuro Targeting Why Mission DataAsset"));
+			if (const FString CreateError = CreateNeuroTargetingWhyMissionAsset(Created, bCreatedNow, bPackageWasDirtyBefore);
 				!CreateError.IsEmpty())
 			{
 				Change.Status = TEXT("execute_failed");
@@ -452,10 +444,10 @@
 			}
 		}
 
-		if (const FString VerifyError = NeuroPowerRestoreMissionMismatchReason(Created); !VerifyError.IsEmpty())
+		if (const FString VerifyError = NeuroTargetingWhyMissionMismatchReason(Created); !VerifyError.IsEmpty())
 		{
 			TArray<FString> Restored;
-			CleanupCreatedNeuroPowerRestoreMissionAsset(Created, bPackageWasDirtyBefore, Restored);
+			CleanupCreatedNeuroTargetingWhyMissionAsset(Created, bPackageWasDirtyBefore, Restored);
 			Change.Status = TEXT("execute_failed");
 			Change.After = MakeShared<FJsonObject>();
 			Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(CollectDirtyPackageNamesSorted()));
@@ -466,7 +458,7 @@
 		}
 
 		const TArray<FString> DirtyAfter = CollectDirtyPackageNamesSorted();
-		const FString ExpectedDirty = NormalizePackage(NeuroPowerRestoreMissionPackage);
+		const FString ExpectedDirty = NormalizePackage(NeuroTargetingWhyMissionPackage);
 		bool bExpectedDirtyPresent = false;
 		for (const FString& Dirty : DirtyAfter)
 		{
@@ -492,7 +484,7 @@
 		if (!bExpectedDirtyPresent || UnexpectedNew.Num() != 0)
 		{
 			TArray<FString> Restored;
-			CleanupCreatedNeuroPowerRestoreMissionAsset(Created, bPackageWasDirtyBefore, Restored);
+			CleanupCreatedNeuroTargetingWhyMissionAsset(Created, bPackageWasDirtyBefore, Restored);
 			Change.Status = TEXT("execute_failed");
 			Change.After = MakeShared<FJsonObject>();
 			Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(DirtyAfter));
@@ -512,11 +504,11 @@
 		Change.Status = TEXT("executed");
 		Change.After = MakeShared<FJsonObject>();
 		Change.After->SetStringField(TEXT("result"), TEXT("created"));
-		Change.After->SetStringField(TEXT("object_path"), NeuroPowerRestoreMissionObjectPath);
+		Change.After->SetStringField(TEXT("object_path"), NeuroTargetingWhyMissionObjectPath);
 		Change.After->SetStringField(TEXT("class"), ClassName(Created));
 		Change.After->SetBoolField(TEXT("created"), bCreatedNow);
 		Change.After->SetBoolField(TEXT("save_performed"), false);
-		Change.After->SetObjectField(TEXT("mission"), NeuroPowerRestoreMissionProposedState(false));
+		Change.After->SetObjectField(TEXT("mission"), NeuroTargetingWhyMissionProposedState(false));
 		Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(DirtyAfter));
 		LogAudit(TEXT("execute"), Change);
 		return Ok(AuditBase(Change));

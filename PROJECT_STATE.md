@@ -1,6 +1,6 @@
 # Project Organoid — State Handoff
 
-_Last updated: 2026-09-22 (Neuro Beat 7 V1 validated — Mission_NeuroPowerRestore + PowerPanel_NeuroBackup restore; 1019/1019. Not staged/committed/pushed.)_
+_Last updated: 2026-09-23 (Neuro Beat 8 V1 validated — Mission_NeuroTargetingWhy on Host_Neuro_Researcher; checkpoint 1147/1147. Not staged/committed/pushed.)_
 
 This file is the single source of truth for where things stand across all tools (Claude, Gemini, GPT/Arena, Qwen/harness). Read this first at the start of any session. Update it before ending one — append, don't rewrite history.
 
@@ -2792,3 +2792,102 @@ Dual-approved change IDs (session-local; do not reuse):
 
 - Beat 7 V1 is implemented, persisted, and validated.
 - Do not begin Beat 8 until separately authorized.
+
+---
+
+## Neuro Beat 8 V1 — Targeting Why (2026-09-23)
+
+**Status:** implemented, persisted, validated. Changes left **unstaged**. No commit / no push / no Beat 9.
+
+**Baseline:** `main` / HEAD / `origin/main` = `a93f3ae39f12d7e8305db8123300261f5cafac47`
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Gameplay slice
+
+- New mission asset: `/Game/Data/Missions/DA_Mission_NeuroTargetingWhy`
+  - Mission ID: `Mission_NeuroTargetingWhy`
+  - Title: `Target the Nervous System`
+  - Exactly one Main task: `Obj_ImpairHostLocomotorNerves` (autoactivate, target 1, no cross-mission prereq)
+  - Title: `Impair the Host’s locomotor nerves`
+  - Complete event: `Event_NeuroLocomotorTargetDemonstrated`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroPowerRestore.NextMissionAsset` → `DA_Mission_NeuroTargetingWhy`
+  - Completing `Obj_RestoreNeuroLabPower` completes PowerRestore and activates TargetingWhy + locomotor objective
+- Researcher: `Host_Neuro_Researcher` authored transform unchanged at `(-1200, 800, -1100)`
+  - Campaign lesson gated by Active `Obj_ImpairHostLocomotorNerves`
+  - Inactive during Beats 1–7; no encounter activation before that objective is Active
+  - Credit only from a real tactical Locomotor Nerves impairment on this Host
+  - Wrong Host, non-tactical hit, wrong weak point, and no-effect contact do not fire the event
+  - Nathan 7.0s, once: `That matches the evidence. Target the locomotor nerves, and the whole body slows with them.`
+  - Replay does not re-fire the event or the line
+- Neuro remains Online. Cryo remains Blackout.
+- No Research Station campaign intro, Cryo route, pursuer, or unrelated side effect.
+- `Host_Neuro_1/2/3` system behavior unchanged. No Host relocation.
+
+### Test-only handoff correction
+
+`NeuroRestoreLabPower_Functional` `prediscovered.mission_complete` still called `IsMissionComplete(Mission_NeuroPowerRestore)` after the TargetingWhy handoff. Production mission logic and mission assets were not changed. That assertion was replaced with post-handoff checks: restore objective Completed, PowerRestore has no incomplete task, `NextMissionAsset` is exactly `DA_Mission_NeuroTargetingWhy`, current mission is `Mission_NeuroTargetingWhy`, and `Obj_ImpairHostLocomotorNerves` is Active. Restore assertion count went from 112 to 116. No other `IsMissionComplete` assert with that stale meaning remained in that file.
+
+### Bridge / persistence
+
+Dual-approved change IDs (session-local; do not reuse). Approvals: user `Tom Cardaro` + second_review `Arena`.
+- create mission: `chg_b8f8f3d0-4a0c-c67a-ec56-fb87f28d8563` (`create_neuro_targeting_why_mission` / `neuro_targeting_why_mission_v1`)
+- set next: `chg_196d32d8-4b10-8c2f-41db-ed9d87d94e39` (`set_neuro_power_restore_next_targeting_why`)
+- save TargetingWhy: `chg_124b8a67-48f1-54f9-4769-058eec4b58dd` (`save_asset`)
+- save PowerRestore: `chg_33f1f050-4a01-7b64-f7ef-259eba4c8b92` (`save_asset`)
+- configure Researcher: `chg_d32302ed-495b-5a12-f8d1-708a4d0863a4` (`configure_neuro_researcher_targeting_why`; idempotent re-apply after the live configure)
+- Neuro-only map save: `chg_5a8abf95-4ada-bb3f-adfa-2393ddcc128d` (`save_maps` Neuro-only)
+- No Save All. No Admin or `Lvl_Epitope` save. No NavMesh rebuild or navigation save.
+
+### Navigation evidence (not a repair)
+
+- `Host_Neuro_Researcher` authored transform remains `(-1200, 800, -1100)`.
+- Local nav projection and path query succeeded on existing navigation.
+- `RequestInvestigateAt` + walking produced **45.8uu** displacement (`combat=Investigate`).
+- Selected projected target `(-931, 800, -1180)` had path length **3315.9uu** with planar separation **269uu**.
+- Measured gap to that target increased from **269.0** to **309.8** during the sample.
+- `NeuroTargetingWhy_Functional` passed. Startup “NavMesh needs to be rebuilt” remains unresolved. This is a deferred navigation-quality issue, not a completed NavMesh repair.
+
+### Validation
+
+- Targeted (V1D): `NeuroTargetingWhy_Functional` **73/73** — `ptr_4c5e62d8-43e7-3d70-c34e-17a374e18e04`
+- Checkpoint (V1E/V1F, exact once; TargetingWhy not rerun after its checkpoint pass):
+  - `NeuroTargetingWhy_Functional` **73/73** — `ptr_596e0596-48b9-1b5a-91d7-7bafc47021fc` (preserved)
+  - `NeuroRestoreLabPower_Functional` **116/116** — `ptr_a827dc9b-4223-ca9b-5bc0-f992e9ff813a` (after the test-only handoff correction; first checkpoint attempt was 111/112 on the stale assert)
+  - `NeuroExamineNeuralChangeEvidence_Functional` **143/143** — `ptr_5fc5f9fe-499e-c86f-ba46-86a520f1753e`
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_4314f05c-438f-2f4a-a130-2eb6db679135`
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_bee85029-4c6e-ee70-cacc-77aa2686928f`
+  - `NeuroResearchLoadCutoff_Functional` **173/173** — `ptr_d0c27592-4fee-2a36-9ab3-4ea8f1d5f791`
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_061f5d88-48a0-3011-b978-0781458ce36f`
+  - `OpeningFoundation_Functional` **48/48** — `ptr_7b7491f2-4328-aebf-6f39-249d5e524da0`
+  - `NeuroPowerFailureDiagnosis_Functional` **86/86** — `ptr_e8ccd953-42a7-3bcb-5f51-fa9bc392f95e`
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_d4b17b0e-4d41-b95b-e8ac-e0b30a75ca03`
+  - `PETactical_Functional` **18/18** — `ptr_3bb1aecf-4c65-400f-e4d4-f5b6b398b621`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_9507bfe4-401d-d15a-12d1-c9ad5818a823`
+  - **Total 1147/1147**
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroPowerRestore.uasset` SHA-256: `9ea3c009fccc89fb27ef0e5ef5067a39e05c36b83ef28bca46eae17ae7d104cb`
+- `Content/Data/Missions/DA_Mission_NeuroTargetingWhy.uasset` SHA-256: `164b6d9811381b6c6a3bbc00cac118acdaa3d5c03508d23c0cf641c306ec9262`
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `dfcd2493bad4cfb9321babea67ddf9d224762005fa960256860b220f2ca66280`
+
+### Preservation / audit
+
+- Dirty packages before close: `[]`. No additional save.
+- Clean editor close via `CloseMainWindow`: no UnrealEditor, UnrealBuildTool, LiveCodingConsole, or ShaderCompileWorker remaining. Bridge unreachable.
+- Canon, `EngineAssociation`, Admin, `Lvl_Epitope`, and Cryo unchanged.
+- Evidence: `%TEMP%\ProjectOrganoid_NeuroBeat8_V1E_20260923-092200` and `%TEMP%\ProjectOrganoid_NeuroBeat8_V1F_20260923-094000`
+- Index empty; changes left **unstaged** (no commit / no push)
+
+### Deferred issues (not fixed)
+
+1. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder. This is implementation drift and requires a future camera conversion.
+2. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+3. Persistent beep begins at reception and continues through gameplay; source remains unresolved.
+4. Testing-bot simulated-left-click workaround remains and should be removed when the beep is correctly fixed.
+
+### Next boundary
+
+- Beat 8 V1 is implemented, persisted, and validated.
+- Do not begin Beat 9 until separately authorized.

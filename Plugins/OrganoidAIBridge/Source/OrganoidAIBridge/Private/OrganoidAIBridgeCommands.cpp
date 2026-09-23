@@ -517,6 +517,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_power_restore_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neurogenetics_next_mission_power_restore")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_backup_power_restore")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_targeting_why_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_power_restore_next_targeting_why")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_researcher_targeting_why")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
@@ -587,6 +590,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_power_restore_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neurogenetics_next_mission_power_restore")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_backup_power_restore")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_targeting_why_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_power_restore_next_targeting_why")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_researcher_targeting_why")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_terminal")));
@@ -1805,6 +1811,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_neuro_power_restore_mission")
 		|| Normalized == TEXT("set_neurogenetics_next_mission_power_restore")
 		|| Normalized == TEXT("configure_neuro_backup_power_restore")
+		|| Normalized == TEXT("create_neuro_targeting_why_mission")
+		|| Normalized == TEXT("set_neuro_power_restore_next_targeting_why")
+		|| Normalized == TEXT("configure_neuro_researcher_targeting_why")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_terminal")

@@ -57,6 +57,10 @@ namespace NeuroRestoreLabPowerFunctional
 	constexpr TCHAR RestoreObjectiveDescription[] =
 		TEXT("Use the backup panel to bring the NeuroGenetics sector online.");
 	constexpr TCHAR RestoreEvent[] = TEXT("Event_NeuroPowerRestored");
+	constexpr TCHAR TargetingMissionSoftPath[] =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy.DA_Mission_NeuroTargetingWhy");
+	constexpr TCHAR TargetingMissionId[] = TEXT("Mission_NeuroTargetingWhy");
+	constexpr TCHAR TargetingObjectiveId[] = TEXT("Obj_ImpairHostLocomotorNerves");
 
 	constexpr TCHAR IsolateId[] = TEXT("Obj_IsolateNeuroResearchLoad");
 	constexpr TCHAR TraceId[] = TEXT("Obj_TraceNeuralMappingSignal");
@@ -819,10 +823,13 @@ namespace NeuroRestoreLabPowerFunctional
 				RestoreMission->MissionDescription.ToString(),
 				TEXT("DA"));
 			AssertTrue(
-				Record, TEXT("asset.restore_next_null"),
-				RestoreMission->NextMissionAsset.IsNull(),
-				TEXT("null"),
-				RestoreMission->NextMissionAsset.IsNull() ? TEXT("null") : RestoreMission->NextMissionAsset.ToString(),
+				Record, TEXT("asset.restore_next_targeting_why"),
+				RestoreMission->NextMissionAsset.ToSoftObjectPath().ToString()
+					== TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy.DA_Mission_NeuroTargetingWhy"),
+				TEXT("/Game/Data/Missions/DA_Mission_NeuroTargetingWhy.DA_Mission_NeuroTargetingWhy"),
+				RestoreMission->NextMissionAsset.IsNull()
+					? TEXT("null")
+					: RestoreMission->NextMissionAsset.ToSoftObjectPath().ToString(),
 				TEXT("DA"));
 			AssertTrue(
 				Record, TEXT("asset.restore_task_count_one"),
@@ -1334,11 +1341,43 @@ namespace NeuroRestoreLabPowerFunctional
 					CountCompletedId(Objectives, FName(RestoreObjectiveId))),
 				RestoreObjectiveId);
 			AssertTrue(
-				Record, TEXT("prediscovered.mission_complete"),
-				Objectives->IsMissionComplete(FName(RestoreMissionId)),
-				TEXT("true"),
-				BoolText(Objectives->IsMissionComplete(FName(RestoreMissionId))),
+				Record, TEXT("prediscovered.restore_objective_completed"),
+				CountCompletedId(Objectives, FName(RestoreObjectiveId)) == 1,
+				TEXT("1"),
+				FString::FromInt(CountCompletedId(Objectives, FName(RestoreObjectiveId))),
+				RestoreObjectiveId);
+			AssertTrue(
+				Record, TEXT("prediscovered.restore_no_incomplete_task"),
+				CountCompletedId(Objectives, FName(RestoreObjectiveId)) == 1
+					&& CountActiveId(Objectives, FName(RestoreObjectiveId)) == 0,
+				TEXT("completed=1 active=0"),
+				FString::Printf(
+					TEXT("active=%d completed=%d"),
+					CountActiveId(Objectives, FName(RestoreObjectiveId)),
+					CountCompletedId(Objectives, FName(RestoreObjectiveId))),
 				RestoreMissionId);
+			UProjectOrganoidObjectiveDataAsset* RestoreAfterHandoff = LoadRestoreMission();
+			AssertTrue(
+				Record, TEXT("prediscovered.next_targeting_why"),
+				RestoreAfterHandoff
+					&& RestoreAfterHandoff->NextMissionAsset.ToSoftObjectPath().ToString() == TargetingMissionSoftPath,
+				TargetingMissionSoftPath,
+				(RestoreAfterHandoff && !RestoreAfterHandoff->NextMissionAsset.IsNull())
+					? RestoreAfterHandoff->NextMissionAsset.ToSoftObjectPath().ToString()
+					: TEXT("null"),
+				TEXT("DA"));
+			AssertTrue(
+				Record, TEXT("prediscovered.targeting_current"),
+				Objectives->GetActiveMissionId() == FName(TargetingMissionId),
+				TargetingMissionId,
+				Objectives->GetActiveMissionId().ToString(),
+				TEXT("mission"));
+			AssertTrue(
+				Record, TEXT("prediscovered.targeting_objective_active"),
+				CountActiveId(Objectives, FName(TargetingObjectiveId)) == 1,
+				TEXT("1"),
+				FString::FromInt(CountActiveId(Objectives, FName(TargetingObjectiveId))),
+				TargetingObjectiveId);
 			AssertTrue(
 				Record, TEXT("prediscovered.map_review_prompt"),
 				Panel->GetInteractionPrompt().ToString() == ExpectedCompletedReviewPrompt,

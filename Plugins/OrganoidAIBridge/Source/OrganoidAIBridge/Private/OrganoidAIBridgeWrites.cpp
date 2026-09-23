@@ -144,6 +144,9 @@ namespace
 		TEXT("create_neuro_power_restore_mission"),
 		TEXT("set_neurogenetics_next_mission_power_restore"),
 		TEXT("configure_neuro_backup_power_restore"),
+		TEXT("create_neuro_targeting_why_mission"),
+		TEXT("set_neuro_power_restore_next_targeting_why"),
+		TEXT("configure_neuro_researcher_targeting_why"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -193,6 +196,9 @@ namespace
 		TEXT("create_neuro_power_restore_mission"),
 		TEXT("set_neurogenetics_next_mission_power_restore"),
 		TEXT("configure_neuro_backup_power_restore"),
+		TEXT("create_neuro_targeting_why_mission"),
+		TEXT("set_neuro_power_restore_next_targeting_why"),
+		TEXT("configure_neuro_researcher_targeting_why"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -3131,6 +3137,9 @@ namespace
 #include "OrganoidAIBridgeNeuroPowerRestoreMission.inl"
 #include "OrganoidAIBridgeNeuroGeneticsNextPowerRestore.inl"
 #include "OrganoidAIBridgeNeuroBackupPowerRestore.inl"
+#include "OrganoidAIBridgeNeuroTargetingWhyMission.inl"
+#include "OrganoidAIBridgeNeuroPowerRestoreNextTargetingWhy.inl"
+#include "OrganoidAIBridgeNeuroResearcherTargetingWhy.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
@@ -3780,6 +3789,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureNeuroBackupPowerRestore(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_targeting_why_mission"))
+		{
+			PreflightError = PreflightCreateNeuroTargetingWhyMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neuro_power_restore_next_targeting_why"))
+		{
+			PreflightError = PreflightSetNeuroPowerRestoreNextTargetingWhy(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_neuro_researcher_targeting_why"))
+		{
+			PreflightError = PreflightConfigureNeuroResearcherTargetingWhy(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{
 			PreflightError = PreflightSpawnNeuroNeuralMappingArray(Args, Before, Proposed);
@@ -3857,6 +3878,9 @@ namespace
 			|| Action == TEXT("create_neuro_power_restore_mission")
 			|| Action == TEXT("set_neurogenetics_next_mission_power_restore")
 			|| Action == TEXT("configure_neuro_backup_power_restore")
+			|| Action == TEXT("create_neuro_targeting_why_mission")
+			|| Action == TEXT("set_neuro_power_restore_next_targeting_why")
+			|| Action == TEXT("configure_neuro_researcher_targeting_why")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
 			|| Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -5022,6 +5046,9 @@ namespace
 				|| Change->Action == TEXT("create_neuro_power_restore_mission")
 				|| Change->Action == TEXT("set_neurogenetics_next_mission_power_restore")
 				|| Change->Action == TEXT("configure_neuro_backup_power_restore")
+				|| Change->Action == TEXT("create_neuro_targeting_why_mission")
+				|| Change->Action == TEXT("set_neuro_power_restore_next_targeting_why")
+				|| Change->Action == TEXT("configure_neuro_researcher_targeting_why")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -5224,6 +5251,18 @@ namespace
 		if (Change->Action == TEXT("configure_neuro_backup_power_restore"))
 		{
 			return ExecuteConfigureNeuroBackupPowerRestore(*Change);
+		}
+		if (Change->Action == TEXT("create_neuro_targeting_why_mission"))
+		{
+			return ExecuteCreateNeuroTargetingWhyMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neuro_power_restore_next_targeting_why"))
+		{
+			return ExecuteSetNeuroPowerRestoreNextTargetingWhy(*Change);
+		}
+		if (Change->Action == TEXT("configure_neuro_researcher_targeting_why"))
+		{
+			return ExecuteConfigureNeuroResearcherTargetingWhy(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{

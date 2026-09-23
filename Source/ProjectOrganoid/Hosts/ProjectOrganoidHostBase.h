@@ -187,6 +187,44 @@ public:
 	/** Gunfire and explicitly tagged generic noise activate; locomotion footsteps do not. */
 	bool IsEncounterActivationNoise(EProjectOrganoidHearingStimulusKind Kind) const;
 
+	/**
+	 * Optional campaign lesson (default off). When RequiredActiveObjectiveId is set:
+	 * encounter activation requires that objective Active; completed objective never rearms;
+	 * a matching tactical weak-point hit that actually applies the existing impairment effect
+	 * fires LessonSuccessObjectiveEventId once and presents the one-shot response.
+	 * Legacy Hosts with RequiredActiveObjectiveId=None are unchanged.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	FName RequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	EProjectOrganoidWeakPointType RequiredLessonWeakPoint = EProjectOrganoidWeakPointType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	bool bLessonRequiresTacticalMode = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	FName LessonSuccessObjectiveEventId = NAME_None;
+
+	/** When this objective is Completed, lesson credit/response will not re-fire or rearm. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	FName LessonCompletedObjectiveReplayGuardId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	FText LessonSuccessNotificationSpeaker = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson")
+	FText LessonSuccessNotificationText = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|Lesson", meta = (ClampMin = "0.0"))
+	float LessonSuccessNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|Lesson|Diagnostics", Transient)
+	int32 LessonSuccessNotificationCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|Lesson|Diagnostics", Transient)
+	int32 LessonSuccessEventFireCount = 0;
+
 	UFUNCTION(BlueprintPure, Category = "Host|AI")
 	FVector GetLastHeardNoiseLocation() const;
 
@@ -371,6 +409,16 @@ protected:
 	void ExpireBioShield();
 	void RefreshMovementSpeed();
 	void HandleDeath();
+
+	bool IsLessonContractConfigured() const;
+	bool IsLessonObjectiveActive() const;
+	bool IsLessonReplayGuardCompleted() const;
+	bool CanOpenEncounterActivationGate() const;
+	bool HasAppliedLessonWeakPointEffect(const FProjectOrganoidBallisticHit& HitInfo) const;
+	void TryAwardBiologicalTargetingLesson(const FProjectOrganoidBallisticHit& HitInfo, AActor* DamageCauser);
+	void NotifyLessonObjectiveEvent(FName EventId) const;
+	void PresentLessonSuccessNotification(AActor* DamageCauser);
+	void SyncLessonCompletedFromObjectives();
 
 	UFUNCTION()
 	void HandleHearingStimulus(AActor* NoiseInstigator, FName NoiseTag, EProjectOrganoidHearingStimulusKind Kind, FVector StimulusLocation, float Strength);
