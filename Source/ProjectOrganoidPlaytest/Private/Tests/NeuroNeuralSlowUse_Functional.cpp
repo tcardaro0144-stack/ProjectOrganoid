@@ -44,6 +44,10 @@ namespace NeuroNeuralSlowUseFunctional
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroResearchStationIntro.DA_Mission_NeuroResearchStationIntro");
 	constexpr TCHAR UseMissionSoftPath[] =
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse.DA_Mission_NeuroNeuralSlowUse");
+	constexpr TCHAR ConnectionMissionSoftPath[] =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroAdaptationConnection.DA_Mission_NeuroAdaptationConnection");
+	constexpr TCHAR ConnectionMissionId[] = TEXT("Mission_NeuroAdaptationConnection");
+	constexpr TCHAR ConnectObjectiveId[] = TEXT("Obj_ConnectLiveAdaptation");
 	constexpr TCHAR AdaptationPath[] =
 		TEXT("/Game/Data/Adaptations/DA_Adaptation_NeuralSlow.DA_Adaptation_NeuralSlow");
 	constexpr TCHAR IntroEvent[] = TEXT("Event_NeuralSlowEquipped");
@@ -997,7 +1001,7 @@ namespace NeuroNeuralSlowUseFunctional
 			AssertTrue(Record, TEXT("asset.intro_next"), Intro && Intro->NextMissionAsset.ToSoftObjectPath().ToString() == UseMissionSoftPath, UseMissionSoftPath, Intro ? Intro->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.use_id"), Use && Use->MissionId == FName(UseMissionId), UseMissionId, Use ? Use->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.use_title"), Use && Use->MissionTitle.ToString() == TEXT("Use Neural Slow"), TEXT("Use Neural Slow"), Use ? Use->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.use_next_null"), Use && Use->NextMissionAsset.IsNull(), TEXT("null"), Use && Use->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.use_next_connection"), Use && Use->NextMissionAsset.ToSoftObjectPath().ToString() == ConnectionMissionSoftPath, ConnectionMissionSoftPath, Use ? Use->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.use_one_task"), Use && Use->Tasks.Num() == 1 && Use->Tasks[0].EventTriggers.Num() == 1 && Use->Tasks[0].EventTriggers[0].EventId == FName(UseEvent), UseEvent, Use && Use->Tasks.Num() == 1 && Use->Tasks[0].EventTriggers.Num() == 1 ? Use->Tasks[0].EventTriggers[0].EventId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.neural_data"), Neural && Neural->GetPathName() == AdaptationPath, AdaptationPath, Neural ? Neural->GetPathName() : TEXT("missing"), TEXT("adaptation"));
 			UProjectOrganoidBiologicalAdaptation_NeuralSlow* Slow = Cast<UProjectOrganoidBiologicalAdaptation_NeuralSlow>(Neural);
@@ -1622,7 +1626,15 @@ namespace NeuroNeuralSlowUseFunctional
 					AssertTrue(Record, TEXT("apply.nathan"), Line.Contains(ExpectedLine) && Subject->AdaptationCampaignNotificationCount == 1, ExpectedLine, Line, TEXT("HUD"));
 					AssertTrue(Record, TEXT("apply.nathan_duration"), FMath::IsNearlyEqual(Subject->AdaptationCampaignNotificationDurationSeconds, 7.f, 0.05f) && RemainingNote > 6.f && RemainingNote <= 7.f, TEXT("7"), FString::SanitizeFloat(RemainingNote), TEXT("HUD"));
 					AssertTrue(Record, TEXT("apply.objective"), CountCompletedId(Objectives, FName(UseObjectiveId)) == 1 && CountActiveId(Objectives, FName(UseObjectiveId)) == 0, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(UseObjectiveId))), UseObjectiveId);
-					AssertTrue(Record, TEXT("apply.mission"), Objectives->IsMissionComplete(FName(UseMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+					AssertTrue(
+						Record,
+						TEXT("apply.connection_current"),
+						Objectives->GetActiveMissionId() == FName(ConnectionMissionId)
+							&& CountActiveId(Objectives, FName(ConnectObjectiveId)) == 1
+							&& CountCompletedId(Objectives, FName(UseObjectiveId)) == 1,
+						ConnectionMissionId,
+						Objectives->GetActiveMissionId().ToString(),
+						TEXT("mission"));
 					StopIfFailed();
 					if (!bAnyAssertFailed)
 					{
@@ -1702,7 +1714,15 @@ namespace NeuroNeuralSlowUseFunctional
 				const float SubjectSpeed = Subject && Subject->GetCharacterMovement() ? Subject->GetCharacterMovement()->MaxWalkSpeed : 0.f;
 				const float Host1Speed = Host1 && Host1->GetCharacterMovement() ? Host1->GetCharacterMovement()->MaxWalkSpeed : 0.f;
 				AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-				AssertTrue(Record, TEXT("save.mission"), Objectives->IsMissionComplete(FName(UseMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+				AssertTrue(
+					Record,
+					TEXT("save.connection_current"),
+					Objectives->GetActiveMissionId() == FName(ConnectionMissionId)
+						&& CountActiveId(Objectives, FName(ConnectObjectiveId)) == 1
+						&& CountCompletedId(Objectives, FName(UseObjectiveId)) == 1,
+					ConnectionMissionId,
+					Objectives->GetActiveMissionId().ToString(),
+					TEXT("mission"));
 				AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(UseObjectiveId)) == 1 && CountActiveId(Objectives, FName(UseObjectiveId)) == 0, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(UseObjectiveId))), UseObjectiveId);
 				AssertTrue(Record, TEXT("save.equipped"), Adapt && Adapt->GetEquippedAdaptationPath().ToString() == AdaptationPath, AdaptationPath, Adapt ? Adapt->GetEquippedAdaptationPath().ToString() : TEXT("missing"), TEXT("adaptation"));
 				AssertTrue(Record, TEXT("save.pe"), FMath::IsNearlyEqual(Character->GetPEEnergy(), SavedPE, 1.f), FString::SanitizeFloat(SavedPE), FString::SanitizeFloat(Character->GetPEEnergy()), TEXT("PE"));

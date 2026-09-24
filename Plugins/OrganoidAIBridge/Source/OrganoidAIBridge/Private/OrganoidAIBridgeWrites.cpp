@@ -153,6 +153,9 @@ namespace
 		TEXT("create_neural_slow_adaptation_asset"),
 		TEXT("create_neuro_neural_slow_use_mission"),
 		TEXT("set_neuro_research_station_intro_next_neural_slow"),
+		TEXT("create_neuro_adaptation_connection_mission"),
+		TEXT("set_neuro_neural_slow_use_next_adaptation_connection"),
+		TEXT("configure_neuro_live_adaptation_connection"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -212,6 +215,9 @@ namespace
 		TEXT("create_neural_slow_adaptation_asset"),
 		TEXT("create_neuro_neural_slow_use_mission"),
 		TEXT("set_neuro_research_station_intro_next_neural_slow"),
+		TEXT("create_neuro_adaptation_connection_mission"),
+		TEXT("set_neuro_neural_slow_use_next_adaptation_connection"),
+		TEXT("configure_neuro_live_adaptation_connection"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3160,12 +3166,15 @@ namespace
 #include "OrganoidAIBridgeNeuralSlowAdaptationAsset.inl"
 #include "OrganoidAIBridgeNeuroNeuralSlowUseMission.inl"
 #include "OrganoidAIBridgeNeuroResearchStationIntroNextNeuralSlow.inl"
+#include "OrganoidAIBridgeNeuroAdaptationConnectionMission.inl"
+#include "OrganoidAIBridgeNeuroNeuralSlowUseNextAdaptationConnection.inl"
 #include "OrganoidAIBridgeNeuroAdaptationSubject.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
 #include "OrganoidAIBridgeNeuroNeuralSignatureObservationNode.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
+#include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
 	FString PreflightSpawnBlueprintActor(
 		const TSharedPtr<FJsonObject>& Args,
@@ -3846,6 +3855,18 @@ namespace
 		{
 			PreflightError = PreflightSetNeuroResearchStationIntroNextNeuralSlow(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_adaptation_connection_mission"))
+		{
+			PreflightError = PreflightCreateNeuroAdaptationConnectionMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neuro_neural_slow_use_next_adaptation_connection"))
+		{
+			PreflightError = PreflightSetNeuroNeuralSlowUseNextAdaptationConnection(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_neuro_live_adaptation_connection"))
+		{
+			PreflightError = PreflightConfigureNeuroLiveAdaptationConnection(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -3935,6 +3956,9 @@ namespace
 			|| Action == TEXT("configure_neuro_research_station_intro")
 			|| Action == TEXT("create_neuro_neural_slow_use_mission")
 			|| Action == TEXT("set_neuro_research_station_intro_next_neural_slow")
+			|| Action == TEXT("create_neuro_adaptation_connection_mission")
+			|| Action == TEXT("set_neuro_neural_slow_use_next_adaptation_connection")
+			|| Action == TEXT("configure_neuro_live_adaptation_connection")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -5114,6 +5138,9 @@ namespace
 				|| Change->Action == TEXT("create_neural_slow_adaptation_asset")
 				|| Change->Action == TEXT("create_neuro_neural_slow_use_mission")
 				|| Change->Action == TEXT("set_neuro_research_station_intro_next_neural_slow")
+				|| Change->Action == TEXT("create_neuro_adaptation_connection_mission")
+				|| Change->Action == TEXT("set_neuro_neural_slow_use_next_adaptation_connection")
+				|| Change->Action == TEXT("configure_neuro_live_adaptation_connection")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -5353,6 +5380,18 @@ namespace
 		if (Change->Action == TEXT("set_neuro_research_station_intro_next_neural_slow"))
 		{
 			return ExecuteSetNeuroResearchStationIntroNextNeuralSlow(*Change);
+		}
+		if (Change->Action == TEXT("create_neuro_adaptation_connection_mission"))
+		{
+			return ExecuteCreateNeuroAdaptationConnectionMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neuro_neural_slow_use_next_adaptation_connection"))
+		{
+			return ExecuteSetNeuroNeuralSlowUseNextAdaptationConnection(*Change);
+		}
+		if (Change->Action == TEXT("configure_neuro_live_adaptation_connection"))
+		{
+			return ExecuteConfigureNeuroLiveAdaptationConnection(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{

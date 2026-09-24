@@ -88,6 +88,13 @@ bool AProjectOrganoidInspectableInstrument::Interact_Implementation(AProjectOrga
 
 	if (IsGuardedObjectiveCompleted())
 	{
+		if (TryFollowupConnection(Interactor))
+		{
+			RefreshPrompt();
+			BP_OnInspected(Interactor, true);
+			return true;
+		}
+
 		RefreshPrompt();
 		BP_OnInspected(Interactor, false);
 		return true;
@@ -191,6 +198,75 @@ bool AProjectOrganoidInspectableInstrument::IsRequiredObjectiveActive() const
 	return Objective.State == EProjectOrganoidObjectiveState::Active;
 }
 
+bool AProjectOrganoidInspectableInstrument::IsFollowupConnectionConfigured() const
+{
+	return !FollowupRequiredActiveObjectiveId.IsNone()
+		&& !FollowupPrerequisiteCompletedObjectiveId.IsNone()
+		&& !FollowupSuccessEventId.IsNone();
+}
+
+bool AProjectOrganoidInspectableInstrument::IsNamedObjectiveInState(
+	FName ObjectiveId,
+	EProjectOrganoidObjectiveState State) const
+{
+	if (ObjectiveId.IsNone())
+	{
+		return false;
+	}
+
+	const UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(ObjectiveId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == State;
+}
+
+bool AProjectOrganoidInspectableInstrument::TryFollowupConnection(AProjectOrganoidCharacter* Interactor)
+{
+	if (!IsFollowupConnectionConfigured())
+	{
+		return false;
+	}
+
+	if (FollowupEventFireCount > 0
+		|| IsNamedObjectiveInState(FollowupRequiredActiveObjectiveId, EProjectOrganoidObjectiveState::Completed))
+	{
+		return false;
+	}
+
+	if (!IsNamedObjectiveInState(FollowupRequiredActiveObjectiveId, EProjectOrganoidObjectiveState::Active)
+		|| !IsNamedObjectiveInState(
+			FollowupPrerequisiteCompletedObjectiveId,
+			EProjectOrganoidObjectiveState::Completed))
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GetObjectiveSubsystem();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	Objectives->TriggerEvent(FollowupSuccessEventId);
+	++FollowupEventFireCount;
+
+	if (IsNamedObjectiveInState(FollowupRequiredActiveObjectiveId, EProjectOrganoidObjectiveState::Completed))
+	{
+		PresentFollowupNotification(Interactor);
+	}
+
+	return true;
+}
+
 void AProjectOrganoidInspectableInstrument::PresentInspectionNotification(AProjectOrganoidCharacter* Interactor)
 {
 	APlayerController* PC = Interactor ? Cast<APlayerController>(Interactor->GetController()) : nullptr;
@@ -220,5 +296,35 @@ void AProjectOrganoidInspectableInstrument::PresentInspectionNotification(AProje
 	if (HUDController->ShowTransientNotification(SpeakerLabel, InspectionResponseText, NotificationDurationSeconds))
 	{
 		++InspectionNotificationCount;
+	}
+}
+
+void AProjectOrganoidInspectableInstrument::PresentFollowupNotification(AProjectOrganoidCharacter* Interactor)
+{
+	if (FollowupResponseText.IsEmpty() || FollowupNotificationDurationSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	APlayerController* PC = Interactor ? Cast<APlayerController>(Interactor->GetController()) : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (!HUDController)
+	{
+		return;
+	}
+
+	const FText Speaker = FollowupSpeakerLabel.IsEmpty()
+		? FText::GetEmpty()
+		: FollowupSpeakerLabel;
+	if (HUDController->ShowTransientNotification(Speaker, FollowupResponseText, FollowupNotificationDurationSeconds))
+	{
+		++FollowupNotificationCount;
 	}
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "ProjectOrganoidInteractable.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidInspectableInstrument.generated.h"
 
 class AProjectOrganoidCharacter;
@@ -86,6 +87,36 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instrument|Diagnostics", Transient)
 	int32 ObjectiveEventFireCount = 0;
 
+	/**
+	 * Optional second campaign hook. All three ids None disables it.
+	 * Runs only after the primary replay guard is already Completed, and only when
+	 * its own objective is Active and its prerequisite objective is Completed.
+	 * Does not replace the primary ObjectiveEventId path.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Followup")
+	FName FollowupRequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Followup")
+	FName FollowupPrerequisiteCompletedObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Followup")
+	FName FollowupSuccessEventId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Followup")
+	FText FollowupSpeakerLabel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Followup")
+	FText FollowupResponseText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Instrument|Followup", meta = (ClampMin = "0.0"))
+	float FollowupNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instrument|Followup", Transient)
+	int32 FollowupEventFireCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Instrument|Followup", Transient)
+	int32 FollowupNotificationCount = 0;
+
 	virtual void BeginPlay() override;
 
 	virtual bool CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const override;
@@ -101,6 +132,10 @@ protected:
 	UProjectOrganoidObjectiveSubsystem* GetObjectiveSubsystem() const;
 	bool IsGuardedObjectiveCompleted() const;
 	bool IsRequiredObjectiveActive() const;
+	bool IsFollowupConnectionConfigured() const;
+	bool IsNamedObjectiveInState(FName ObjectiveId, EProjectOrganoidObjectiveState State) const;
+	bool TryFollowupConnection(AProjectOrganoidCharacter* Interactor);
 	void PresentInspectionNotification(AProjectOrganoidCharacter* Interactor);
+	void PresentFollowupNotification(AProjectOrganoidCharacter* Interactor);
 	void ConfigurePresentationMesh(UStaticMeshComponent* Mesh) const;
 };

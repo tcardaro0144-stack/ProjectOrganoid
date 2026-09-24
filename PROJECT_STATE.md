@@ -3106,3 +3106,93 @@ Checkpoint, each once:
 
 - Beat 10 V1 is implemented, persisted, and validated, with the deferred Beep/LMB exception documented above.
 - Do not begin Beat 11 until separately authorized.
+
+## 2026-09-24 — Beat 11: Connect Live Adaptation
+
+**Status:** implemented, persisted, validated, with one documented deferred Beep exception and one documented flaky HostCombatLoop that passes in isolation. Changes left **unstaged**. No commit / no push / no Beat 12.
+
+**Baseline:** published Beat 10 commit `302ae2eba4c02a9d6f96eddc8d60984bb9a90dc7`. Beat 11 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_NeuroNeuralSlowUse` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_NeuroAdaptationConnection`
+  - Mission ID: `Mission_NeuroAdaptationConnection`
+  - Title: `Connect Live Adaptation`
+  - Description: `The Neural Slow adaptation affected a live Host. Connect that live result to the neural evidence already collected.`
+  - Exactly one Main task: `Obj_ConnectLiveAdaptation` (autoactivate, target 1, no prerequisite)
+  - Title: `Connect Live Adaptation to Evidence`
+  - Description: `Examine the neural evidence instrument to correlate the live slowdown with Epitope's research data.`
+  - Complete event: `Event_LiveAdaptationConnected`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroNeuralSlowUse.NextMissionAsset` → `DA_Mission_NeuroAdaptationConnection`.
+
+### Encounter and actor reuse
+
+- No new Host, no new enemy, and no pursuer.
+- Credit reuses the existing `NeuralChangeEvidenceInstrument_NeuroGenetics`. It was not moved.
+- Existing Hosts, the Research Station, pads, and hazards were not moved or reconfigured.
+- Power remains Neuro Online and Cryo Blackout. This beat does not restore power and does not unlock Cryo.
+
+### Gameplay behavior
+
+- The inspectable instrument has a second follow-up hook that is default-off. The instrument class does not hard-code Beat 11 IDs. The hook runs only after the existing examine replay guard is already complete.
+- Credit requires all of: `Obj_ConnectLiveAdaptation` Active, `Event_NeuralSlowApplied` completed (`Obj_ApplyNeuralSlow` Completed), the actor is exactly `NeuralChangeEvidenceInstrument_NeuroGenetics`, and a successful interact.
+- The original examine event `Event_NeuralChangeEvidenceExamined` is unchanged.
+- Nathan line, once, 7 seconds: `The live Host slowed the same way these records describe. Epitope was adapting nervous systems, not only recording them.`
+- Replay is guarded. Mission completion and sector power persist. The notification is transient and is not persisted.
+- No forced equipment, no power change, and no Cryo unlock.
+- Ordinary instrument use before this objective is active gives no Beat 11 credit.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (successor link; Beat 10 published hash was `ab110f4c84932864f33e535d02af16d784b29e92f2baada779ba098092a96195`)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `b6af5383e5b1eb1fe213b72e7d1a75da9128f94012076f03d586dfdd7af3437f` (instrument follow-up saved; Beat 10 published hash was `29981773ca021a06b864d935ae7b4349a888db8d9d6cef87570da14516753b5e`)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `8dbcd1c52e336ab3afad83fd034f1b9f12307eea277a85b56ec8a4bd438ae806`
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite: **7/7** tests, **797/797** assertions.
+  - `NeuroAdaptationConnection_Functional` **86/86** — `ptr_979d5f8f-4071-24b3-2029-6f8cdcb2e6dc`
+  - `NeuroNeuralSlowUse_Functional` **67/67** — `ptr_9caa92d4-403a-17a4-443d-5c8c3a0f8fc8`
+  - `NeuroResearchStationIntro_Functional` **93/93** — `ptr_9c422f62-444c-dd0e-2594-b196b3d6c55e`
+  - `NeuroExamineNeuralChangeEvidence_Functional` **143/143** — `ptr_fa200483-4a3d-c57a-3014-77b950458164`
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_4746282b-4fbd-308e-aa18-85aef161c3e7`
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_6db15c92-4dcc-5dbb-33ad-e995133e26f4`
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_e8383176-4bf8-6fea-325c-06bb3ab6b715`
+- One complete 46-test checkpoint ran once and stopped at test 12. It was not rerun as a second complete checkpoint. Live catalog order was accepted; `NeuroAdaptationConnection_Functional` is index **45**.
+  - Executed **12/46**, **337** assertions, **2** failed.
+  - `BeepClickInjection_Functional` **11/12** — `ptr_07d971da-4305-e4ec-af03-989bcf973f8b`. Failed assertion `route.no_lmb_combat`, expected `false`, actual `true`, actor `Admin`. Known deferred simulated-click exception.
+  - `HostCombatLoop_Functional` **21/22** — `ptr_9b4529c2-4c1f-60f4-75d2-56b0efa2d126`. Failed assertion `no_invalid_range_damage`, expected `85.0`, actual `67.0`, actor `player`. `no_invalid_range_melee` passed.
+  - Log had no ensure, fatal, unhandled exception, assertion-failed, or critical-error signature. Saves were restored. The five locked hashes were unchanged.
+- Isolated `HostCombatLoop_Functional`, with no predecessor tests: **ISOLATED_PASS**, **33/33** — `ptr_3434b3ea-4aab-09f4-2228-4cbbe828274e`. `no_invalid_range_damage` stayed `85.0`. Log clean.
+  - Classified as a preexisting flaky/test-isolation defect. The Beat 11 diff has no Host, Melee, Damage, or Health hits. It is not a Beat 11 regression.
+- Continuation of live indexes 13–46, not a second complete checkpoint: **34/34** tests, **4113/4113** assertions, outcome `CONTINUATION_PASS`. Summary: `%TEMP%\b11_cont34_summary_61005bf569284c239f9540bc57ecef89.json`
+- Recorded assertion executions: checkpoint **337** + isolated HostCombat **33** + continuation **4113** = **4483**. Failed assertions: **2** in the checkpoint, **0** in the isolated diagnostic, **0** in the continuation. The isolated 33 re-executes HostCombatLoop, whose checkpoint stop is inside the 337 (22 assertions, 1 failed), so 4483 counts that re-execution and is not a unique-assertion total.
+- One-pass coverage: **46** tests exercised, **45** pass states, one documented deferred Beep exception, and one flaky HostCombatLoop that passes in isolation.
+- Closed logs after the delegate fixes had no `Ensure condition failed`, `Fatal error`, `Unhandled Exception`, `Assertion failed`, or `Critical error:` hit. Save inventories were restored. No test slot remained.
+
+### Deferred issues (not fixed)
+
+1. `route.no_lmb_combat` remains the historical simulated-click exception. Expected `false`, actual `true`, actor `Admin`.
+2. `HostCombatLoop_Functional` `no_invalid_range_damage` can fail at `67.0` (an 18-point non-melee hit while the Admin-host exemption lookup is null). Isolated rerun passes **33/33** at `85.0`. Not a Beat 11 regression.
+3. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder.
+4. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+
+### Preservation / audit
+
+- Unreal closed. No dirty package at the last clean close.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged** (no commit / no push).
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 11 is implemented, persisted, and validated, with the deferred Beep exception and the isolated-pass HostCombatLoop flake documented above.
+- Do not begin Beat 12 until separately authorized.
