@@ -15,6 +15,8 @@
 	const TCHAR* NeuroRevelationObjectiveDescription =
 		TEXT("Review the neural signature observation node to confirm the pattern.");
 	const TCHAR* NeuroRevelationEventId = TEXT("Event_NeuroRevelationReached");
+	const TCHAR* NeuroRevelationAllowedNext =
+		TEXT("/Game/Data/Missions/DA_Mission_CryoAccess.DA_Mission_CryoAccess");
 
 	const FVector NeuroRevelationNodeLocation(500.f, -2100.f, -1100.f);
 	const FVector NeuroRevelationTerminalLocation(300.f, -600.f, -1100.f);
@@ -210,11 +212,13 @@
 		if (FSoftObjectProperty* SoftProp = CastField<FSoftObjectProperty>(NextProp))
 		{
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
-			if (Soft.ToSoftObjectPath().IsValid())
+			const FString NextPath = Soft.ToSoftObjectPath().IsValid() ? Soft.ToSoftObjectPath().ToString() : FString();
+			if (!NextPath.IsEmpty() && !NextPath.Equals(NeuroRevelationAllowedNext, ESearchCase::CaseSensitive))
 			{
 				return FString::Printf(
-					TEXT("NextMissionAsset must be null, got '%s'"),
-					*Soft.ToSoftObjectPath().ToString());
+					TEXT("NextMissionAsset must be null or '%s', got '%s'"),
+					NeuroRevelationAllowedNext,
+					*NextPath);
 			}
 		}
 		else

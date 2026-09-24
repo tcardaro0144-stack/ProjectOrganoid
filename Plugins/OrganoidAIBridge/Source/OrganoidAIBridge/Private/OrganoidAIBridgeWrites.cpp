@@ -71,6 +71,7 @@ namespace
 	const TCHAR* AdminPackage = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	const TCHAR* EpitopePackage = TEXT("/Game/Maps/Lvl_Epitope");
 	const TCHAR* NeuroPackage = TEXT("/Game/Maps/Epitope/SL_Epitope_NeuroGenetics");
+	const TCHAR* CryoPackage = TEXT("/Game/Maps/Epitope/SL_Epitope_Cryo");
 	const TCHAR* MainMenuPackage = TEXT("/Game/Maps/Lvl_MainMenu");
 	const TCHAR* AccessDoorBpPath = TEXT("/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor");
 	const TCHAR* AccessDoorBpPackage = TEXT("/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor");
@@ -159,6 +160,9 @@ namespace
 		TEXT("create_neuro_revelation_mission"),
 		TEXT("set_neuro_adaptation_connection_next_revelation"),
 		TEXT("configure_neuro_revelation_observation"),
+		TEXT("create_cryo_access_mission"),
+		TEXT("set_neuro_revelation_next_cryo_access"),
+		TEXT("configure_cryo_backup_power_panel"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -224,6 +228,9 @@ namespace
 		TEXT("create_neuro_revelation_mission"),
 		TEXT("set_neuro_adaptation_connection_next_revelation"),
 		TEXT("configure_neuro_revelation_observation"),
+		TEXT("create_cryo_access_mission"),
+		TEXT("set_neuro_revelation_next_cryo_access"),
+		TEXT("configure_cryo_backup_power_panel"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -1545,12 +1552,13 @@ namespace
 		return TEXT("");
 	}
 
-	bool ParseSaveMapsPackages(const TSharedPtr<FJsonObject>& Args, TArray<FString>& OutPackages, bool& bAdminOnly, bool& bNeuroOnly, bool& bEpitopeOnly, FString& OutError)
+	bool ParseSaveMapsPackages(const TSharedPtr<FJsonObject>& Args, TArray<FString>& OutPackages, bool& bAdminOnly, bool& bNeuroOnly, bool& bEpitopeOnly, bool& bCryoOnly, FString& OutError)
 	{
 		OutPackages.Reset();
 		bAdminOnly = false;
 		bNeuroOnly = false;
 		bEpitopeOnly = false;
+		bCryoOnly = false;
 		const TArray<TSharedPtr<FJsonValue>>* PackagesArr = nullptr;
 		if (!Args.IsValid() || !Args->TryGetArrayField(TEXT("packages"), PackagesArr) || !PackagesArr)
 		{
@@ -1578,7 +1586,13 @@ namespace
 				bEpitopeOnly = true;
 				return true;
 			}
-			OutError = TEXT("single-package save_maps must be Admin, NeuroGenetics, or Lvl_Epitope.");
+			if (PackagesEqual(Only, CryoPackage))
+			{
+				OutPackages.Add(FString(CryoPackage));
+				bCryoOnly = true;
+				return true;
+			}
+			OutError = TEXT("single-package save_maps must be Admin, NeuroGenetics, Cryo, or Lvl_Epitope.");
 			return false;
 		}
 		if (PackagesArr->Num() == 2)
@@ -1807,8 +1821,9 @@ namespace
 		bool bAdminOnly = false;
 		bool bNeuroOnly = false;
 		bool bEpitopeOnly = false;
+		bool bCryoOnly = false;
 		FString ParseError;
-		if (!ParseSaveMapsPackages(Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, ParseError))
+		if (!ParseSaveMapsPackages(Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, bCryoOnly, ParseError))
 		{
 			return ParseError;
 		}
@@ -1826,6 +1841,10 @@ namespace
 			{
 				return TEXT("Neuro-only save_maps must not include Admin or Lvl_Epitope.");
 			}
+			if (bCryoOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, EpitopePackage) || PackagesEqual(PackageName, NeuroPackage)))
+			{
+				return TEXT("Cryo-only save_maps must not include Admin, NeuroGenetics, or Lvl_Epitope.");
+			}
 			if (bEpitopeOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, NeuroPackage)))
 			{
 				return TEXT("Lvl_Epitope-only save_maps must not include Admin or NeuroGenetics.");
@@ -1836,6 +1855,49 @@ namespace
 		if (!World)
 		{
 			return TEXT("No editor world.");
+		}
+		if (bCryoOnly)
+		{
+			ULevel* CryoLevel = FindLoadedLevelByPackage(World, CryoPackage);
+			if (!CryoLevel)
+			{
+				return TEXT("Destination /Game/Maps/Epitope/SL_Epitope_Cryo is not loaded.");
+			}
+			if (!FindPackageByName(CryoPackage))
+			{
+				return TEXT("Cryo map package is not loaded in memory.");
+			}
+			if (GetPieWorld())
+			{
+				return TEXT("PIE is running. Stop Play before a Cryo-only save.");
+			}
+			TArray<AActor*> PanelMatches = FindByExactLabel(World, TEXT("PowerPanel_CryoBackup"));
+			if (PanelMatches.Num() != 1 || !PackagesEqual(ActorOwningPackage(PanelMatches[0]), CryoPackage))
+			{
+				return FString::Printf(TEXT("PowerPanel_CryoBackup count=%d must be the unique Cryo panel before Cryo save."), PanelMatches.Num());
+			}
+			TArray<AActor*> CheckpointMatches = FindByExactLabel(World, TEXT("Checkpoint_FreightAirlock"));
+			if (CheckpointMatches.Num() != 1 || !LocationMatches(CheckpointMatches[0]->GetActorLocation(), FVector(1950.f, 0.f, -2340.f)))
+			{
+				return TEXT("Checkpoint_FreightAirlock must stay unique at (1950, 0, -2340) before Cryo save.");
+			}
+			Before->SetStringField(TEXT("persistent_package"), NormalizePackage(WorldPackageName(World)));
+			Before->SetBoolField(TEXT("pie_running"), false);
+			Before->SetBoolField(TEXT("on_game_thread"), IsInGameThread());
+			Before->SetBoolField(TEXT("cryo_only"), true);
+			Before->SetBoolField(TEXT("neuro_only"), false);
+			Before->SetBoolField(TEXT("admin_only"), false);
+			TArray<TSharedPtr<FJsonValue>> CryoPkgs;
+			CryoPkgs.Add(MakeShared<FJsonValueString>(FString(CryoPackage)));
+			Before->SetArrayField(TEXT("packages"), CryoPkgs);
+			Proposed->SetArrayField(TEXT("packages"), CryoPkgs);
+			Proposed->SetBoolField(TEXT("cryo_only"), true);
+			Proposed->SetStringField(TEXT("api"), TEXT("UEditorLoadingAndSavingUtils::SavePackages"));
+			Proposed->SetBoolField(TEXT("dialog"), false);
+			Proposed->SetBoolField(TEXT("save_all"), false);
+			Proposed->SetBoolField(TEXT("compile"), false);
+			Proposed->SetStringField(TEXT("result"), TEXT("Save SL_Epitope_Cryo only. Does not save Admin, NeuroGenetics, or Lvl_Epitope."));
+			return TEXT("");
 		}
 		if (bNeuroOnly)
 		{
@@ -3182,6 +3244,9 @@ namespace
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
 #include "OrganoidAIBridgeNeuroNeuralSignatureObservationNode.inl"
 #include "OrganoidAIBridgeNeuroRevelationObservation.inl"
+#include "OrganoidAIBridgeCryoAccessMission.inl"
+#include "OrganoidAIBridgeNeuroRevelationNextCryoAccess.inl"
+#include "OrganoidAIBridgeCryoBackupPowerPanel.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -3888,6 +3953,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureNeuroRevelationObservation(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_cryo_access_mission"))
+		{
+			PreflightError = PreflightCreateCryoAccessMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neuro_revelation_next_cryo_access"))
+		{
+			PreflightError = PreflightSetNeuroRevelationNextCryoAccess(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_cryo_backup_power_panel"))
+		{
+			PreflightError = PreflightConfigureCryoBackupPowerPanel(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -3983,6 +4060,8 @@ namespace
 			|| Action == TEXT("create_neuro_revelation_mission")
 			|| Action == TEXT("set_neuro_adaptation_connection_next_revelation")
 			|| Action == TEXT("configure_neuro_revelation_observation")
+			|| Action == TEXT("create_cryo_access_mission")
+			|| Action == TEXT("set_neuro_revelation_next_cryo_access")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -3991,6 +4070,10 @@ namespace
 			|| Action == TEXT("spawn_neuro_neural_change_evidence_instrument"))
 		{
 			Package = NeuroPackage;
+		}
+		else if (Action == TEXT("configure_cryo_backup_power_panel"))
+		{
+			Package = CryoPackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -4017,10 +4100,15 @@ namespace
 			bool bSaveAdminOnly = false;
 			bool bSaveNeuroOnly = false;
 			bool bSaveEpitopeOnly = false;
+			bool bSaveCryoOnly = false;
 			FString SaveParseError;
-			if (ParseSaveMapsPackages(Args, SavePackages, bSaveAdminOnly, bSaveNeuroOnly, bSaveEpitopeOnly, SaveParseError) && bSaveNeuroOnly)
+			if (ParseSaveMapsPackages(Args, SavePackages, bSaveAdminOnly, bSaveNeuroOnly, bSaveEpitopeOnly, bSaveCryoOnly, SaveParseError) && bSaveNeuroOnly)
 			{
 				Package = NeuroPackage;
+			}
+			else if (bSaveCryoOnly)
+			{
+				Package = CryoPackage;
 			}
 			else if (bSaveEpitopeOnly)
 			{
@@ -4791,10 +4879,43 @@ namespace
 		bool bAdminOnly = false;
 		bool bNeuroOnly = false;
 		bool bEpitopeOnly = false;
+		bool bCryoOnly = false;
 		FString ParseError;
-		if (!ParseSaveMapsPackages(Change.Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, ParseError))
+		if (!ParseSaveMapsPackages(Change.Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, bCryoOnly, ParseError))
 		{
 			return FailAudit(TEXT("bad_args"), ParseError, MakeShared<FBridgeChange>(Change));
+		}
+
+		if (bCryoOnly)
+		{
+			UPackage* CryoPkg = FindPackageByName(CryoPackage);
+			if (!CryoPkg)
+			{
+				return FailAudit(TEXT("not_found"), TEXT("Cryo map package not loaded. ZERO writes."), MakeShared<FBridgeChange>(Change));
+			}
+			TArray<UPackage*> CryoOnly;
+			CryoOnly.Add(CryoPkg);
+			const bool bCryoSaved = UEditorLoadingAndSavingUtils::SavePackages(CryoOnly, /*bOnlyDirty=*/false);
+			Change.bExecuted = bCryoSaved;
+			Change.ExecutedAt = NowIso();
+			Change.bSavePerformed = bCryoSaved;
+			Change.Status = bCryoSaved ? TEXT("executed") : TEXT("execute_save_failed");
+			Change.After = MakeShared<FJsonObject>();
+			Change.After->SetBoolField(TEXT("on_game_thread"), IsInGameThread());
+			Change.After->SetBoolField(TEXT("cryo_saved"), bCryoSaved);
+			Change.After->SetBoolField(TEXT("cryo_only"), true);
+			Change.After->SetStringField(TEXT("api"), TEXT("UEditorLoadingAndSavingUtils::SavePackages"));
+			Change.After->SetBoolField(TEXT("dialog"), false);
+			Change.After->SetBoolField(TEXT("save_all"), false);
+			Change.After->SetBoolField(TEXT("compile"), false);
+			TArray<TSharedPtr<FJsonValue>> SavedCryo;
+			if (bCryoSaved)
+			{
+				SavedCryo.Add(MakeShared<FJsonValueString>(FString(CryoPackage)));
+			}
+			Change.After->SetArrayField(TEXT("packages_saved"), SavedCryo);
+			LogAudit(TEXT("execute"), Change);
+			return bCryoSaved ? Ok(AuditBase(Change)) : FailAudit(TEXT("save_failed"), TEXT("SavePackages failed for SL_Epitope_Cryo."), MakeShared<FBridgeChange>(Change));
 		}
 
 		if (bEpitopeOnly)
@@ -5168,6 +5289,9 @@ namespace
 				|| Change->Action == TEXT("create_neuro_revelation_mission")
 				|| Change->Action == TEXT("set_neuro_adaptation_connection_next_revelation")
 				|| Change->Action == TEXT("configure_neuro_revelation_observation")
+				|| Change->Action == TEXT("create_cryo_access_mission")
+				|| Change->Action == TEXT("set_neuro_revelation_next_cryo_access")
+				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -5178,7 +5302,9 @@ namespace
 				|| PackagesEqual(SessionPackage, EpitopePackage);
 			const bool bNeuroSession = PackagesEqual(SessionPackage, NeuroPackage)
 				|| PackagesEqual(SessionPackage, MainMenuPackage)
-				|| PackagesEqual(Change->Package, NeuroPackage);
+				|| PackagesEqual(Change->Package, NeuroPackage)
+				|| PackagesEqual(SessionPackage, CryoPackage)
+				|| PackagesEqual(Change->Package, CryoPackage);
 			if (!((bBlueprintTemplate || bBlueprintVariable || bBlueprintGraph) && bAdminSession)
 				&& !(bMoveOrSaveMaps && (bEpitopeOrAdminSession || bNeuroSession)))
 			{
@@ -5431,6 +5557,18 @@ namespace
 		if (Change->Action == TEXT("configure_neuro_revelation_observation"))
 		{
 			return ExecuteConfigureNeuroRevelationObservation(*Change);
+		}
+		if (Change->Action == TEXT("create_cryo_access_mission"))
+		{
+			return ExecuteCreateCryoAccessMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neuro_revelation_next_cryo_access"))
+		{
+			return ExecuteSetNeuroRevelationNextCryoAccess(*Change);
+		}
+		if (Change->Action == TEXT("configure_cryo_backup_power_panel"))
+		{
+			return ExecuteConfigureCryoBackupPowerPanel(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{

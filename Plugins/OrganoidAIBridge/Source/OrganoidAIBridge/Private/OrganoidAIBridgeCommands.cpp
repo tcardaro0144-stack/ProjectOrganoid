@@ -532,6 +532,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_revelation_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_adaptation_connection_next_revelation")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_revelation_observation")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_cryo_access_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_revelation_next_cryo_access")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_cryo_backup_power_panel")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -618,6 +621,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_revelation_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_adaptation_connection_next_revelation")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_revelation_observation")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_cryo_access_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_revelation_next_cryo_access")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_cryo_backup_power_panel")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1852,6 +1858,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_neuro_revelation_mission")
 		|| Normalized == TEXT("set_neuro_adaptation_connection_next_revelation")
 		|| Normalized == TEXT("configure_neuro_revelation_observation")
+		|| Normalized == TEXT("create_cryo_access_mission")
+		|| Normalized == TEXT("set_neuro_revelation_next_cryo_access")
+		|| Normalized == TEXT("configure_cryo_backup_power_panel")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")

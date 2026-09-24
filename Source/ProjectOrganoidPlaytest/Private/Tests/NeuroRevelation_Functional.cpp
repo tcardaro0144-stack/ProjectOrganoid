@@ -33,6 +33,8 @@ namespace NeuroRevelationFunctional
 	constexpr TCHAR UseSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse.DA_Mission_NeuroNeuralSlowUse");
 	constexpr TCHAR ConnectionSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroAdaptationConnection.DA_Mission_NeuroAdaptationConnection");
 	constexpr TCHAR RevelationSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroRevelation.DA_Mission_NeuroRevelation");
+	constexpr TCHAR CryoAccessSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoAccess.DA_Mission_CryoAccess");
+	constexpr TCHAR CryoAccessMissionId[] = TEXT("Mission_CryoAccess");
 	constexpr TCHAR RevelationPackage[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroRevelation");
 	constexpr TCHAR ConnectionPackage[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroAdaptationConnection");
 	constexpr TCHAR RevelationMissionId[] = TEXT("Mission_NeuroRevelation");
@@ -232,7 +234,7 @@ namespace NeuroRevelationFunctional
 			AssertTrue(Record, TEXT("asset.revelation_id"), Revelation && Revelation->MissionId == FName(RevelationMissionId), RevelationMissionId, Revelation ? Revelation->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.revelation_title"), Revelation && Revelation->MissionTitle.ToString() == TEXT("Read the Neural Pattern"), TEXT("Read the Neural Pattern"), Revelation ? Revelation->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.revelation_description"), Revelation && Revelation->MissionDescription.ToString().Contains(TEXT("systematic reorganization")), TEXT("systematic reorganization"), Revelation ? Revelation->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.revelation_next_null"), Revelation && Revelation->NextMissionAsset.IsNull(), TEXT("null"), Revelation && Revelation->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.revelation_next_cryoaccess"), Revelation && Revelation->NextMissionAsset.ToSoftObjectPath().ToString() == CryoAccessSoftPath, CryoAccessSoftPath, Revelation ? Revelation->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_task"), Revelation && Revelation->Tasks.Num() == 1, TEXT("1"), Revelation ? FString::FromInt(Revelation->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(RevelationObjectiveId), RevelationObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_title"), Task && Task->Objective.Title.ToString() == TEXT("Reach Neuro Revelation"), TEXT("Reach Neuro Revelation"), Task ? Task->Objective.Title.ToString() : TEXT("missing"), TEXT("DA"));
@@ -416,7 +418,7 @@ namespace NeuroRevelationFunctional
 			AssertTrue(Record, TEXT("success.interact"), bSuccess, TEXT("true"), BoolText(bSuccess), NodeLabel);
 			AssertTrue(Record, TEXT("success.fire"), Node->FollowupEventFireCount == 1, TEXT("1"), FString::FromInt(Node->FollowupEventFireCount), NodeLabel);
 			AssertTrue(Record, TEXT("success.objective"), CountCompletedId(Objectives, FName(RevelationObjectiveId)) == 1 && CountActiveId(Objectives, FName(RevelationObjectiveId)) == 0, TEXT("completed"), FString::FromInt(CountCompletedId(Objectives, FName(RevelationObjectiveId))), RevelationObjectiveId);
-			AssertTrue(Record, TEXT("success.mission"), Objectives->IsMissionComplete(FName(RevelationMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("success.cryo_access_current"), Objectives->GetActiveMissionId() == FName(CryoAccessMissionId), CryoAccessMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("success.notification"), Node->FollowupNotificationCount == 1, TEXT("1"), FString::FromInt(Node->FollowupNotificationCount), TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.line"), Line.Contains(ExpectedLine) && Line.StartsWith(TEXT("Nathan:")), ExpectedLine, Line, TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.duration"), Remaining > 6.0f && Remaining <= 7.0f, TEXT("7"), FString::SanitizeFloat(Remaining), TEXT("HUD"));
@@ -434,7 +436,7 @@ namespace NeuroRevelationFunctional
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.wrote"), bSaved, TEXT("true"), BoolText(bSaved), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->IsMissionComplete(FName(RevelationMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(CryoAccessMissionId), CryoAccessMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.guard_captured"), CountCompletedId(Objectives, FName(RevelationObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(RevelationObjectiveId))), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
@@ -455,7 +457,7 @@ namespace NeuroRevelationFunctional
 			}
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->IsMissionComplete(FName(RevelationMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(CryoAccessMissionId), CryoAccessMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(RevelationObjectiveId)) == 1 && CountActiveId(Objectives, FName(RevelationObjectiveId)) == 0, TEXT("completed"), FString::Printf(TEXT("completed=%d active=%d"), CountCompletedId(Objectives, FName(RevelationObjectiveId)), CountActiveId(Objectives, FName(RevelationObjectiveId))), RevelationObjectiveId);
 			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("Power"));
 			AssertTrue(Record, TEXT("save.cryo_blackout"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Blackout, TEXT("Blackout"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));

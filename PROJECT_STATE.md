@@ -3284,3 +3284,100 @@ Checkpoint, each once:
 
 - Beat 12 is implemented, persisted, and validated, with the deferred Beep exception documented above. HostCombatLoop passed in the complete checkpoint.
 - Do not begin Beat 13 until separately authorized.
+
+## 2026-09-24 — Beat 13: Open the Cryo Route
+
+**Status:** implemented, persisted, validated, with one documented deferred Beep exception. `HostCombatLoop_Functional` passed **33/33** in the complete retry. Changes left **unstaged**. No commit / no push / no Beat 14.
+
+**Baseline:** published Beat 12 commit `07a52746d64a7778b004833e62f4fe52d6975ece`. Beat 13 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_NeuroRevelation` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_CryoAccess`
+  - Mission ID: `Mission_CryoAccess`
+  - Title: `Open the Cryo Route`
+  - Description: `Cryo is still on emergency backup. Restore its power to make the route legitimately available.`
+  - Exactly one Main task: `Obj_RestoreCryoPower` (autoactivate, target 1, no prerequisite)
+  - Complete event: `Event_CryoBackupEngaged`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroRevelation.NextMissionAsset` → `DA_Mission_CryoAccess`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon.
+- Reused `PowerPanel_CryoBackup` at `(1665, -870, -2300)` on `SL_Epitope_Cryo`. It was not moved.
+- Existing checkpoint `Checkpoint_FreightAirlock`, datapads, and hazards were unchanged.
+- Panel configured: sector Cryo, restored state Online, required objective `Obj_RestoreCryoPower`, prompt `Engage Cryo Backup`, event `Event_CryoBackupEngaged`.
+- Nathan line, once, 6 seconds: `Cryo's backup came up. I can go in. I still don't know what they were keeping this cold.`
+- Replay is guarded. No door.
+
+### Gameplay behavior
+
+- Panel hook `bDiscoverPowerFailureBeforeRestore` is true. Default sector is Cryo, restored state is Online, and the required objective is Active `Obj_RestoreCryoPower`.
+- Credit only when `Obj_RestoreCryoPower` is Active, the actor is the exact panel, and interact succeeds.
+- Before that, Cryo power stays Blackout.
+- After success: Cryo Online, Neuro Online preserved, Admin Online, Facility Online, Compute Online, Reactor Emergency.
+- No Cryo unlock beyond power, and no door.
+- Cryo Online persists through SaveSubsystem and the panel Completed reapply. The notification is transient and is not persisted.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (successor now CryoAccess; Beat 12 recorded hash was `a3711be824fd93f4c71f65da1ab15d2641e546fedfcdb12792c7dcd137c39573`)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `fca3acae0ad474f21b7c8893ab71948a36f692b1b3ed57ecbf0847112f97749e` (new)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `2b39c4ebdfa939f340961816adb516726b9b6285705c09b4a219d26fb407807c` (panel configured, restored state Online)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded in **17.93s**.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 30612, dirty 0): **8/8** tests, **602/602** assertions. PIE stopped and dirty count 0 after each. The fresh log was clean. Both closes were clean (PID 28148, then PID 30612). One leftover `OrganoidOpeningFoundationTest.sav` existed before cleanup.
+  - `CryoAccess_Functional` **78/78** — `ptr_f57fc4a5-4924-a4b2-487b-75b24cb2ce5e` (78 `AssertTrue` calls; `power.cryo_blackout` before interact)
+  - `NeuroRevelation_Functional` **88/88** — `ptr_31486b25-4ef1-2a91-1484-a696ea1e0815`
+  - `NeuroAdaptationConnection_Functional` **86/86** — `ptr_d47517ec-4f40-6ba2-9e43-83a1c0dbd858`
+  - `NeuroNeuralSlowUse_Functional` **67/67** — `ptr_5f2b2c22-4029-5f53-093e-b7a7511c5844`
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_b4dd0898-43d9-cff5-7fac-7fae6c084a20`
+  - `NeuroRestoreLabPower_Functional` **116/116** — `ptr_b701b382-4655-65eb-3723-fb8fe75d2ef5`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_ea35935e-4ddb-935c-89fc-27a348d11ed7`
+  - `OpeningFoundation_Functional` **48/48** — `ptr_844e0c65-4edc-f7bc-adf4-3ba837e52984`
+- Complete 48-test attempt 1 aborted at test 2, `AmbienceLayerPlayback_Functional`, on a bridge status timeout. **1/48** executed. The editor hung as `UnrealEditor` PID 5928 and `CrashReportClientEditor` PID 30400. `CloseMainWindow` returned true, no Save Content dialog appeared, and both processes remained. Bridge probes for pie state, playtests, and editor state timed out. Authorized `Stop-Process -Force` on 5928, then 30400. After 60 seconds `PROC_COUNT` was 0. The eight hashes stayed exact. `OrganoidAutosave.sav` was restored to preflight hash `7568bec65b1840f904044a7e63a4dd6ee9e0adf8d8ead385cb4595c5154cc8de` (18888 bytes). `OrganoidOpeningFoundationTest.sav` was removed. Only the autosave remained. Retry file `%TEMP%\b13_complete48_proposed.ps1` stayed 16021 bytes and was not edited.
+- Complete 48-test retry ran once. Live order was 1–48. `NeuroAdaptationConnection_Functional` index **14**, `CryoAccess_Functional` index **47**, `NeuroRevelation_Functional` index **48**.
+  - Executed **48/48**, **4627** assertions, **1** failed.
+  - Outcome `DEFERRED_BEEP_EXCEPTION`. Script exit code **0**.
+  - `BeepClickInjection_Functional` **11/12** — `ptr_fde579ee-4f20-9f93-8d50-5d95e9e68917`. Failed assertion `route.no_lmb_combat`, expected `false`, actual `true`, actor `Admin`. Beep-exception flag true.
+  - `HostCombatLoop_Functional` **33/33** — `ptr_73a5676b-4ea6-07dc-f03f-00a8134b0961`. Host-flaky flag false.
+  - `CryoAccess_Functional` **78/78** — `ptr_4dd85540-4948-a621-ef60-ffb0d45dd6cd`.
+  - `NeuroRevelation_Functional` **88/88** — `ptr_97198906-42b0-279e-f471-a9b03d5e0645`.
+  - Close of editor PID 3992: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0 for `Ensure condition failed`, `Fatal error`, `Unhandled Exception`, `Assertion failed`, and `Critical error:`.
+  - Saves restored to `OrganoidAutosave.sav` only (`saves_ok` true). The eight locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Summary: `%TEMP%\b13_complete48_dcea5d5e0de244618b0fdb4a3c11937b\summary.json`
+- The diff is the Revelation successor link, the new Cryo Access mission, the Cryo map panel configuration, the bridge allowlist for create / next / panel, `CryoAccess_Functional`, and the Revelation handoff expectation.
+
+### Deferred issues (not fixed)
+
+1. `route.no_lmb_combat` remains the historical simulated-click exception. Expected `false`, actual `true`, actor `Admin`.
+2. `HostCombatLoop_Functional` `no_invalid_range_damage` was previously flaky at `67.0`. In this complete retry it passed **33/33**. Still deferred as a preexisting isolation defect, not a Beat 13 regression.
+3. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+4. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder. Camera correction remains deferred.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 14 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 13 is implemented, persisted, and validated, with the deferred Beep exception documented above. HostCombatLoop passed **33/33** in the complete retry.
+- Do not begin Beat 14 until separately authorized.
