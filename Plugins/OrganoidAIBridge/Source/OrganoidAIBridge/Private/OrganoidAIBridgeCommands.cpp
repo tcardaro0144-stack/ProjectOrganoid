@@ -529,6 +529,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_adaptation_connection_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_neural_slow_use_next_adaptation_connection")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_live_adaptation_connection")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_revelation_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_adaptation_connection_next_revelation")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_revelation_observation")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -612,6 +615,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_adaptation_connection_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_neural_slow_use_next_adaptation_connection")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_live_adaptation_connection")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_revelation_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_neuro_adaptation_connection_next_revelation")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_neuro_revelation_observation")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1843,6 +1849,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_neuro_adaptation_connection_mission")
 		|| Normalized == TEXT("set_neuro_neural_slow_use_next_adaptation_connection")
 		|| Normalized == TEXT("configure_neuro_live_adaptation_connection")
+		|| Normalized == TEXT("create_neuro_revelation_mission")
+		|| Normalized == TEXT("set_neuro_adaptation_connection_next_revelation")
+		|| Normalized == TEXT("configure_neuro_revelation_observation")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")

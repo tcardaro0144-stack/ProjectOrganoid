@@ -14,6 +14,8 @@
 	const TCHAR* NeuroAdaptationConnectionObjectiveDescription =
 		TEXT("Examine the neural evidence instrument to correlate the live slowdown with Epitope's research data.");
 	const TCHAR* NeuroAdaptationConnectionEventId = TEXT("Event_LiveAdaptationConnected");
+	const TCHAR* NeuroAdaptationConnectionAllowedNext =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroRevelation.DA_Mission_NeuroRevelation");
 	
 	UObject* FindNeuroAdaptationConnectionMissionAssetExact()
 	{
@@ -110,11 +112,13 @@
 		if (FSoftObjectProperty* SoftProp = CastField<FSoftObjectProperty>(NextProp))
 		{
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
-			if (Soft.ToSoftObjectPath().IsValid())
+			const FString NextPath = Soft.ToSoftObjectPath().IsValid() ? Soft.ToSoftObjectPath().ToString() : FString();
+			if (!NextPath.IsEmpty() && !NextPath.Equals(NeuroAdaptationConnectionAllowedNext, ESearchCase::CaseSensitive))
 			{
 				return FString::Printf(
-					TEXT("NextMissionAsset must be null, got '%s'"),
-					*Soft.ToSoftObjectPath().ToString());
+					TEXT("NextMissionAsset must be null or '%s', got '%s'"),
+					NeuroAdaptationConnectionAllowedNext,
+					*NextPath);
 			}
 		}
 		else

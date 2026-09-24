@@ -156,6 +156,9 @@ namespace
 		TEXT("create_neuro_adaptation_connection_mission"),
 		TEXT("set_neuro_neural_slow_use_next_adaptation_connection"),
 		TEXT("configure_neuro_live_adaptation_connection"),
+		TEXT("create_neuro_revelation_mission"),
+		TEXT("set_neuro_adaptation_connection_next_revelation"),
+		TEXT("configure_neuro_revelation_observation"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -218,6 +221,9 @@ namespace
 		TEXT("create_neuro_adaptation_connection_mission"),
 		TEXT("set_neuro_neural_slow_use_next_adaptation_connection"),
 		TEXT("configure_neuro_live_adaptation_connection"),
+		TEXT("create_neuro_revelation_mission"),
+		TEXT("set_neuro_adaptation_connection_next_revelation"),
+		TEXT("configure_neuro_revelation_observation"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3167,12 +3173,15 @@ namespace
 #include "OrganoidAIBridgeNeuroNeuralSlowUseMission.inl"
 #include "OrganoidAIBridgeNeuroResearchStationIntroNextNeuralSlow.inl"
 #include "OrganoidAIBridgeNeuroAdaptationConnectionMission.inl"
+#include "OrganoidAIBridgeNeuroRevelationMission.inl"
+#include "OrganoidAIBridgeNeuroAdaptationConnectionNextRevelation.inl"
 #include "OrganoidAIBridgeNeuroNeuralSlowUseNextAdaptationConnection.inl"
 #include "OrganoidAIBridgeNeuroAdaptationSubject.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
 #include "OrganoidAIBridgeNeuroNeuralSignatureObservationNode.inl"
+#include "OrganoidAIBridgeNeuroRevelationObservation.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -3867,6 +3876,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureNeuroLiveAdaptationConnection(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_revelation_mission"))
+		{
+			PreflightError = PreflightCreateNeuroRevelationMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neuro_adaptation_connection_next_revelation"))
+		{
+			PreflightError = PreflightSetNeuroAdaptationConnectionNextRevelation(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_neuro_revelation_observation"))
+		{
+			PreflightError = PreflightConfigureNeuroRevelationObservation(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -3959,6 +3980,9 @@ namespace
 			|| Action == TEXT("create_neuro_adaptation_connection_mission")
 			|| Action == TEXT("set_neuro_neural_slow_use_next_adaptation_connection")
 			|| Action == TEXT("configure_neuro_live_adaptation_connection")
+			|| Action == TEXT("create_neuro_revelation_mission")
+			|| Action == TEXT("set_neuro_adaptation_connection_next_revelation")
+			|| Action == TEXT("configure_neuro_revelation_observation")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -5141,6 +5165,9 @@ namespace
 				|| Change->Action == TEXT("create_neuro_adaptation_connection_mission")
 				|| Change->Action == TEXT("set_neuro_neural_slow_use_next_adaptation_connection")
 				|| Change->Action == TEXT("configure_neuro_live_adaptation_connection")
+				|| Change->Action == TEXT("create_neuro_revelation_mission")
+				|| Change->Action == TEXT("set_neuro_adaptation_connection_next_revelation")
+				|| Change->Action == TEXT("configure_neuro_revelation_observation")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -5392,6 +5419,18 @@ namespace
 		if (Change->Action == TEXT("configure_neuro_live_adaptation_connection"))
 		{
 			return ExecuteConfigureNeuroLiveAdaptationConnection(*Change);
+		}
+		if (Change->Action == TEXT("create_neuro_revelation_mission"))
+		{
+			return ExecuteCreateNeuroRevelationMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neuro_adaptation_connection_next_revelation"))
+		{
+			return ExecuteSetNeuroAdaptationConnectionNextRevelation(*Change);
+		}
+		if (Change->Action == TEXT("configure_neuro_revelation_observation"))
+		{
+			return ExecuteConfigureNeuroRevelationObservation(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{

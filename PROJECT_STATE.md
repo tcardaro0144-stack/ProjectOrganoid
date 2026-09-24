@@ -3196,3 +3196,91 @@ Checkpoint, each once:
 
 - Beat 11 is implemented, persisted, and validated, with the deferred Beep exception and the isolated-pass HostCombatLoop flake documented above.
 - Do not begin Beat 12 until separately authorized.
+
+## 2026-09-24 — Beat 12: Neuro Revelation
+
+**Status:** implemented, persisted, validated, with one documented deferred Beep exception. `HostCombatLoop_Functional` passed in the complete checkpoint. Changes left **unstaged**. No commit / no push / no Beat 13.
+
+**Baseline:** published Beat 11 commit `7b125bda5f0ffa548dfbd708faf0842cb8c63e17`. Beat 12 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_NeuroAdaptationConnection` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_NeuroRevelation`
+  - Mission ID: `Mission_NeuroRevelation`
+  - Title: `Read the Neural Pattern`
+  - Description: `The mapping and signature data now show a systematic reorganization of nervous systems tied to the research conducted in this wing.`
+  - Exactly one Main task: `Obj_ReachNeuroRevelation` (autoactivate, target 1, no prerequisite)
+  - Title: `Reach Neuro Revelation`
+  - Description: `Review the neural signature observation node to confirm the pattern.`
+  - Complete event: `Event_NeuroRevelationReached`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroAdaptationConnection.NextMissionAsset` → `DA_Mission_NeuroRevelation`.
+
+### Encounter and actor reuse
+
+- No new Host, no new enemy, and no pursuer. No Cryo unlock.
+- Credit reuses the existing `NeuralSignatureObservationNode_NeuroGenetics` at `(500, -2100, -1100)`. It was not moved.
+- Existing Hosts, the Research Station, pads, and hazards were not moved or reconfigured.
+- Power remains Neuro Online and Cryo Blackout. This beat does not restore power and does not unlock Cryo.
+
+### Gameplay behavior
+
+- The existing second follow-up hook on the inspectable instrument stays default-off. It runs only after the existing Follow Signature guard. Global instrument code stays ID-agnostic. `ProjectOrganoidInspectableInstrument` was not edited in this beat.
+- Credit requires all of: `Obj_ReachNeuroRevelation` Active, `Obj_ConnectLiveAdaptation` Completed, the actor label is exactly `NeuralSignatureObservationNode_NeuroGenetics`, and a successful interact.
+- The original follow-signature event `Event_NeuralSignatureFollowed` is unchanged.
+- Nathan line, once, 7 seconds: `These people are not simply infected; the research in this wing has been systematically reorganizing their nervous systems.`
+- Replay is guarded. Mission completion and sector power persist. The notification is transient and is not persisted.
+- No forced equipment, no power change, and no Cryo unlock.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882` (observation-node follow-up saved; Beat 11 recorded hash was `b6af5383e5b1eb1fe213b72e7d1a75da9128f94012076f03d586dfdd7af3437f`)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (successor now Revelation; Beat 11 recorded hash was `8dbcd1c52e336ab3afad83fd034f1b9f12307eea277a85b56ec8a4bd438ae806`; working-tree size 5190 bytes, was 3927)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `a3711be824fd93f4c71f65da1ab15d2641e546fedfcdb12792c7dcd137c39573` (new)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 21708, dirty 0): **8/8** tests, **885/885** assertions. PIE stopped and dirty count 0 after each. The fresh log was clean. Both closes were clean.
+  - `NeuroRevelation_Functional` **88/88** — `ptr_41f80a4c-4c8e-ba12-7061-b08133cb8285`
+  - `NeuroAdaptationConnection_Functional` **86/86** — `ptr_fcbf21ea-48ba-2027-5f70-9ab76e6ccea1`
+  - `NeuroNeuralSlowUse_Functional` **67/67** — `ptr_93bc0da6-406f-68c8-1885-43aef836d4bb`
+  - `NeuroResearchStationIntro_Functional` **93/93** — `ptr_3227bcc4-479c-4669-be8b-d7b524562f2e`
+  - `NeuroFollowNeuralSignature_Functional` **124/124** — `ptr_0f1faee1-411c-2fa6-99c8-1894ce37d4a0`
+  - `NeuroMappingSignalTrace_Functional` **157/157** — `ptr_ddf2496e-4e5a-3b6b-f1ca-dab980d185e1`
+  - `NeuroExamineNeuralChangeEvidence_Functional` **143/143** — `ptr_e8a98966-40be-bba4-9180-3c99df0577bc`
+  - `NeuroResearchFloorArray_Functional` **127/127** — `ptr_47c40012-4a1f-9c3b-affc-69ada8068dd3`
+- One complete 47-test checkpoint ran once. Live order placed `NeuroAdaptationConnection_Functional` at index **46** and `NeuroRevelation_Functional` at index **47**.
+  - Executed **47/47**, **4549** assertions, **1** failed.
+  - Outcome `DEFERRED_BEEP_EXCEPTION`. Script exit code **3** because `processes_remaining` was 1 at the count moment. `CloseMainWindow` returned true. No Save Content dialog. Both `UnrealEditor` and `CrashReportClientEditor` were gone afterward.
+  - `BeepClickInjection_Functional` **11/12** — `ptr_fa52d9a1-43d8-292a-1266-e793dc3203c7`. Failed assertion `route.no_lmb_combat`, expected `false`, actual `true`, actor `Admin`. Beep-exception flag true.
+  - `HostCombatLoop_Functional` **33/33** — `ptr_b72e3325-4956-f41f-eaa5-c28a08795aef`. Host-flaky flag false.
+  - Log signature counts were 0 for `Ensure condition failed`, `Fatal error`, `Unhandled Exception`, `Assertion failed`, and `Critical error:`. Saves restored to `OrganoidAutosave.sav` only. The six locked hashes were unchanged. Git status matched the preflight snapshot. Contaminated object remained unreachable.
+  - Summary: `%TEMP%\b12_complete47_a96a3199a53d46c48f4d41709205b037\summary.json`
+- No Beat 12 regression in Host, Melee, Damage, or Health. The diff is the Adaptation Connection successor link, the new Revelation mission, the Neuro map observation-node follow-up, the bridge allowlist for that mission, and the focused tests.
+
+### Deferred issues (not fixed)
+
+1. `route.no_lmb_combat` remains the historical simulated-click exception. Expected `false`, actual `true`, actor `Admin`.
+2. `HostCombatLoop_Functional` `no_invalid_range_damage` was previously flaky at `67.0`. In this complete checkpoint it passed **33/33**. Still deferred as a preexisting isolation defect, not a Beat 12 regression.
+3. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+4. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder.
+
+### Preservation / audit
+
+- Unreal closed. No dirty package at the last clean close.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged** (no commit / no push).
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 12 is implemented, persisted, and validated, with the deferred Beep exception documented above. HostCombatLoop passed in the complete checkpoint.
+- Do not begin Beat 13 until separately authorized.

@@ -37,6 +37,9 @@ namespace NeuroAdaptationConnectionFunctional
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse.DA_Mission_NeuroNeuralSlowUse");
 	constexpr TCHAR ConnectionSoftPath[] =
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroAdaptationConnection.DA_Mission_NeuroAdaptationConnection");
+	constexpr TCHAR RevelationSoftPath[] =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroRevelation.DA_Mission_NeuroRevelation");
+	constexpr TCHAR RevelationMissionId[] = TEXT("Mission_NeuroRevelation");
 	constexpr TCHAR ConnectionPackage[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroAdaptationConnection");
 	constexpr TCHAR UsePackage[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse");
 	constexpr TCHAR ConnectionMissionId[] = TEXT("Mission_NeuroAdaptationConnection");
@@ -261,7 +264,7 @@ namespace NeuroAdaptationConnectionFunctional
 			AssertTrue(Record, TEXT("asset.connection_id"), Connection && Connection->MissionId == FName(ConnectionMissionId), ConnectionMissionId, Connection ? Connection->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.connection_title"), Connection && Connection->MissionTitle.ToString() == TEXT("Connect Live Adaptation"), TEXT("Connect Live Adaptation"), Connection ? Connection->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.connection_description"), Connection && Connection->MissionDescription.ToString().Contains(TEXT("live Host")), TEXT("live Host"), Connection ? Connection->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.connection_next_null"), Connection && Connection->NextMissionAsset.IsNull(), TEXT("null"), Connection && Connection->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.connection_next_revelation"), Connection && Connection->NextMissionAsset.ToSoftObjectPath().ToString() == RevelationSoftPath, RevelationSoftPath, Connection ? Connection->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.connection_one_task"), Connection && Connection->Tasks.Num() == 1, TEXT("1"), Connection ? FString::FromInt(Connection->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(ConnectObjectiveId), ConnectObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_title"), Task && Task->Objective.Title.ToString() == TEXT("Connect Live Adaptation to Evidence"), TEXT("Connect Live Adaptation to Evidence"), Task ? Task->Objective.Title.ToString() : TEXT("missing"), TEXT("DA"));
@@ -476,7 +479,7 @@ namespace NeuroAdaptationConnectionFunctional
 			AssertTrue(Record, TEXT("success.interact"), bSuccess, TEXT("true"), BoolText(bSuccess), InstrumentLabel);
 			AssertTrue(Record, TEXT("success.fire"), Instrument->FollowupEventFireCount == 1, TEXT("1"), FString::FromInt(Instrument->FollowupEventFireCount), InstrumentLabel);
 			AssertTrue(Record, TEXT("success.objective"), CountCompletedId(Objectives, FName(ConnectObjectiveId)) == 1 && CountActiveId(Objectives, FName(ConnectObjectiveId)) == 0, TEXT("completed"), FString::FromInt(CountCompletedId(Objectives, FName(ConnectObjectiveId))), ConnectObjectiveId);
-			AssertTrue(Record, TEXT("success.mission"), Objectives->IsMissionComplete(FName(ConnectionMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("success.revelation_current"), Objectives->GetActiveMissionId() == FName(RevelationMissionId), RevelationMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("success.notification"), Instrument->FollowupNotificationCount == 1, TEXT("1"), FString::FromInt(Instrument->FollowupNotificationCount), TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.line"), Line.Contains(ExpectedLine) && Line.StartsWith(TEXT("Nathan:")), ExpectedLine, Line, TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.duration"), Remaining > 6.0f && Remaining <= 7.0f, TEXT("7"), FString::SanitizeFloat(Remaining), TEXT("HUD"));
@@ -493,7 +496,7 @@ namespace NeuroAdaptationConnectionFunctional
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.wrote"), bSaved, TEXT("true"), BoolText(bSaved), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->IsMissionComplete(FName(ConnectionMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(RevelationMissionId), RevelationMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.guard_captured"), CountCompletedId(Objectives, FName(ConnectObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(ConnectObjectiveId))), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed)
@@ -530,7 +533,7 @@ namespace NeuroAdaptationConnectionFunctional
 			ApplyFollowupContract(Instrument);
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->IsMissionComplete(FName(ConnectionMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(RevelationMissionId), RevelationMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(ConnectObjectiveId)) == 1 && CountActiveId(Objectives, FName(ConnectObjectiveId)) == 0, TEXT("completed"), FString::Printf(TEXT("completed=%d active=%d"), CountCompletedId(Objectives, FName(ConnectObjectiveId)), CountActiveId(Objectives, FName(ConnectObjectiveId))), ConnectObjectiveId);
 			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("Power"));
 			AssertTrue(Record, TEXT("save.cryo_blackout"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Blackout, TEXT("Blackout"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
