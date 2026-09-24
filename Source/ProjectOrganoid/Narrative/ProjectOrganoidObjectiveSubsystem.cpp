@@ -433,8 +433,13 @@ int32 UProjectOrganoidObjectiveSubsystem::TriggerEvent(FName EventId)
 		return 0;
 	}
 
+	// Copy the triggers that exist at entry. Completing an objective can load the
+	// successor mission and append triggers; those must not run for this event,
+	// and the live array must not change under the iterator.
+	const TArray<FProjectOrganoidObjectiveEventTrigger> DispatchSet = EventTriggers;
+
 	int32 Handled = 0;
-	for (const FProjectOrganoidObjectiveEventTrigger& Trigger : EventTriggers)
+	for (const FProjectOrganoidObjectiveEventTrigger& Trigger : DispatchSet)
 	{
 		if (Trigger.EventId != EventId)
 		{

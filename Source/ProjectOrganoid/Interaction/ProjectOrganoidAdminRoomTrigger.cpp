@@ -30,7 +30,7 @@ void AProjectOrganoidAdminRoomTrigger::BeginPlay()
 
 	if (TriggerBox)
 	{
-		TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidAdminRoomTrigger::OnTriggerBeginOverlap);
+		TriggerBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidAdminRoomTrigger::OnTriggerBeginOverlap);
 	}
 }
 

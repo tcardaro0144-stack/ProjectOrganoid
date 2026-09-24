@@ -17,6 +17,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidObjectiveTypes.h"
+#include "ProjectOrganoidBiologicalAdaptationComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidGameMode.h"
 #include "ProjectOrganoidGameplayHUDController.h"
@@ -101,6 +102,7 @@ void AProjectOrganoidHostBase::BeginPlay()
 	EnsureHostAIController();
 	BindHostPerceptionToController();
 	SyncLessonCompletedFromObjectives();
+	SyncAdaptationCampaignCompletedFromObjectives();
 
 	if (HostPerception)
 	{
@@ -1178,6 +1180,15 @@ bool AProjectOrganoidHostBase::IsLessonReplayGuardCompleted() const
 
 bool AProjectOrganoidHostBase::CanOpenEncounterActivationGate() const
 {
+	if (IsAdaptationCampaignConfigured())
+	{
+		if (IsAdaptationCampaignReplayGuardCompleted() || AdaptationCampaignEventFireCount > 0)
+		{
+			return false;
+		}
+		return IsAdaptationCampaignObjectiveActive();
+	}
+
 	if (!IsLessonContractConfigured())
 	{
 		return true;
@@ -1329,6 +1340,160 @@ void AProjectOrganoidHostBase::PresentLessonSuccessNotification(AActor* DamageCa
 			LessonSuccessNotificationDurationSeconds))
 	{
 		++LessonSuccessNotificationCount;
+	}
+}
+
+bool AProjectOrganoidHostBase::IsAdaptationCampaignConfigured() const
+{
+	return !AdaptationCampaignRequiredActiveObjectiveId.IsNone()
+		&& !AdaptationCampaignSuccessEventId.IsNone()
+		&& !AdaptationCampaignRequiredAdaptation.IsNull();
+}
+
+bool AProjectOrganoidHostBase::IsAdaptationCampaignObjectiveActive() const
+{
+	if (AdaptationCampaignRequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	if (!GI)
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(AdaptationCampaignRequiredActiveObjectiveId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Active;
+}
+
+bool AProjectOrganoidHostBase::IsAdaptationCampaignReplayGuardCompleted() const
+{
+	const FName GuardId = AdaptationCampaignReplayGuardObjectiveId.IsNone()
+		? AdaptationCampaignRequiredActiveObjectiveId
+		: AdaptationCampaignReplayGuardObjectiveId;
+	if (GuardId.IsNone())
+	{
+		return false;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	if (!GI)
+	{
+		return false;
+	}
+
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>();
+	if (!Objectives)
+	{
+		return false;
+	}
+
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(GuardId, Objective))
+	{
+		return false;
+	}
+
+	return Objective.State == EProjectOrganoidObjectiveState::Completed;
+}
+
+void AProjectOrganoidHostBase::NotifySuccessfulBiologicalAdaptation(AProjectOrganoidCharacter* Character)
+{
+	if (!IsAdaptationCampaignConfigured() || !Character || !IsBiologicalLocomotorSlowActive())
+	{
+		return;
+	}
+
+	if (AdaptationCampaignEventFireCount > 0 || IsAdaptationCampaignReplayGuardCompleted())
+	{
+		return;
+	}
+
+	if (!IsAdaptationCampaignObjectiveActive())
+	{
+		return;
+	}
+
+	UProjectOrganoidBiologicalAdaptationComponent* Adapt = Character->GetBiologicalAdaptationComponent();
+	if (!Adapt)
+	{
+		return;
+	}
+
+	const FSoftObjectPath Equipped = Adapt->GetEquippedAdaptationPath();
+	const FSoftObjectPath Required = AdaptationCampaignRequiredAdaptation.ToSoftObjectPath();
+	if (!Equipped.IsValid() || Equipped != Required)
+	{
+		return;
+	}
+
+	NotifyLessonObjectiveEvent(AdaptationCampaignSuccessEventId);
+	++AdaptationCampaignEventFireCount;
+	PresentAdaptationCampaignNotification(Character);
+}
+
+void AProjectOrganoidHostBase::PresentAdaptationCampaignNotification(AProjectOrganoidCharacter* Character)
+{
+	if (AdaptationCampaignNotificationText.IsEmpty() || AdaptationCampaignNotificationDurationSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	APlayerController* PC = Character ? Cast<APlayerController>(Character->GetController()) : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	AProjectOrganoidGameMode* GameMode = World->GetAuthGameMode<AProjectOrganoidGameMode>();
+	if (!GameMode)
+	{
+		return;
+	}
+
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode->GetHUDControllerForPlayer(PC);
+	if (!HUDController)
+	{
+		return;
+	}
+
+	if (HUDController->ShowTransientNotification(
+			AdaptationCampaignNotificationSpeaker,
+			AdaptationCampaignNotificationText,
+			AdaptationCampaignNotificationDurationSeconds))
+	{
+		++AdaptationCampaignNotificationCount;
+	}
+}
+
+void AProjectOrganoidHostBase::SyncAdaptationCampaignCompletedFromObjectives()
+{
+	if (!IsAdaptationCampaignConfigured())
+	{
+		return;
+	}
+
+	if (IsAdaptationCampaignReplayGuardCompleted() && AdaptationCampaignEventFireCount == 0)
+	{
+		AdaptationCampaignEventFireCount = 1;
 	}
 }
 

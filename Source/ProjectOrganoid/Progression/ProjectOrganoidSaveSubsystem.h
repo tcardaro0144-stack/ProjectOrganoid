@@ -17,7 +17,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnProjectOrganoidGameSaved, cons
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidGameLoaded, const FString&, SlotName, bool, bSucceeded);
 
 /**
- *  Full game-state serialization: vitals, inventory, weapon mods, objectives, stats.
+ *  Full game-state serialization: vitals, inventory, weapon mods, objectives, stats, sector power.
  *  Checkpoints + objective autosaves write to AutosaveSlotName by default.
  */
 UCLASS()

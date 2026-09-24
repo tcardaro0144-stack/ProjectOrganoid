@@ -151,6 +151,9 @@ namespace
 		TEXT("set_neuro_targeting_why_next_research_station"),
 		TEXT("configure_neuro_research_station_intro"),
 		TEXT("create_neural_slow_adaptation_asset"),
+		TEXT("create_neuro_neural_slow_use_mission"),
+		TEXT("set_neuro_research_station_intro_next_neural_slow"),
+		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -207,6 +210,9 @@ namespace
 		TEXT("set_neuro_targeting_why_next_research_station"),
 		TEXT("configure_neuro_research_station_intro"),
 		TEXT("create_neural_slow_adaptation_asset"),
+		TEXT("create_neuro_neural_slow_use_mission"),
+		TEXT("set_neuro_research_station_intro_next_neural_slow"),
+		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
 		TEXT("spawn_neuro_neural_mapping_terminal"),
@@ -3152,6 +3158,9 @@ namespace
 #include "OrganoidAIBridgeNeuroTargetingWhyNextResearchStation.inl"
 #include "OrganoidAIBridgeNeuroResearchStationIntro.inl"
 #include "OrganoidAIBridgeNeuralSlowAdaptationAsset.inl"
+#include "OrganoidAIBridgeNeuroNeuralSlowUseMission.inl"
+#include "OrganoidAIBridgeNeuroResearchStationIntroNextNeuralSlow.inl"
+#include "OrganoidAIBridgeNeuroAdaptationSubject.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingArray.inl"
 #include "OrganoidAIBridgeNeuroResearchLoadCutoff.inl"
 #include "OrganoidAIBridgeNeuroNeuralMappingTerminal.inl"
@@ -3829,6 +3838,18 @@ namespace
 		{
 			PreflightError = PreflightCreateNeuralSlowAdaptationAsset(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_neural_slow_use_mission"))
+		{
+			PreflightError = PreflightCreateNeuroNeuralSlowUseMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_neuro_research_station_intro_next_neural_slow"))
+		{
+			PreflightError = PreflightSetNeuroResearchStationIntroNextNeuralSlow(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
+		{
+			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{
 			PreflightError = PreflightSpawnNeuroNeuralMappingArray(Args, Before, Proposed);
@@ -3912,6 +3933,9 @@ namespace
 			|| Action == TEXT("create_neuro_research_station_intro_mission")
 			|| Action == TEXT("set_neuro_targeting_why_next_research_station")
 			|| Action == TEXT("configure_neuro_research_station_intro")
+			|| Action == TEXT("create_neuro_neural_slow_use_mission")
+			|| Action == TEXT("set_neuro_research_station_intro_next_neural_slow")
+			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
 			|| Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -5088,6 +5112,9 @@ namespace
 				|| Change->Action == TEXT("set_neuro_targeting_why_next_research_station")
 				|| Change->Action == TEXT("configure_neuro_research_station_intro")
 				|| Change->Action == TEXT("create_neural_slow_adaptation_asset")
+				|| Change->Action == TEXT("create_neuro_neural_slow_use_mission")
+				|| Change->Action == TEXT("set_neuro_research_station_intro_next_neural_slow")
+				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
 				|| Change->Action == TEXT("spawn_neuro_research_load_cutoff")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_terminal")
@@ -5318,6 +5345,18 @@ namespace
 		if (Change->Action == TEXT("create_neural_slow_adaptation_asset"))
 		{
 			return ExecuteCreateNeuralSlowAdaptationAsset(*Change);
+		}
+		if (Change->Action == TEXT("create_neuro_neural_slow_use_mission"))
+		{
+			return ExecuteCreateNeuroNeuralSlowUseMission(*Change);
+		}
+		if (Change->Action == TEXT("set_neuro_research_station_intro_next_neural_slow"))
+		{
+			return ExecuteSetNeuroResearchStationIntroNextNeuralSlow(*Change);
+		}
+		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
+		{
+			return ExecuteSpawnNeuroAdaptationSubject(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_neural_mapping_array"))
 		{

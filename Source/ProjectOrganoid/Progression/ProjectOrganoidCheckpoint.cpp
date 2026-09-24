@@ -31,7 +31,7 @@ void AProjectOrganoidCheckpoint::BeginPlay()
 
 	if (AutosaveVolume)
 	{
-		AutosaveVolume->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidCheckpoint::OnAutosaveVolumeBeginOverlap);
+		AutosaveVolume->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidCheckpoint::OnAutosaveVolumeBeginOverlap);
 	}
 
 	if (!CheckpointDisplayName.IsEmpty())

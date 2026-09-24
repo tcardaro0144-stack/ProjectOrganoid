@@ -57,6 +57,10 @@ namespace NeuroResearchStationIntroFunctional
 	constexpr TCHAR IntroObjectiveTitle[] = TEXT("Equip Neural Slow");
 	constexpr TCHAR IntroObjectiveDescription[] = TEXT("Open the Research Station and equip Neural Slow.");
 	constexpr TCHAR IntroEvent[] = TEXT("Event_NeuralSlowEquipped");
+	constexpr TCHAR UseMissionSoftPath[] =
+		TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse.DA_Mission_NeuroNeuralSlowUse");
+	constexpr TCHAR UseMissionId[] = TEXT("Mission_NeuroNeuralSlowUse");
+	constexpr TCHAR UseObjectiveId[] = TEXT("Obj_ApplyNeuralSlow");
 	constexpr TCHAR TargetingEvent[] = TEXT("Event_NeuroLocomotorTargetDemonstrated");
 
 	constexpr TCHAR StationLabel[] = TEXT("ResearchStation_NeuroGenetics");
@@ -386,7 +390,7 @@ namespace NeuroResearchStationIntroFunctional
 				AssertTrue(Record, TEXT("asset.intro_id"), IntroDA->MissionId == FName(IntroMissionId), IntroMissionId, IntroDA->MissionId.ToString(), TEXT("DA"));
 				AssertTrue(Record, TEXT("asset.intro_title"), IntroDA->MissionTitle.ToString() == IntroMissionTitle, IntroMissionTitle, IntroDA->MissionTitle.ToString(), TEXT("DA"));
 				AssertTrue(Record, TEXT("asset.intro_description"), IntroDA->MissionDescription.ToString() == IntroMissionDescription, IntroMissionDescription, IntroDA->MissionDescription.ToString(), TEXT("DA"));
-				AssertTrue(Record, TEXT("asset.intro_next_null"), IntroDA->NextMissionAsset.IsNull(), TEXT("null"), IntroDA->NextMissionAsset.IsNull() ? TEXT("null") : IntroDA->NextMissionAsset.ToString(), TEXT("DA"));
+				AssertTrue(Record, TEXT("asset.intro_next_use"), IntroDA->NextMissionAsset.ToSoftObjectPath().ToString() == UseMissionSoftPath, UseMissionSoftPath, IntroDA->NextMissionAsset.IsNull() ? TEXT("null") : IntroDA->NextMissionAsset.ToSoftObjectPath().ToString(), TEXT("DA"));
 				AssertTrue(Record, TEXT("asset.intro_task_count"), IntroDA->Tasks.Num() == 1, TEXT("1"), FString::FromInt(IntroDA->Tasks.Num()), TEXT("DA"));
 				if (IntroDA->Tasks.Num() == 1)
 				{
@@ -674,7 +678,8 @@ namespace NeuroResearchStationIntroFunctional
 				AssertTrue(Record, TEXT("equip.notify_once"), Station->CampaignSuccessNotificationCount == 1, TEXT("1"), FString::FromInt(Station->CampaignSuccessNotificationCount), StationLabel);
 				AssertTrue(Record, TEXT("equip.nathan_line"), HUD && HUD->GetLastResourceNotification().ToString().Contains(ExpectedLine), ExpectedLine, HUD ? HUD->GetLastResourceNotification().ToString() : TEXT("no hud"), TEXT("HUD"));
 				AssertTrue(Record, TEXT("equip.objective_completed"), CountCompletedId(Objectives, FName(IntroObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(IntroObjectiveId))), IntroObjectiveId);
-				AssertTrue(Record, TEXT("equip.mission_complete"), Objectives->IsMissionComplete(FName(IntroMissionId)), TEXT("true"), BoolText(Objectives->IsMissionComplete(FName(IntroMissionId))), IntroMissionId);
+				AssertTrue(Record, TEXT("equip.use_mission_current"), Objectives->GetActiveMissionId() == FName(UseMissionId), UseMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+				AssertTrue(Record, TEXT("equip.use_objective_active"), CountActiveId(Objectives, FName(UseObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountActiveId(Objectives, FName(UseObjectiveId))), UseObjectiveId);
 				AssertTrue(Record, TEXT("equip.sot_unchanged"), Character->GetInventoryComponent() && Character->GetInventoryComponent()->CountItemsOfType(EProjectOrganoidItemType::SOT) == SotBefore, FString::FromInt(SotBefore), Character->GetInventoryComponent() ? FString::FromInt(Character->GetInventoryComponent()->CountItemsOfType(EProjectOrganoidItemType::SOT)) : TEXT("none"), TEXT("SOT"));
 				AssertTrue(Record, TEXT("equip.pe_unchanged"), FMath::IsNearlyEqual(Character->GetPEEnergy(), PEBefore), FString::SanitizeFloat(PEBefore), FString::SanitizeFloat(Character->GetPEEnergy()), TEXT("PE"));
 				AssertTrue(Record, TEXT("equip.only_neural_slow"), Adapt->GetUnlockedAdaptationPaths().Num() == 1 && Adapt->IsAdaptationUnlocked(NeuralSlow), TEXT("1"), FString::FromInt(Adapt->GetUnlockedAdaptationPaths().Num()), TEXT("adaptation"));
@@ -753,7 +758,8 @@ namespace NeuroResearchStationIntroFunctional
 					Widget->CloseStationUI();
 				}
 				AssertTrue(Record, TEXT("migration.visit_reconciles_once"), bVisited && Station->CampaignSuccessEventFireCount == 1 && Station->CampaignSuccessNotificationCount == 1, TEXT("1"), FString::FromInt(Station->CampaignSuccessEventFireCount), StationLabel);
-				AssertTrue(Record, TEXT("migration.mission_complete"), Objectives->IsMissionComplete(FName(IntroMissionId)), TEXT("true"), BoolText(Objectives->IsMissionComplete(FName(IntroMissionId))), IntroMissionId);
+				AssertTrue(Record, TEXT("migration.use_mission_current"), Objectives->GetActiveMissionId() == FName(UseMissionId), UseMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+				AssertTrue(Record, TEXT("migration.use_objective_active"), CountActiveId(Objectives, FName(UseObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountActiveId(Objectives, FName(UseObjectiveId))), UseObjectiveId);
 				const bool bAgain = Station->Interact(Character);
 				if (UProjectOrganoidResearchStationWidget* Widget = Station->GetActiveStationWidget())
 				{

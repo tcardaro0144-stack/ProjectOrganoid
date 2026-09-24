@@ -29,7 +29,7 @@ void AProjectOrganoidLaserTripwire::BeginPlay()
 {
 	Super::BeginPlay();
 	RefreshBeamExtent();
-	BeamVolume->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidLaserTripwire::HandleBeginOverlap);
+	BeamVolume->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidLaserTripwire::HandleBeginOverlap);
 }
 
 void AProjectOrganoidLaserTripwire::RefreshBeamExtent()

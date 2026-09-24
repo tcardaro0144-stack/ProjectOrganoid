@@ -3001,3 +3001,108 @@ Checkpoint, each once:
 
 - Beat 9 V1 is implemented, persisted, and validated.
 - Do not begin Beat 10 until separately authorized.
+
+---
+
+## 2026-09-24 — Beat 10: Apply Neural Slow
+
+**Status:** implemented, persisted, validated, with one documented deferred exception. Changes left **unstaged**. No commit / no push / no Beat 11.
+
+**Baseline:** published Beat 9 commit `babeaa4aa71d21a3374793b2d9f9a711bb30d3f9`. Beat 10 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission and handoff
+
+- New mission asset: `/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse`
+  - Mission ID: `Mission_NeuroNeuralSlowUse`
+  - Title: `Use Neural Slow`
+  - Description: `Slow the Host with the adaptation mounted at the Research Station.`
+  - Exactly one Main task: `Obj_ApplyNeuralSlow` (autoactivate, target 1, no prerequisite)
+  - Title: `Apply Neural Slow`
+  - Description: `Aim at the Host and activate Neural Slow.`
+  - Complete event: `Event_NeuralSlowApplied`
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_NeuroResearchStationIntro.NextMissionAsset` → `DA_Mission_NeuroNeuralSlowUse`
+  - Completing `Obj_EquipNeuralSlow` completes the Beat 9 intro and activates this mission and `Obj_ApplyNeuralSlow`
+- Beat 9 task and event were not altered. No global mission seeding.
+
+### Encounter
+
+- New Host: `Host_Neuro_AdaptationSubject`
+  - Class: `BP_OrganoidHost_C` / `AProjectOrganoidHostBase`
+  - Saved transform: location `(850, -2050, -1100)`, rotation `(0, 90, 0)`, scale `(1, 1, 1)`
+  - Required active objective `Obj_ApplyNeuralSlow`
+  - Required adaptation `/Game/Data/Adaptations/DA_Adaptation_NeuralSlow`
+  - Success event `Event_NeuralSlowApplied`
+  - Replay guard `Obj_ApplyNeuralSlow`
+  - Nathan, 7.0s, once: `Neural Slow took hold. The Host is moving slower, and it did not cost a shot.`
+- Accepted placement evidence from `NeuroNeuralSlowUse_Functional` (`ptr_d01fe70e-41ba-42fc-d944-989d4bb6fb99`):
+  - Player stand `(850, -1850, -1100)`. Walk target `(850, -1900, -1100)` is a survey constant, not a Host property.
+  - Runtime location `X=850.000 Y=-2050.000 Z=-1091.850`, yaw 90, scale 1.
+  - Capsule half-height 96. Floor impact `Z=-1190.000`. Bottom gap `2.150` (accepted band 0.5–4).
+  - Existing navigation path length to the walk target `391.55619`. No NavMesh rebuild.
+- `Host_Neuro_Researcher`, `Host_Neuro_1/2/3`, `ResearchStation_NeuroGenetics`, and the observation/evidence instruments were not moved or reconfigured.
+- The Host stays dormant until `Obj_ApplyNeuralSlow` is Active. Handoff leaves it dormant.
+
+### Gameplay behavior
+
+- Activation is the real `Q` / `IA_Ability_Runtime` path through `TryActivateEquipped` and `ExecuteOnTarget`. The test does not call `TriggerEvent(Event_NeuralSlowApplied)` or `ApplyBiologicalLocomotorSlow` as the success path, and it does not set the campaign Host transform.
+- Production Neural Slow remains the persisted data asset: PE 20, cooldown 8 seconds wall-clock, range 800, speed multiplier 0.6, duration 4 seconds. Failures return before PE is spent. Success spends PE, starts cooldown, then `ExecuteOnTarget`.
+- The subject Host slows and then restores. The Nathan line plays once for 7 seconds.
+- An ordinary living Host can receive `BiologicalLocomotorSlow` and spend 20 PE, with zero Beat 10 mission credit.
+- No forced equipment. Replay does not re-fire the event or the line and does not require another PE spend.
+- Save/load keeps mission completion, Neural Slow equipped, PE, and sector power. Cooldown and the active slow are transient and are not persisted.
+- Neuro remains Online. Cryo remains Blackout.
+
+### Generic production corrections
+
+- `AProjectOrganoidHostBase` campaign credit is default-off. It runs only when the Host instance is configured with an objective, event, and adaptation. Beat 10 IDs are not hard-coded into HostBase, Neural Slow, the adaptation component, the character, or a global subsystem.
+- `UProjectOrganoidObjectiveSubsystem::TriggerEvent` dispatches a snapshot of the triggers that exist at entry, so a successor mission appended during that event cannot invalidate the iterator or run for the same event.
+- Sector power save/load is generic. `bHasSectorPowerStates` stays false on old saves and leaves the fresh-world seed unchanged. A true flag applies the saved snapshot; sectors absent from an older snapshot keep their current defaults. Checkpoint saves capture the same map.
+- BeginPlay overlap binds that could run again on the same component now use `AddUniqueDynamic`: `AProjectOrganoidCheckpoint`, `AProjectOrganoidAdminRoomTrigger`, `AProjectOrganoidPressurePlate`, `AProjectOrganoidHazardEmitterTrap`, `AProjectOrganoidLaserTripwire`, and both begin and end overlap on `AProjectOrganoidAmbienceZone`. Callback bodies were not changed.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `ab110f4c84932864f33e535d02af16d784b29e92f2baada779ba098092a96195`
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a`
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `29981773ca021a06b864d935ae7b4349a888db8d9d6cef87570da14516753b5e`
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged from Beat 9)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development builds succeeded, including the builds after the sector-power save and the `AddUniqueDynamic` overlap edits.
+- Expanded targeted suite: **13/13** tests, **890/890** assertions. That run predates the campaign overlap-bind fix; its log contained the checkpoint `BeginPlay` ensure those edits removed.
+- Overlap-delegate regression after the final bind edits: `BiologicalAdaptation_Functional` **59/59**, `S20_AdminLighting_Functional` **1078/1078**, `S22_AdminAudioZones_Functional` **69/69**. **3/3** tests, **1206/1206** assertions, no ensure.
+- One whole-catalog checkpoint command ran once and stopped at test 4. It was not rerun.
+  - `AdminToNeuroTraversal_Functional` **26/26** — `ptr_7f4f7e32-4065-1b0b-a848-c090877477cc`
+  - `AmbienceLayerPlayback_Functional` **28/28** — `ptr_8cee459e-4442-f97e-8ced-5ca2a45f639c`
+  - `AmmoReload_Functional` **57/57** — `ptr_3bdb3122-4263-7a37-3d9b-7e9a90d65a1d`
+  - First three subtotal **111/111**
+  - `BeepClickInjection_Functional` **11/12** — `ptr_8620ee9d-4b3b-d668-d1a7-3b800fe48030`
+  - The only failed assertion was `route.no_lmb_combat`, expected `false`, actual `true`, actor `Admin`.
+- The identical assertion failed on 2026-09-22 in Beat 8, run `ptr_0dd7251b-4f6d-bc51-502d-24bf4ac36a89`, with the same Security-stop alarm.
+- Isolated fresh-editor diagnostic, with no preceding test, reproduced that single assertion: `ptr_6f00eb72-4a33-1b08-d8b5-53b7fa09fa34`, **11/12**. Gunfire checks passed, including `lmb.no_combat_from_shot` and `lmb_five.no_combat_from_shots`.
+- Classified as deferred simulated-click behavior. It is unrelated to Beat 10. The persistent beep investigation and the testing-bot simulated-left-click workaround were left untouched.
+- Continuation of manifest entries 5–45, not a second complete checkpoint: **41/41** tests, **4252/4252** assertions. Summary: `%TEMP%\b10_checkpoint_continuation_summary_aad46b7008df44e0a559755a75e3be17.json`
+- One-pass catalog coverage: **45/45** tests exercised, **44** test states pass, **4374/4375** assertions pass, one documented deferred Beep/LMB exception.
+- Closed logs after the delegate fixes had no `Ensure condition failed`, `Fatal error`, `Unhandled Exception`, `Assertion failed`, or `Critical error:` hit. Save inventories were restored. No test slot remained.
+
+### Deferred issues (not fixed)
+
+1. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder. This is implementation drift and requires a future camera conversion.
+2. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+3. Persistent beep begins at reception and continues through gameplay; source remains unresolved.
+4. Testing-bot simulated-left-click workaround remains and should be removed when the beep is correctly fixed. `route.no_lmb_combat` is the documented checkpoint exception for that workaround.
+
+### Preservation / audit
+
+- Unreal closed. No dirty package at the last clean close.
+- Canon and `EngineAssociation` unchanged. No Admin or `Lvl_Epitope` save.
+- Evidence only under `%TEMP%`.
+- Index empty; changes left **unstaged** (no commit / no push)
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 10 V1 is implemented, persisted, and validated, with the deferred Beep/LMB exception documented above.
+- Do not begin Beat 11 until separately authorized.

@@ -9,6 +9,7 @@
 #include "Engine/TimerHandle.h"
 #include "ProjectOrganoidPerceptionTypes.h"
 #include "ProjectOrganoidHostCombatTypes.h"
+#include "ProjectOrganoidBiologicalAdaptationTypes.h"
 #include "ProjectOrganoidHostBase.generated.h"
 
 class USphereComponent;
@@ -225,6 +226,42 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|Lesson|Diagnostics", Transient)
 	int32 LessonSuccessEventFireCount = 0;
 
+	/**
+	 * Optional adaptation lesson (default off). Empty required objective preserves existing Hosts.
+	 * Encounter activation requires that objective Active. A successful biological effect on this Host,
+	 * while that objective is Active and the equipped adaptation matches, fires the event once.
+	 * A completed replay-guard objective never rearms the encounter or the response.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign")
+	FName AdaptationCampaignRequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign")
+	TSoftObjectPtr<UProjectOrganoidBiologicalAdaptationData> AdaptationCampaignRequiredAdaptation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign")
+	FName AdaptationCampaignSuccessEventId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign")
+	FName AdaptationCampaignReplayGuardObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign")
+	FText AdaptationCampaignNotificationSpeaker = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign")
+	FText AdaptationCampaignNotificationText = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host|AdaptationCampaign", meta = (ClampMin = "0.0"))
+	float AdaptationCampaignNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AdaptationCampaign|Diagnostics", Transient)
+	int32 AdaptationCampaignNotificationCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Host|AdaptationCampaign|Diagnostics", Transient)
+	int32 AdaptationCampaignEventFireCount = 0;
+
+	/** Called only after a biological adaptation successfully applies its effect to this Host. */
+	void NotifySuccessfulBiologicalAdaptation(AProjectOrganoidCharacter* Character);
+
 	UFUNCTION(BlueprintPure, Category = "Host|AI")
 	FVector GetLastHeardNoiseLocation() const;
 
@@ -419,6 +456,11 @@ protected:
 	void NotifyLessonObjectiveEvent(FName EventId) const;
 	void PresentLessonSuccessNotification(AActor* DamageCauser);
 	void SyncLessonCompletedFromObjectives();
+	bool IsAdaptationCampaignConfigured() const;
+	bool IsAdaptationCampaignObjectiveActive() const;
+	bool IsAdaptationCampaignReplayGuardCompleted() const;
+	void PresentAdaptationCampaignNotification(AProjectOrganoidCharacter* Character);
+	void SyncAdaptationCampaignCompletedFromObjectives();
 
 	UFUNCTION()
 	void HandleHearingStimulus(AActor* NoiseInstigator, FName NoiseTag, EProjectOrganoidHearingStimulusKind Kind, FVector StimulusLocation, float Strength);

@@ -12,8 +12,21 @@
 #include "ProjectOrganoidBiologicalAdaptationComponent.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidPowerSubsystem.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
+
+static bool IsPersistedPowerSector(EProjectOrganoidPowerSector Sector)
+{
+	const UEnum* Enum = StaticEnum<EProjectOrganoidPowerSector>();
+	return Enum && Enum->IsValidEnumValue(static_cast<int64>(Sector));
+}
+
+static bool IsPersistedPowerState(EProjectOrganoidPowerState State)
+{
+	const UEnum* Enum = StaticEnum<EProjectOrganoidPowerState>();
+	return Enum && Enum->IsValidEnumValue(static_cast<int64>(State));
+}
 
 void UProjectOrganoidSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -398,6 +411,23 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 		}
 	}
 
+	if (UWorld* World = Character->GetWorld())
+	{
+		if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+		{
+			SaveGame->SectorPowerStates.Reset();
+			for (const FProjectOrganoidSectorPowerStatus& Status : Power->GetAllSectorStatuses())
+			{
+				if (!IsPersistedPowerSector(Status.Sector) || !IsPersistedPowerState(Status.State))
+				{
+					continue;
+				}
+				SaveGame->SectorPowerStates.Add(Status.Sector, Status.State);
+			}
+			SaveGame->bHasSectorPowerStates = SaveGame->SectorPowerStates.Num() > 0;
+		}
+	}
+
 	FillSaveMeta(SaveGame, Character, EProjectOrganoidSaveReason::Manual, nullptr);
 	return SaveGame;
 }
@@ -496,6 +526,24 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
 		{
 			Objectives->ApplyObjectivesFromSaveGame(SaveGame);
+		}
+	}
+
+	if (SaveGame->bHasSectorPowerStates)
+	{
+		if (UWorld* World = Character->GetWorld())
+		{
+			if (UProjectOrganoidPowerSubsystem* Power = World->GetSubsystem<UProjectOrganoidPowerSubsystem>())
+			{
+				for (const TPair<EProjectOrganoidPowerSector, EProjectOrganoidPowerState>& Pair : SaveGame->SectorPowerStates)
+				{
+					if (!IsPersistedPowerSector(Pair.Key) || !IsPersistedPowerState(Pair.Value))
+					{
+						continue;
+					}
+					Power->SetSectorPowerState(Pair.Key, Pair.Value);
+				}
+			}
 		}
 	}
 

@@ -29,7 +29,7 @@ AProjectOrganoidPressurePlate::AProjectOrganoidPressurePlate()
 void AProjectOrganoidPressurePlate::BeginPlay()
 {
 	Super::BeginPlay();
-	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidPressurePlate::HandleBeginOverlap);
+	TriggerVolume->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidPressurePlate::HandleBeginOverlap);
 }
 
 void AProjectOrganoidPressurePlate::HandleBeginOverlap(

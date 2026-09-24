@@ -25,7 +25,7 @@ void AProjectOrganoidHazardEmitterTrap::BeginPlay()
 {
 	Super::BeginPlay();
 	EmissionSphere->SetSphereRadius(EmissionRadius);
-	EmissionSphere->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidHazardEmitterTrap::HandleBeginOverlap);
+	EmissionSphere->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidHazardEmitterTrap::HandleBeginOverlap);
 }
 
 void AProjectOrganoidHazardEmitterTrap::Tick(float DeltaSeconds)

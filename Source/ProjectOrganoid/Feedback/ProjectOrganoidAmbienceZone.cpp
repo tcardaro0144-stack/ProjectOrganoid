@@ -43,8 +43,8 @@ void AProjectOrganoidAmbienceZone::BeginPlay()
 		ZoneReverb = TSoftObjectPtr<UReverbEffect>(FSoftObjectPath(TEXT("/Engine/EngineSounds/ReverbSettings/BunkerHall.BunkerHall")));
 	}
 
-	ZoneVolume->OnComponentBeginOverlap.AddDynamic(this, &AProjectOrganoidAmbienceZone::HandleBeginOverlap);
-	ZoneVolume->OnComponentEndOverlap.AddDynamic(this, &AProjectOrganoidAmbienceZone::HandleEndOverlap);
+	ZoneVolume->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidAmbienceZone::HandleBeginOverlap);
+	ZoneVolume->OnComponentEndOverlap.AddUniqueDynamic(this, &AProjectOrganoidAmbienceZone::HandleEndOverlap);
 	SynchronizeOverlappingLocalCharacter();
 }
 

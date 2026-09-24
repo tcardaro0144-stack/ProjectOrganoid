@@ -178,7 +178,7 @@ bool UProjectOrganoidBiologicalAdaptation_NeuralSlow::TryResolveTarget(
 }
 
 bool UProjectOrganoidBiologicalAdaptation_NeuralSlow::ExecuteOnTarget(
-	AProjectOrganoidCharacter* /*Character*/,
+	AProjectOrganoidCharacter* Character,
 	AActor* Target) const
 {
 	AProjectOrganoidHostBase* Host = AsLivingHost(Target);
@@ -187,5 +187,11 @@ bool UProjectOrganoidBiologicalAdaptation_NeuralSlow::ExecuteOnTarget(
 		return false;
 	}
 
-	return Host->ApplyBiologicalLocomotorSlow(LocomotorSpeedMultiplier, DurationSeconds);
+	if (!Host->ApplyBiologicalLocomotorSlow(LocomotorSpeedMultiplier, DurationSeconds))
+	{
+		return false;
+	}
+
+	Host->NotifySuccessfulBiologicalAdaptation(Character);
+	return true;
 }

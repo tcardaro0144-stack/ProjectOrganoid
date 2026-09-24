@@ -10,6 +10,7 @@
 #include "ProjectOrganoidWeaponTypes.h"
 #include "ProjectOrganoidStatsTypes.h"
 #include "ProjectOrganoidObjectiveTypes.h"
+#include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidSaveGame.generated.h"
 
 /** Why a save blob was written (checkpoint, objective autosave, manual, etc.) */
@@ -25,7 +26,7 @@ enum class EProjectOrganoidSaveReason : uint8
 
 /**
  *  Disk-serialized Avery progress:
- *  vitals, upgrades, inventory grid, weapon mods, objectives, stats, checkpoint.
+ *  vitals, upgrades, inventory grid, weapon mods, objectives, stats, checkpoint, sector power.
  */
 UCLASS(BlueprintType)
 class UProjectOrganoidSaveGame : public USaveGame
@@ -192,4 +193,15 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Stats")
 	TArray<FName> UnlockedAchievementIds;
+
+	/**
+	 *  Live sector power at save time.
+	 *  False on old saves — leave the fresh-world seed unchanged.
+	 *  Sectors missing from an older snapshot keep their current defaults.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Power")
+	bool bHasSectorPowerStates = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Power")
+	TMap<EProjectOrganoidPowerSector, EProjectOrganoidPowerState> SectorPowerStates;
 };

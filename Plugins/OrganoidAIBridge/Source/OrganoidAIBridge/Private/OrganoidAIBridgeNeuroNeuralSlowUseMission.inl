@@ -1,57 +1,55 @@
-	// Fixed Neuro Research Station intro mission — create_neuro_research_station_intro_mission.
-	const TCHAR* NeuroResearchStationIntroMissionSpec = TEXT("neuro_research_station_intro_mission_v1");
-	const TCHAR* NeuroResearchStationIntroMissionAction = TEXT("create_neuro_research_station_intro_mission");
-	const TCHAR* NeuroResearchStationIntroMissionPackage = TEXT("/Game/Data/Missions/DA_Mission_NeuroResearchStationIntro");
-	const TCHAR* NeuroResearchStationIntroMissionObjectPath =
-		TEXT("/Game/Data/Missions/DA_Mission_NeuroResearchStationIntro.DA_Mission_NeuroResearchStationIntro");
-	const TCHAR* NeuroResearchStationIntroMissionAssetName = TEXT("DA_Mission_NeuroResearchStationIntro");
-	const TCHAR* NeuroResearchStationIntroMissionId = TEXT("Mission_NeuroResearchStationIntro");
-	const TCHAR* NeuroResearchStationIntroMissionTitle = TEXT("Use the Research Station");
-	const TCHAR* NeuroResearchStationIntroMissionDescription =
-		TEXT("Mount the neural adaptation at the NeuroGenetics Research Station.");
-	const TCHAR* NeuroResearchStationIntroObjectiveId = TEXT("Obj_EquipNeuralSlow");
-	const TCHAR* NeuroResearchStationIntroObjectiveTitle = TEXT("Equip Neural Slow");
-	const TCHAR* NeuroResearchStationIntroObjectiveDescription =
-		TEXT("Open the Research Station and equip Neural Slow.");
-	const TCHAR* NeuroResearchStationIntroEventId = TEXT("Event_NeuralSlowEquipped");
-	const TCHAR* NeuroResearchStationIntroAllowedNextSoftPath =
+	// Fixed Neuro Research Station intro mission — create_neuro_neural_slow_use_mission.
+	const TCHAR* NeuroNeuralSlowUseMissionSpec = TEXT("neuro_neural_slow_use_mission_v1");
+	const TCHAR* NeuroNeuralSlowUseMissionAction = TEXT("create_neuro_neural_slow_use_mission");
+	const TCHAR* NeuroNeuralSlowUseMissionPackage = TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse");
+	const TCHAR* NeuroNeuralSlowUseMissionObjectPath =
 		TEXT("/Game/Data/Missions/DA_Mission_NeuroNeuralSlowUse.DA_Mission_NeuroNeuralSlowUse");
-
-	UObject* FindNeuroResearchStationIntroMissionAssetExact()
+	const TCHAR* NeuroNeuralSlowUseMissionAssetName = TEXT("DA_Mission_NeuroNeuralSlowUse");
+	const TCHAR* NeuroNeuralSlowUseMissionId = TEXT("Mission_NeuroNeuralSlowUse");
+	const TCHAR* NeuroNeuralSlowUseMissionTitle = TEXT("Use Neural Slow");
+	const TCHAR* NeuroNeuralSlowUseMissionDescription =
+		TEXT("Slow the Host with the adaptation mounted at the Research Station.");
+	const TCHAR* NeuroNeuralSlowUseObjectiveId = TEXT("Obj_ApplyNeuralSlow");
+	const TCHAR* NeuroNeuralSlowUseObjectiveTitle = TEXT("Apply Neural Slow");
+	const TCHAR* NeuroNeuralSlowUseObjectiveDescription =
+		TEXT("Aim at the Host and activate Neural Slow.");
+	const TCHAR* NeuroNeuralSlowUseEventId = TEXT("Event_NeuralSlowApplied");
+	
+	UObject* FindNeuroNeuralSlowUseMissionAssetExact()
 	{
-		if (UObject* Found = StaticFindObject(nullptr, nullptr, NeuroResearchStationIntroMissionObjectPath))
+		if (UObject* Found = StaticFindObject(nullptr, nullptr, NeuroNeuralSlowUseMissionObjectPath))
 		{
 			return Found;
 		}
-		return StaticLoadObject(UObject::StaticClass(), nullptr, NeuroResearchStationIntroMissionObjectPath);
+		return StaticLoadObject(UObject::StaticClass(), nullptr, NeuroNeuralSlowUseMissionObjectPath);
 	}
 
-	TSharedRef<FJsonObject> NeuroResearchStationIntroMissionProposedState(bool bAlreadyExact)
+	TSharedRef<FJsonObject> NeuroNeuralSlowUseMissionProposedState(bool bAlreadyExact)
 	{
 		TSharedRef<FJsonObject> Task = MakeShared<FJsonObject>();
-		Task->SetStringField(TEXT("objective_id"), NeuroResearchStationIntroObjectiveId);
-		Task->SetStringField(TEXT("title"), NeuroResearchStationIntroObjectiveTitle);
-		Task->SetStringField(TEXT("description"), NeuroResearchStationIntroObjectiveDescription);
+		Task->SetStringField(TEXT("objective_id"), NeuroNeuralSlowUseObjectiveId);
+		Task->SetStringField(TEXT("title"), NeuroNeuralSlowUseObjectiveTitle);
+		Task->SetStringField(TEXT("description"), NeuroNeuralSlowUseObjectiveDescription);
 		Task->SetStringField(TEXT("category"), TEXT("Main"));
 		Task->SetNumberField(TEXT("target_count"), 1);
 		Task->SetBoolField(TEXT("b_auto_activate"), true);
 		Task->SetArrayField(TEXT("prerequisite_objective_ids"), TArray<TSharedPtr<FJsonValue>>());
-		Task->SetStringField(TEXT("complete_event"), NeuroResearchStationIntroEventId);
+		Task->SetStringField(TEXT("complete_event"), NeuroNeuralSlowUseEventId);
 
 		TArray<TSharedPtr<FJsonValue>> Tasks;
 		Tasks.Add(MakeShared<FJsonValueObject>(Task));
 
 		TSharedRef<FJsonObject> Mission = MakeShared<FJsonObject>();
-		Mission->SetStringField(TEXT("mission_id"), NeuroResearchStationIntroMissionId);
-		Mission->SetStringField(TEXT("mission_title"), NeuroResearchStationIntroMissionTitle);
-		Mission->SetStringField(TEXT("mission_description"), NeuroResearchStationIntroMissionDescription);
+		Mission->SetStringField(TEXT("mission_id"), NeuroNeuralSlowUseMissionId);
+		Mission->SetStringField(TEXT("mission_title"), NeuroNeuralSlowUseMissionTitle);
+		Mission->SetStringField(TEXT("mission_description"), NeuroNeuralSlowUseMissionDescription);
 		Mission->SetField(TEXT("next_mission_asset"), MakeShared<FJsonValueNull>());
 		Mission->SetArrayField(TEXT("tasks"), Tasks);
 		Mission->SetBoolField(TEXT("already_exact"), bAlreadyExact);
 		return Mission;
 	}
 
-	FString NeuroResearchStationIntroMissionRejectClientOverrides(const TSharedPtr<FJsonObject>& Args)
+	FString NeuroNeuralSlowUseMissionRejectClientOverrides(const TSharedPtr<FJsonObject>& Args)
 	{
 		if (!Args.IsValid())
 		{
@@ -70,15 +68,15 @@
 				return FString::Printf(TEXT("Client override '%s' rejected. Spec is locked."), Key);
 			}
 		}
-		const FString Spec = GetString(Args, TEXT("spec"), NeuroResearchStationIntroMissionSpec);
-		if (!Spec.Equals(NeuroResearchStationIntroMissionSpec, ESearchCase::CaseSensitive))
+		const FString Spec = GetString(Args, TEXT("spec"), NeuroNeuralSlowUseMissionSpec);
+		if (!Spec.Equals(NeuroNeuralSlowUseMissionSpec, ESearchCase::CaseSensitive))
 		{
-			return FString::Printf(TEXT("spec must be '%s'."), NeuroResearchStationIntroMissionSpec);
+			return FString::Printf(TEXT("spec must be '%s'."), NeuroNeuralSlowUseMissionSpec);
 		}
 		return TEXT("");
 	}
 
-	FString NeuroResearchStationIntroMissionMismatchReason(UObject* Asset)
+	FString NeuroNeuralSlowUseMissionMismatchReason(UObject* Asset)
 	{
 		if (!Asset)
 		{
@@ -90,20 +88,20 @@
 		}
 		FProperty* IdProp = FindInstanceProperty(Asset, TEXT("MissionId"));
 		FString IdError;
-		if (!PropertyMatchesJson(Asset, IdProp, MakeShared<FJsonValueString>(NeuroResearchStationIntroMissionId), IdError))
+		if (!PropertyMatchesJson(Asset, IdProp, MakeShared<FJsonValueString>(NeuroNeuralSlowUseMissionId), IdError))
 		{
 			return FString::Printf(TEXT("MissionId: %s"), *IdError);
 		}
 		FProperty* TitleProp = FindInstanceProperty(Asset, TEXT("MissionTitle"));
 		FString TitleError;
-		if (!PropertyMatchesJson(Asset, TitleProp, MakeShared<FJsonValueString>(NeuroResearchStationIntroMissionTitle), TitleError))
+		if (!PropertyMatchesJson(Asset, TitleProp, MakeShared<FJsonValueString>(NeuroNeuralSlowUseMissionTitle), TitleError))
 		{
 			return FString::Printf(TEXT("MissionTitle: %s"), *TitleError);
 		}
 		FProperty* DescProp = FindInstanceProperty(Asset, TEXT("MissionDescription"));
 		FString DescError;
 		if (!PropertyMatchesJson(
-				Asset, DescProp, MakeShared<FJsonValueString>(NeuroResearchStationIntroMissionDescription), DescError))
+				Asset, DescProp, MakeShared<FJsonValueString>(NeuroNeuralSlowUseMissionDescription), DescError))
 		{
 			return FString::Printf(TEXT("MissionDescription: %s"), *DescError);
 		}
@@ -112,13 +110,11 @@
 		if (FSoftObjectProperty* SoftProp = CastField<FSoftObjectProperty>(NextProp))
 		{
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
-			const FString NextPath = Soft.ToSoftObjectPath().IsValid() ? Soft.ToSoftObjectPath().ToString() : TEXT("");
-			if (!NextPath.IsEmpty()
-				&& !NextPath.Equals(NeuroResearchStationIntroAllowedNextSoftPath, ESearchCase::CaseSensitive))
+			if (Soft.ToSoftObjectPath().IsValid())
 			{
 				return FString::Printf(
-					TEXT("NextMissionAsset must be null or DA_Mission_NeuroNeuralSlowUse, got '%s'"),
-					*NextPath);
+					TEXT("NextMissionAsset must be null, got '%s'"),
+					*Soft.ToSoftObjectPath().ToString());
 			}
 		}
 		else
@@ -146,14 +142,14 @@
 		if (const FString Task0Error = NeuroGeneticsMissionBeat3ReadTaskObjectiveMismatch(
 				Helper.GetRawPtr(0),
 				TaskStruct,
-				NeuroResearchStationIntroObjectiveId,
-				NeuroResearchStationIntroObjectiveTitle,
-				NeuroResearchStationIntroObjectiveDescription,
+				NeuroNeuralSlowUseObjectiveId,
+				NeuroNeuralSlowUseObjectiveTitle,
+				NeuroNeuralSlowUseObjectiveDescription,
 				true,
 				0,
 				nullptr,
 				1,
-				NeuroResearchStationIntroEventId);
+				NeuroNeuralSlowUseEventId);
 			!Task0Error.IsEmpty())
 		{
 			return FString::Printf(TEXT("Tasks[0]: %s"), *Task0Error);
@@ -161,24 +157,24 @@
 		return TEXT("");
 	}
 
-	FString ApplyNeuroResearchStationIntroMissionDefaults(UObject* Asset)
+	FString ApplyNeuroNeuralSlowUseMissionDefaults(UObject* Asset)
 	{
 		if (!Asset)
 		{
 			return TEXT("Asset is null.");
 		}
-		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionId"), NeuroResearchStationIntroMissionId);
+		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionId"), NeuroNeuralSlowUseMissionId);
 			!Error.IsEmpty())
 		{
 			return Error;
 		}
-		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionTitle"), NeuroResearchStationIntroMissionTitle);
+		if (const FString Error = SetNamedPropertyFromString(Asset, TEXT("MissionTitle"), NeuroNeuralSlowUseMissionTitle);
 			!Error.IsEmpty())
 		{
 			return Error;
 		}
 		if (const FString Error = SetNamedPropertyFromString(
-				Asset, TEXT("MissionDescription"), NeuroResearchStationIntroMissionDescription);
+				Asset, TEXT("MissionDescription"), NeuroNeuralSlowUseMissionDescription);
 			!Error.IsEmpty())
 		{
 			return Error;
@@ -210,13 +206,13 @@
 
 		TArray<FName> NoPrereqs;
 		TArray<FName> Events;
-		Events.Add(FName(NeuroResearchStationIntroEventId));
+		Events.Add(FName(NeuroNeuralSlowUseEventId));
 		if (const FString Task0Error = NeuroGeneticsMissionBeat3WriteTaskObjective(
 				Helper.GetRawPtr(0),
 				TaskStruct,
-				NeuroResearchStationIntroObjectiveId,
-				NeuroResearchStationIntroObjectiveTitle,
-				NeuroResearchStationIntroObjectiveDescription,
+				NeuroNeuralSlowUseObjectiveId,
+				NeuroNeuralSlowUseObjectiveTitle,
+				NeuroNeuralSlowUseObjectiveDescription,
 				true,
 				NoPrereqs,
 				Events);
@@ -227,7 +223,7 @@
 		return TEXT("");
 	}
 
-	FString CleanupCreatedNeuroResearchStationIntroMissionAsset(
+	FString CleanupCreatedNeuroNeuralSlowUseMissionAsset(
 		UObject* Asset, bool bPackageWasDirtyBefore, TArray<FString>& OutRestored)
 	{
 		OutRestored.Reset();
@@ -252,7 +248,7 @@
 		return TEXT("");
 	}
 
-	FString CreateNeuroResearchStationIntroMissionAsset(UObject*& OutAsset, bool& bOutCreatedNow, bool& bOutPackageWasDirtyBefore)
+	FString CreateNeuroNeuralSlowUseMissionAsset(UObject*& OutAsset, bool& bOutCreatedNow, bool& bOutPackageWasDirtyBefore)
 	{
 		OutAsset = nullptr;
 		bOutCreatedNow = false;
@@ -264,29 +260,29 @@
 			return FString::Printf(TEXT("Failed to load mission class '%s'."), NeuroGeneticsMissionClassPath);
 		}
 
-		UPackage* ExistingPackage = FindPackage(nullptr, NeuroResearchStationIntroMissionPackage);
+		UPackage* ExistingPackage = FindPackage(nullptr, NeuroNeuralSlowUseMissionPackage);
 		bOutPackageWasDirtyBefore = ExistingPackage && ExistingPackage->IsDirty();
 
-		UPackage* Package = CreatePackage(NeuroResearchStationIntroMissionPackage);
+		UPackage* Package = CreatePackage(NeuroNeuralSlowUseMissionPackage);
 		if (!Package)
 		{
-			return FString::Printf(TEXT("Failed to create package '%s'."), NeuroResearchStationIntroMissionPackage);
+			return FString::Printf(TEXT("Failed to create package '%s'."), NeuroNeuralSlowUseMissionPackage);
 		}
 
 		UObject* Asset = NewObject<UObject>(
 			Package,
 			MissionClass,
-			NeuroResearchStationIntroMissionAssetName,
+			NeuroNeuralSlowUseMissionAssetName,
 			RF_Public | RF_Standalone | RF_Transactional);
 		if (!Asset)
 		{
-			return TEXT("NewObject failed for DA_Mission_NeuroResearchStationIntro.");
+			return TEXT("NewObject failed for DA_Mission_NeuroNeuralSlowUse.");
 		}
 
-		if (const FString ApplyError = ApplyNeuroResearchStationIntroMissionDefaults(Asset); !ApplyError.IsEmpty())
+		if (const FString ApplyError = ApplyNeuroNeuralSlowUseMissionDefaults(Asset); !ApplyError.IsEmpty())
 		{
 			TArray<FString> Restored;
-			CleanupCreatedNeuroResearchStationIntroMissionAsset(Asset, bOutPackageWasDirtyBefore, Restored);
+			CleanupCreatedNeuroNeuralSlowUseMissionAsset(Asset, bOutPackageWasDirtyBefore, Restored);
 			return ApplyError;
 		}
 
@@ -297,11 +293,11 @@
 		return TEXT("");
 	}
 
-	FString GuardNeuroResearchStationIntroMissionEditorContext()
+	FString GuardNeuroNeuralSlowUseMissionEditorContext()
 	{
 		if (!IsInGameThread())
 		{
-			return TEXT("create_neuro_research_station_intro_mission must run on the game thread.");
+			return TEXT("create_neuro_neural_slow_use_mission must run on the game thread.");
 		}
 		if (GetPieWorld())
 		{
@@ -310,33 +306,33 @@
 		return TEXT("");
 	}
 
-	FString PreflightCreateNeuroResearchStationIntroMission(
+	FString PreflightCreateNeuroNeuralSlowUseMission(
 		const TSharedPtr<FJsonObject>& Args,
 		TSharedRef<FJsonObject> Before,
 		TSharedRef<FJsonObject> Proposed)
 	{
-		if (const FString ContextError = GuardNeuroResearchStationIntroMissionEditorContext(); !ContextError.IsEmpty())
+		if (const FString ContextError = GuardNeuroNeuralSlowUseMissionEditorContext(); !ContextError.IsEmpty())
 		{
 			return ContextError;
 		}
 		if (GetBool(Args, TEXT("save"), false) || GetBool(Args, TEXT("save_all"), false))
 		{
-			return TEXT("save must be false. create_neuro_research_station_intro_mission does not save.");
+			return TEXT("save must be false. create_neuro_neural_slow_use_mission does not save.");
 		}
-		if (const FString OverrideError = NeuroResearchStationIntroMissionRejectClientOverrides(Args); !OverrideError.IsEmpty())
+		if (const FString OverrideError = NeuroNeuralSlowUseMissionRejectClientOverrides(Args); !OverrideError.IsEmpty())
 		{
 			return OverrideError;
 		}
 
-		UObject* Existing = FindNeuroResearchStationIntroMissionAssetExact();
+		UObject* Existing = FindNeuroNeuralSlowUseMissionAssetExact();
 		bool bAlreadyExact = false;
 		if (Existing)
 		{
-			const FString Mismatch = NeuroResearchStationIntroMissionMismatchReason(Existing);
+			const FString Mismatch = NeuroNeuralSlowUseMissionMismatchReason(Existing);
 			if (!Mismatch.IsEmpty())
 			{
 				return FString::Printf(
-					TEXT("DA_Mission_NeuroResearchStationIntro exists but mismatches locked contract: %s. Fail closed — no opportunistic repair."),
+					TEXT("DA_Mission_NeuroNeuralSlowUse exists but mismatches locked contract: %s. Fail closed — no opportunistic repair."),
 					*Mismatch);
 			}
 			bAlreadyExact = true;
@@ -346,39 +342,39 @@
 			return FString::Printf(TEXT("Mission class '%s' unresolved."), NeuroGeneticsMissionClassPath);
 		}
 
-		Before->SetStringField(TEXT("spec"), NeuroResearchStationIntroMissionSpec);
-		Before->SetStringField(TEXT("action"), NeuroResearchStationIntroMissionAction);
-		Before->SetStringField(TEXT("object_path"), NeuroResearchStationIntroMissionObjectPath);
-		Before->SetStringField(TEXT("package"), NeuroResearchStationIntroMissionPackage);
+		Before->SetStringField(TEXT("spec"), NeuroNeuralSlowUseMissionSpec);
+		Before->SetStringField(TEXT("action"), NeuroNeuralSlowUseMissionAction);
+		Before->SetStringField(TEXT("object_path"), NeuroNeuralSlowUseMissionObjectPath);
+		Before->SetStringField(TEXT("package"), NeuroNeuralSlowUseMissionPackage);
 		Before->SetBoolField(TEXT("exists"), Existing != nullptr);
 		Before->SetBoolField(TEXT("already_exact"), bAlreadyExact);
 
-		Proposed->SetStringField(TEXT("spec"), NeuroResearchStationIntroMissionSpec);
-		Proposed->SetStringField(TEXT("action"), NeuroResearchStationIntroMissionAction);
-		Proposed->SetStringField(TEXT("object_path"), NeuroResearchStationIntroMissionObjectPath);
-		Proposed->SetStringField(TEXT("package"), NeuroResearchStationIntroMissionPackage);
-		Proposed->SetStringField(TEXT("asset_name"), NeuroResearchStationIntroMissionAssetName);
+		Proposed->SetStringField(TEXT("spec"), NeuroNeuralSlowUseMissionSpec);
+		Proposed->SetStringField(TEXT("action"), NeuroNeuralSlowUseMissionAction);
+		Proposed->SetStringField(TEXT("object_path"), NeuroNeuralSlowUseMissionObjectPath);
+		Proposed->SetStringField(TEXT("package"), NeuroNeuralSlowUseMissionPackage);
+		Proposed->SetStringField(TEXT("asset_name"), NeuroNeuralSlowUseMissionAssetName);
 		Proposed->SetStringField(TEXT("class"), NeuroGeneticsMissionClassName);
-		Proposed->SetObjectField(TEXT("mission"), NeuroResearchStationIntroMissionProposedState(bAlreadyExact));
+		Proposed->SetObjectField(TEXT("mission"), NeuroNeuralSlowUseMissionProposedState(bAlreadyExact));
 		Proposed->SetBoolField(TEXT("already_exact"), bAlreadyExact);
 		Proposed->SetBoolField(TEXT("will_mutate"), !bAlreadyExact);
 		Proposed->SetBoolField(TEXT("saves"), false);
 		return TEXT("");
 	}
 
-	TSharedRef<FJsonObject> ExecuteCreateNeuroResearchStationIntroMission(FBridgeChange& Change)
+	TSharedRef<FJsonObject> ExecuteCreateNeuroNeuralSlowUseMission(FBridgeChange& Change)
 	{
 		if (!IsInGameThread())
 		{
 			return FailAudit(
 				TEXT("wrong_thread"),
-				TEXT("create_neuro_research_station_intro_mission must run on the game thread. ZERO writes."),
+				TEXT("create_neuro_neural_slow_use_mission must run on the game thread. ZERO writes."),
 				MakeShared<FBridgeChange>(Change));
 		}
 
 		TSharedRef<FJsonObject> Before = MakeShared<FJsonObject>();
 		TSharedRef<FJsonObject> Proposed = MakeShared<FJsonObject>();
-		const FString PreflightError = PreflightCreateNeuroResearchStationIntroMission(Change.Args, Before, Proposed);
+		const FString PreflightError = PreflightCreateNeuroNeuralSlowUseMission(Change.Args, Before, Proposed);
 		if (!PreflightError.IsEmpty())
 		{
 			Change.Status = TEXT("execute_aborted_preflight");
@@ -388,8 +384,8 @@
 				MakeShared<FBridgeChange>(Change));
 		}
 
-		UObject* Existing = FindNeuroResearchStationIntroMissionAssetExact();
-		if (Existing && NeuroResearchStationIntroMissionMismatchReason(Existing).IsEmpty())
+		UObject* Existing = FindNeuroNeuralSlowUseMissionAssetExact();
+		if (Existing && NeuroNeuralSlowUseMissionMismatchReason(Existing).IsEmpty())
 		{
 			Change.bExecuted = true;
 			Change.ExecutedAt = NowIso();
@@ -397,10 +393,10 @@
 			Change.Status = TEXT("executed_noop");
 			Change.After = MakeShared<FJsonObject>();
 			Change.After->SetStringField(TEXT("result"), TEXT("already_exact_noop"));
-			Change.After->SetStringField(TEXT("object_path"), NeuroResearchStationIntroMissionObjectPath);
+			Change.After->SetStringField(TEXT("object_path"), NeuroNeuralSlowUseMissionObjectPath);
 			Change.After->SetBoolField(TEXT("created"), false);
 			Change.After->SetBoolField(TEXT("save_performed"), false);
-			Change.After->SetObjectField(TEXT("mission"), NeuroResearchStationIntroMissionProposedState(true));
+			Change.After->SetObjectField(TEXT("mission"), NeuroNeuralSlowUseMissionProposedState(true));
 			Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(CollectDirtyPackageNamesSorted()));
 			LogAudit(TEXT("execute"), Change);
 			return Ok(AuditBase(Change));
@@ -410,7 +406,7 @@
 			Change.Status = TEXT("execute_aborted_preflight");
 			return FailAudit(
 				TEXT("mismatch"),
-				TEXT("DA_Mission_NeuroResearchStationIntro exists but is not exact. Fail closed. ZERO writes."),
+				TEXT("DA_Mission_NeuroNeuralSlowUse exists but is not exact. Fail closed. ZERO writes."),
 				MakeShared<FBridgeChange>(Change));
 		}
 
@@ -421,10 +417,10 @@
 		{
 			const FScopedTransaction Transaction(NSLOCTEXT(
 				"OrganoidAIBridge",
-				"CreateNeuroResearchStationIntroMission",
-				"Create Neuro Research Station Intro Mission DataAsset"));
+				"CreateNeuroNeuralSlowUseMission",
+				"Create Neuro Neural Slow Use Mission DataAsset"));
 			if (const FString CreateError =
-					CreateNeuroResearchStationIntroMissionAsset(Created, bCreatedNow, bPackageWasDirtyBefore);
+					CreateNeuroNeuralSlowUseMissionAsset(Created, bCreatedNow, bPackageWasDirtyBefore);
 				!CreateError.IsEmpty())
 			{
 				Change.Status = TEXT("execute_failed");
@@ -437,10 +433,10 @@
 			}
 		}
 
-		if (const FString VerifyError = NeuroResearchStationIntroMissionMismatchReason(Created); !VerifyError.IsEmpty())
+		if (const FString VerifyError = NeuroNeuralSlowUseMissionMismatchReason(Created); !VerifyError.IsEmpty())
 		{
 			TArray<FString> Restored;
-			CleanupCreatedNeuroResearchStationIntroMissionAsset(Created, bPackageWasDirtyBefore, Restored);
+			CleanupCreatedNeuroNeuralSlowUseMissionAsset(Created, bPackageWasDirtyBefore, Restored);
 			Change.Status = TEXT("execute_failed");
 			Change.After = MakeShared<FJsonObject>();
 			Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(CollectDirtyPackageNamesSorted()));
@@ -451,7 +447,7 @@
 		}
 
 		const TArray<FString> DirtyAfter = CollectDirtyPackageNamesSorted();
-		const FString ExpectedDirty = NormalizePackage(NeuroResearchStationIntroMissionPackage);
+		const FString ExpectedDirty = NormalizePackage(NeuroNeuralSlowUseMissionPackage);
 		bool bExpectedDirtyPresent = false;
 		for (const FString& Dirty : DirtyAfter)
 		{
@@ -476,7 +472,7 @@
 		if (!bExpectedDirtyPresent || UnexpectedNew.Num() != 0)
 		{
 			TArray<FString> Restored;
-			CleanupCreatedNeuroResearchStationIntroMissionAsset(Created, bPackageWasDirtyBefore, Restored);
+			CleanupCreatedNeuroNeuralSlowUseMissionAsset(Created, bPackageWasDirtyBefore, Restored);
 			Change.Status = TEXT("execute_failed");
 			Change.After = MakeShared<FJsonObject>();
 			Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(DirtyAfter));
@@ -496,11 +492,11 @@
 		Change.Status = TEXT("executed");
 		Change.After = MakeShared<FJsonObject>();
 		Change.After->SetStringField(TEXT("result"), TEXT("created"));
-		Change.After->SetStringField(TEXT("object_path"), NeuroResearchStationIntroMissionObjectPath);
+		Change.After->SetStringField(TEXT("object_path"), NeuroNeuralSlowUseMissionObjectPath);
 		Change.After->SetStringField(TEXT("class"), ClassName(Created));
 		Change.After->SetBoolField(TEXT("created"), bCreatedNow);
 		Change.After->SetBoolField(TEXT("save_performed"), false);
-		Change.After->SetObjectField(TEXT("mission"), NeuroResearchStationIntroMissionProposedState(false));
+		Change.After->SetObjectField(TEXT("mission"), NeuroNeuralSlowUseMissionProposedState(false));
 		Change.After->SetArrayField(TEXT("dirty_packages"), DirtyPackageJsonArray(DirtyAfter));
 		LogAudit(TEXT("execute"), Change);
 		return Ok(AuditBase(Change));
