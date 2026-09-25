@@ -53,9 +53,12 @@
 		if (FSoftObjectProperty* SoftProp = CastField<FSoftObjectProperty>(NextProp))
 		{
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
-			if (Soft.ToSoftObjectPath().IsValid())
+			const FString NextPath = Soft.ToSoftObjectPath().ToString();
+			const bool bNull = !Soft.ToSoftObjectPath().IsValid();
+			const bool bEvidence = NextPath.Equals(TEXT("/Game/Data/Missions/DA_Mission_CryoEvidence.DA_Mission_CryoEvidence"), ESearchCase::CaseSensitive);
+			if (!bNull && !bEvidence)
 			{
-				return FString::Printf(TEXT("NextMissionAsset must be null, got '%s'"), *Soft.ToSoftObjectPath().ToString());
+				return FString::Printf(TEXT("NextMissionAsset must be null or DA_Mission_CryoEvidence, got '%s'"), *NextPath);
 			}
 		}
 		else

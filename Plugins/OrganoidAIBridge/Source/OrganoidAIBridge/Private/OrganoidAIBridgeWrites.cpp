@@ -166,6 +166,9 @@ namespace
 		TEXT("create_cryo_entry_mission"),
 		TEXT("set_cryo_access_next_cryo_entry"),
 		TEXT("configure_cryo_entry_checkpoint"),
+		TEXT("create_cryo_evidence_mission"),
+		TEXT("set_cryo_entry_next_cryo_evidence"),
+		TEXT("configure_cryo_evidence_datapads"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -237,6 +240,9 @@ namespace
 		TEXT("create_cryo_entry_mission"),
 		TEXT("set_cryo_access_next_cryo_entry"),
 		TEXT("configure_cryo_entry_checkpoint"),
+		TEXT("create_cryo_evidence_mission"),
+		TEXT("set_cryo_entry_next_cryo_evidence"),
+		TEXT("configure_cryo_evidence_datapads"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3256,6 +3262,9 @@ namespace
 #include "OrganoidAIBridgeCryoEntryMission.inl"
 #include "OrganoidAIBridgeCryoAccessNextCryoEntry.inl"
 #include "OrganoidAIBridgeCryoEntryCheckpoint.inl"
+#include "OrganoidAIBridgeCryoEvidenceMission.inl"
+#include "OrganoidAIBridgeCryoEntryNextCryoEvidence.inl"
+#include "OrganoidAIBridgeCryoEvidenceDatapads.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -3986,6 +3995,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureCryoEntryCheckpoint(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_cryo_evidence_mission"))
+		{
+			PreflightError = PreflightCreateCryoEvidenceMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_cryo_entry_next_cryo_evidence"))
+		{
+			PreflightError = PreflightSetCryoEntryNextCryoEvidence(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_cryo_evidence_datapads"))
+		{
+			PreflightError = PreflightConfigureCryoEvidenceDatapads(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4085,6 +4106,8 @@ namespace
 			|| Action == TEXT("set_neuro_revelation_next_cryo_access")
 			|| Action == TEXT("create_cryo_entry_mission")
 			|| Action == TEXT("set_cryo_access_next_cryo_entry")
+			|| Action == TEXT("create_cryo_evidence_mission")
+			|| Action == TEXT("set_cryo_entry_next_cryo_evidence")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -4095,7 +4118,8 @@ namespace
 			Package = NeuroPackage;
 		}
 		else if (Action == TEXT("configure_cryo_backup_power_panel")
-			|| Action == TEXT("configure_cryo_entry_checkpoint"))
+			|| Action == TEXT("configure_cryo_entry_checkpoint")
+			|| Action == TEXT("configure_cryo_evidence_datapads"))
 		{
 			Package = CryoPackage;
 		}
@@ -5318,6 +5342,9 @@ namespace
 				|| Change->Action == TEXT("create_cryo_entry_mission")
 				|| Change->Action == TEXT("set_cryo_access_next_cryo_entry")
 				|| Change->Action == TEXT("configure_cryo_entry_checkpoint")
+				|| Change->Action == TEXT("create_cryo_evidence_mission")
+				|| Change->Action == TEXT("set_cryo_entry_next_cryo_evidence")
+				|| Change->Action == TEXT("configure_cryo_evidence_datapads")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -5608,6 +5635,18 @@ namespace
 		if (Change->Action == TEXT("configure_cryo_entry_checkpoint"))
 		{
 			return ExecuteConfigureCryoEntryCheckpoint(*Change);
+		}
+		if (Change->Action == TEXT("create_cryo_evidence_mission"))
+		{
+			return ExecuteCreateCryoEvidenceMission(*Change);
+		}
+		if (Change->Action == TEXT("set_cryo_entry_next_cryo_evidence"))
+		{
+			return ExecuteSetCryoEntryNextCryoEvidence(*Change);
+		}
+		if (Change->Action == TEXT("configure_cryo_evidence_datapads"))
+		{
+			return ExecuteConfigureCryoEvidenceDatapads(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{

@@ -2,6 +2,8 @@
 
 #include "ProjectOrganoidDataPad.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidObjectiveTypes.h"
@@ -82,6 +84,7 @@ bool AProjectOrganoidDataPad::Interact_Implementation(AProjectOrganoidCharacter*
 		{
 			if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
 			{
+				const bool bAlreadyComplete = IsRequiredObjectiveCompleted(Objectives);
 				if (bBroadcastGenericDataPadEvent)
 				{
 					Objectives->TriggerEvent(TEXT("Event_DataPadRead"));
@@ -91,10 +94,42 @@ bool AProjectOrganoidDataPad::Interact_Implementation(AProjectOrganoidCharacter*
 				{
 					Objectives->TriggerEvent(ObjectiveEventId);
 				}
+
+				if (!bAlreadyComplete && IsRequiredObjectiveCompleted(Objectives))
+				{
+					PresentCompletionNotification(Interactor);
+				}
 			}
 		}
 	}
 
 	BP_OnDataPadRead(Interactor, LogEntry);
 	return true;
+}
+
+bool AProjectOrganoidDataPad::IsRequiredObjectiveCompleted(const UProjectOrganoidObjectiveSubsystem* Objectives) const
+{
+	if (RequiredObjectiveIdForInteraction.IsNone() || !Objectives)
+	{
+		return false;
+	}
+	FProjectOrganoidObjective Objective;
+	return Objectives->GetObjective(RequiredObjectiveIdForInteraction, Objective)
+		&& Objective.State == EProjectOrganoidObjectiveState::Completed;
+}
+
+void AProjectOrganoidDataPad::PresentCompletionNotification(AProjectOrganoidCharacter* Interactor)
+{
+	if (CompletionNotificationText.IsEmpty() || CompletionNotificationCount > 0)
+	{
+		return;
+	}
+	APlayerController* PC = Interactor ? Cast<APlayerController>(Interactor->GetController()) : nullptr;
+	UWorld* World = GetWorld();
+	AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
+	UProjectOrganoidGameplayHUDController* HUD = GameMode && PC ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (HUD && HUD->ShowTransientNotification(CompletionNotificationSpeaker, CompletionNotificationText, CompletionNotificationDurationSeconds))
+	{
+		++CompletionNotificationCount;
+	}
 }

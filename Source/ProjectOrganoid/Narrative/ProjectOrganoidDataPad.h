@@ -8,6 +8,7 @@
 #include "ProjectOrganoidDataPad.generated.h"
 
 class UStaticMeshComponent;
+class UProjectOrganoidObjectiveSubsystem;
 
 /**
  *  Facility data pad — pushes lore into Avery's log and optionally fires objective events.
@@ -43,6 +44,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|Objectives")
 	bool bBroadcastGenericDataPadEvent = true;
 
+	/**
+	 * Optional line shown once, only when this read is the interact that completes
+	 * RequiredObjectiveIdForInteraction. Empty text leaves every other pad silent.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|Objectives")
+	FText CompletionNotificationSpeaker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|Objectives")
+	FText CompletionNotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|Objectives", meta = (ClampMin = "0.0"))
+	float CompletionNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Log|Objectives", Transient)
+	int32 CompletionNotificationCount = 0;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Log")
 	bool bHasBeenRead = false;
 
@@ -50,6 +67,11 @@ public:
 
 	virtual bool Interact_Implementation(AProjectOrganoidCharacter* Interactor) override;
 
+protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Log")
 	void BP_OnDataPadRead(AProjectOrganoidCharacter* Interactor, const FProjectOrganoidLogEntry& Entry);
+
+private:
+	bool IsRequiredObjectiveCompleted(const UProjectOrganoidObjectiveSubsystem* Objectives) const;
+	void PresentCompletionNotification(AProjectOrganoidCharacter* Interactor);
 };

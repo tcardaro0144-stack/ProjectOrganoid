@@ -3482,3 +3482,116 @@ Checkpoint, each once:
 
 - Beat 14 is implemented, persisted, and validated, with the deferred Beep exception documented above. HostCombatLoop passed **33/33** in the complete catalog run.
 - Do not begin Beat 15 until separately authorized.
+
+## 2026-09-25 — Beat 15: Lot Numbers
+
+**Status:** implemented, persisted, validated, with one documented deferred Beep exception plus an intermittent Biological Adaptation aim flake that passed on the catalog retry. `HostCombatLoop_Functional` passed **33/33** in both complete runs. `BiologicalAdaptation_Functional` passed **59/59** on the retry. Changes left **unstaged**. No commit / no push / no Beat 16.
+
+**Baseline:** published Beat 14 commit `16bf65b289d44f2939aed503f1180d40940a4eb4` on `origin/main`. Beat 15 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_CryoEntry` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_CryoEvidence`
+  - Mission ID: `Mission_CryoEvidence`
+  - Title: `Lot Numbers`
+  - Description: `The cryo manifests don't match the specimen logs. Recover the remaining facility documents downstairs.`
+  - Exactly one Main task: `Obj_RecoverCryoEvidence` (autoactivate, target 3, no prerequisite)
+  - Objective title: `Recover Cryo Evidence`
+  - Objective description: `Recover the remaining Cryo documents.`
+  - Completes on `Event_CryoEvidenceRecovered` (Advance, progress delta 1, target 3)
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_CryoEntry.NextMissionAsset` → `DA_Mission_CryoEvidence`. Revelation still points at `DA_Mission_CryoAccess`. CryoAccess still points at `DA_Mission_CryoEntry`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon. No new datapad text. Existing log text was not rewritten.
+- Reused three existing datapads on `SL_Epitope_Cryo`. They were not moved.
+  - `DataPad_SpecimenManifest` (`ProjectOrganoidDataPad_0`) at `(-2330, -2150, -2310)`
+  - `DataPad_ConsentForms` (`ProjectOrganoidDataPad_1`) at `(-400, -1150, -2310)`
+  - `DataPad_SterlingCryoNote` (`ProjectOrganoidDataPad_2`) at `(-2425, 1025, -2310)`
+- `DataPad_GrantProposal` and `DataPad_SterlingFinalLog` are on other levels and were left alone. Hazards were unchanged.
+- Each pad requires `Obj_RecoverCryoEvidence` Active, prompt `Recover Cryo Evidence`, event `Event_CryoEvidenceRecovered`.
+- Nathan line, once, 7 seconds, on the completing read only, replay guarded: `Lot numbers, consent forms... These weren't specimens. They were staff. Authorization was filed before anyone died.`
+- Configure did not change sector power. The editor seed at configure time remained Cryo Blackout. The live contract is Cryo restored Online. Online still comes from the Beat 13 panel Completed reapply and SaveSubsystem.
+
+### Gameplay behavior
+
+- The three pads set `bBroadcastGenericDataPadEvent` false, so they do not also fire `Event_DataPadRead`.
+- Credit only when `Obj_RecoverCryoEvidence` is Active. Each first read counts toward target 3. The objective completes on the third `Event_CryoEvidenceRecovered`.
+- The Nathan line is shown only by the read that transitions `Obj_RecoverCryoEvidence` to Completed. It is a transient HUD notification and is not persisted.
+- Before interact, Cryo Online is preserved. After the third read, Cryo stays Online, Neuro Online preserved, Admin Online preserved.
+- The pads do not call `SetSectorPowerState`. There is no door and no Cryo unlock beyond the evidence objective.
+- Cryo Online persists through SaveSubsystem and the Beat 13 panel Completed reapply.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged; Next already `DA_Mission_CryoEntry`)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `3390f101ad45e1a299abf1be8ec8b29615b987536adc847b4b7ce95543004279` (three datapads configured; Beat 14 recorded hash was `705855f5f216234691415cfd5210aa57d82aa146518a4774b3c006d466087e9a`)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (Next now CryoEvidence; Beat 14 recorded hash was `6c922ce14d04f01fe34e8353609a0d8b49bc5bbdc6e2b2673d37d80a134a0905`)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `1009fcfe32a8541a44848793629672461e660ef36fc8905936551d3326e8adf5` (new)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 21380, dirty 0, PIE stopped): **8/8** tests, **616/616** assertions. Script exit code **0**. Close of PID 21380 was clean: `CloseMainWindow` true, process count 0. The fresh log was clean.
+  - `CryoEvidence_Functional` **100/100** — `ptr_db2f00e4-4aa3-3bbb-8f10-a9a900a74c32`
+  - `CryoEntry_Functional` **78/78** — `ptr_8cbc42b0-4824-1d9a-522f-73a476ad47db`
+  - `CryoAccess_Functional` **78/78** — `ptr_78731704-4903-337d-e060-1896a50c900a`
+  - `NeuroRevelation_Functional` **88/88** — `ptr_7d96d12c-4c6f-dcab-5b3a-918eabbe492d`
+  - `NeuroAdaptationConnection_Functional` **86/86** — `ptr_b080d63e-463f-db3b-9125-87af5b932e54`
+  - `NeuroNeuralSlowUse_Functional` **67/67** — `ptr_7d60e199-4806-5536-e400-45adc976568e`
+  - `NeuroPowerFailureDiscovery_Functional` **49/49** — `ptr_e80fa6d3-4b73-aba7-ef58-248f38a1234f`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_ce9691ce-42f1-f6b3-ea44-ebbe7c0728aa`
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b15_targeted8_summary.txt`
+  - Log signature counts were 0 for `Ensure condition failed`, `Fatal error`, `Unhandled Exception`, `Assertion failed`, and `Critical error:`.
+- Complete catalog attempt 1 executed **50/50**. Outcome `FAIL`. Script exit code **3**. Aggregate **4789** assertions.
+  - `BeepClickInjection_Functional` **11/12** — `ptr_94decafd-4f16-d8df-5d19-b885bf2b6723`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_a198ca6d-488f-4e0c-bfb9-2cbc376389b5`
+  - `BiologicalAdaptation_Functional` **39/43** — `ptr_a2add6d4-4849-0d58-50c3-cbbf26526ce5`. `valid_activation` expected `true`, actual `false`. PE was not spent. Host speed stayed `350`.
+  - Isolated repro on editor PID 28456 repeated the same four asserts — `ptr_b1980045-4bb4-802a-0c6d-b5b1281cbd27`.
+  - Diagnosis: intermittent aim failure on the same-tick activation after camera lag is enabled. Not a Beat 15 regression. `DA_Adaptation_NeuralSlow.uasset` was unchanged. The mission chain was intact. The adaptation test does not load a mission. A later isolated launch, editor PID 11472, passed **59/59** — `ptr_d4110d4c-49eb-3d9f-3009-6caadd23645f`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b15_complete48_4548c6b57e89490ba852c84fa0fa83aa`
+- Complete catalog retry executed **50/50**. The catalog is 50 because `CryoEvidence_Functional` registered. Live order: `NeuroAdaptationConnection_Functional` index **15**, `NeuroRevelation_Functional` index **27**, `CryoAccess_Functional` index **10**, `CryoEntry_Functional` index **49**, `CryoEvidence_Functional` index **50**.
+  - **49** passed, **4805** assertions, **1** failed.
+  - Outcome `DEFERRED_BEEP_EXCEPTION`. Script exit code **0**. Editor PID 26496.
+  - `BeepClickInjection_Functional` **11/12** — `ptr_f2e8a212-4808-6041-fd38-ccb2c3a20ad6`. Failed assertion `route.no_lmb_combat`, expected `false`, actual `true`, actor `Admin`.
+  - `BiologicalAdaptation_Functional` **59/59** — `ptr_12b81da9-4116-de98-557d-8ea21a550571`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_4c3ce0e3-44a9-1f04-f855-d7a97810cd07`
+  - `CryoEvidence_Functional` **100/100** — `ptr_2f8186f8-4d63-1a79-da3d-fdb175a2ac9a`
+  - Close of editor PID 26496: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0. Saves restored to `OrganoidAutosave.sav` only. The ten locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Summary: `C:\Users\tomca\AppData\Local\Temp\b15_complete50_retry_3bb9e4de8c0540f08e7cff07c7c52a1b\summary.json`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b15_complete50_retry_3bb9e4de8c0540f08e7cff07c7c52a1b.log`
+- The diff is the Cryo Entry successor link, the new Cryo Evidence mission, the Cryo map three-datapad configuration, the bridge allowlist for create / next / datapads, the datapad completion-notification hook, `CryoEvidence_Functional`, and the Cryo Entry handoff expectation.
+
+### Deferred issues (not fixed)
+
+1. `route.no_lmb_combat` remains the historical simulated-click exception. Expected `false`, actual `true`, actor `Admin`.
+2. `BiologicalAdaptation_Functional` `valid_activation` is an intermittent aim failure when camera lag is on. Two failures and two full passes on the unchanged test. Deferred as a preexisting isolation defect, not a Beat 15 regression, in the same category as the HostCombatLoop flake.
+3. `HostCombatLoop_Functional` `no_invalid_range_damage` was previously flaky. In both Beat 15 complete runs it passed **33/33**. Still deferred as a preexisting isolation defect, not a Beat 15 regression.
+4. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+5. Current runtime POV is first-person, but the intended design remains modern third-person over-the-shoulder. Camera correction remains deferred.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 16 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 15 is implemented, persisted, and validated, with the deferred Beep exception documented above. HostCombatLoop passed **33/33** in both complete runs. Biological Adaptation passed **59/59** on the catalog retry.
+- Do not begin Beat 16 until separately authorized.
