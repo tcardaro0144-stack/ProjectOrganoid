@@ -3822,3 +3822,111 @@ Checkpoint, each once:
 
 - Beat 17 is implemented, persisted, and validated, with `COMPLETE_PASS` **52/52**.
 - Do not begin Beat 18 until separately authorized.
+
+## 2026-09-25 — Beat 18: The Conclusion
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **53/53**. Beep is **12/12** (fixed). `HostCombatLoop_Functional` **33/33**. `BiologicalAdaptation_Functional` **59/59**. Changes left **unstaged**. No commit / no push / no Beat 19.
+
+**Baseline:** published Beat 17 commit `02186288821481b5e51e963a653e8b8339628b48` (`feat: implement Compute handover`) on `origin/main` at the time of validation. Beat 18 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_ComputeHandover` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → ComputeHandover → TheConclusion → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_TheConclusion`
+  - Mission ID: `Mission_TheConclusion`
+  - Title: `The Conclusion`
+  - Description: `The incubator is awake. Reach the control spine overlooking the primary incubator.`
+  - One Main task.
+  - `Obj_ReachControlSpine` (autoactivate, target 1, no prerequisite). Objective title: `Reach Control Spine`. Objective description: `Reach the control spine.` Completes on `Event_ReactorControlUsed` (Complete, target 1).
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_ComputeHandover.NextMissionAsset` → `DA_Mission_TheConclusion`. ComputeEntry still points at `DA_Mission_ComputeHandover`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon. Hazards were unchanged.
+- Reused existing `Terminal_ControlSpine` on `SL_Epitope_Reactor` at `(-1950, -1650, -4700)`. It was not moved.
+- `Checkpoint_BasinRim` at `(25, 0, -4740)` stayed the reactor-only save identity and was not the interact.
+- Terminal: sector Reactor, restored Emergency, requires `Obj_ReachControlSpine` Active, prompt `Reach Control Spine`, event `Event_ReactorControlUsed`.
+- Nathan line, once, 7 seconds, replay guarded: `The incubator is awake. Every document leads here.`
+- Configure did not change sector power and did not unlock a door or gate. Reactor stayed Emergency.
+
+### Gameplay behavior
+
+- The terminal hook keeps `bDiscoverPowerFailureBeforeRestore` false. Sector is Reactor, restored state Emergency. The required objective is Active `Obj_ReachControlSpine`.
+- Credit applies only while `Obj_ReachControlSpine` is Active and the exact actor interact succeeds. The event is `Event_ReactorControlUsed`. The Nathan line is shown on the transition to Completed.
+- Before interact, Reactor Emergency is preserved. After the event, Reactor stays Emergency. Compute, Cryo, Neuro, and Admin stay as they were.
+- There is no unlock beyond the conclusion and no door. The terminal does not call `SetSectorPowerState` (`bApplyPowerChangeOnSuccess` is false).
+- Reactor Emergency persists through SaveSubsystem. The Nathan line is a transient HUD notification and is not persisted.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `3390f101ad45e1a299abf1be8ec8b29615b987536adc847b4b7ce95543004279` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `9acb9fe98b28b8304fe759ca6da2fbf9b310bddc8649377bb3a9708336a06126` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (Next now TheConclusion; Beat 17 recorded hash was `6b472cb2e102c23327e10516175bd05d0609896a8fe6b65645aff43be6804aee`)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `c126f553984bce0b612cbbf50f2651ff3a071a491b8639e55346ac25167512e9` (new)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `853b4c01ec6110d612810837edcf306a88ff17f622a09c86fcda8c6dd661aa50` (`Terminal_ControlSpine` configured in place)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 35364, dirty 0, PIE stopped): **8/8**. Close of PID 35364 was clean: `CloseMainWindow` true, process count 0, no Save Content dialog. Log signatures were 0.
+  - `TheConclusion_Functional` **78/78** — `ptr_5cd9dde4-4885-199b-491d-c295ecf7b9e0`
+  - `ComputeHandover_Functional` **101/101** — `ptr_120a1a43-4499-cf60-3f4b-b0b1c488fadf`
+  - `ComputeEntry_Functional` **78/78** — `ptr_9f700d93-46e9-93a3-ce8e-b6861e5533f0`
+  - `CryoEvidence_Functional` **100/100** — `ptr_6b8ddd39-495b-c893-2ca0-d2aac146028a`
+  - `CryoEntry_Functional` **78/78** — `ptr_3c5d50e8-4af3-dfe4-752a-6abd0a941f18`
+  - `NeuroRevelation_Functional` **88/88** — `ptr_29a72d71-4702-ed45-228c-41833fb01ecd`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_f75cb403-43b6-63bb-88ba-b3aff36dfdde`
+  - `BeepClickInjection_Functional` **12/12** — `ptr_c55a8cc8-42e3-f094-9f59-55a8972b95c7`
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b18_targeted8`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b18_targeted_editor.log`
+- Complete catalog executed **53/53**. The catalog is 53 because `TheConclusion_Functional` registered. Live order: `NeuroAdaptationConnection_Functional` index **15**, `NeuroRevelation_Functional` index **27**, `CryoAccess_Functional` index **10**, `CryoEntry_Functional` index **49**, `CryoEvidence_Functional` index **50**, `ComputeEntry_Functional` index **51**, `ComputeHandover_Functional` index **52**, `TheConclusion_Functional` index **53**.
+  - Outcome `COMPLETE_PASS`. Script exit code **0**. Aggregate **5062** assertions. Editor PID 2248.
+  - `BeepClickInjection_Functional` **12/12** — `ptr_6c4b70be-447f-fea1-1b54-66bd81892c9f`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_52a3102a-4644-f07c-09e2-f8b67be14064`
+  - `BiologicalAdaptation_Functional` **59/59** — `ptr_bec81a6b-45b6-2db6-3088-0397e2c73661`
+  - `CryoEvidence_Functional` **100/100** — `ptr_9a337b69-4c33-197f-84c0-1dae34501ba3`
+  - `ComputeEntry_Functional` **78/78** — `ptr_e6477a91-4a22-bb81-f27f-0790ffae7eaa`
+  - `ComputeHandover_Functional` **101/101** — `ptr_b2cf66ae-4a0a-3851-0d51-60a581de059e`
+  - `TheConclusion_Functional` **78/78** — `ptr_518b2c90-4c9d-4684-23ea-ef83b83afe01`
+  - Close of editor PID 2248: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0. Saves restored to `OrganoidAutosave.sav` only. The fifteen locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b18_complete53_4764fb23cb6f4c50b4db35a54f777364` (`summary.json`)
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b18_complete53_4764fb23cb6f4c50b4db35a54f777364.log`
+  - Script: `C:\Users\tomca\AppData\Local\Temp\b18_complete53_proposed.ps1`
+- The diff is the Compute Handover successor link, the new The Conclusion mission, the Reactor map control-spine configuration, the bridge allowlist for create / next / control spine, and `TheConclusion_Functional`.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `BeepClickInjection_Functional` is **12/12**.
+2. `HostCombatLoop_Functional` was previously flaky. It passed **33/33** in the Beat 18 complete run. Still deferred as a preexisting isolation defect, not a Beat 18 regression.
+3. `BiologicalAdaptation_Functional` was previously an intermittent aim failure (**39/43**). It passed **59/59** in the Beat 18 complete pass. Still deferred as a preexisting isolation defect, not a Beat 18 regression.
+4. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+5. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 19 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 18 is implemented, persisted, and validated, with `COMPLETE_PASS` **53/53**. The current spine is complete: Admin → Neuro → Cryo → Compute → Reactor.
+- Do not begin Beat 19 until separately authorized.

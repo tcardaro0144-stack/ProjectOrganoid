@@ -73,6 +73,7 @@ namespace
 	const TCHAR* NeuroPackage = TEXT("/Game/Maps/Epitope/SL_Epitope_NeuroGenetics");
 	const TCHAR* CryoPackage = TEXT("/Game/Maps/Epitope/SL_Epitope_Cryo");
 	const TCHAR* ComputePackage = TEXT("/Game/Maps/Epitope/SL_Epitope_Compute");
+	const TCHAR* ReactorPackage = TEXT("/Game/Maps/Epitope/SL_Epitope_Reactor");
 	const TCHAR* MainMenuPackage = TEXT("/Game/Maps/Lvl_MainMenu");
 	const TCHAR* AccessDoorBpPath = TEXT("/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor");
 	const TCHAR* AccessDoorBpPackage = TEXT("/Game/ProjectOrganoid/Environment/Admin/Blueprints/BP_AdminAccessDoor");
@@ -176,6 +177,9 @@ namespace
 		TEXT("create_compute_handover_mission"),
 		TEXT("set_compute_entry_next_compute_handover"),
 		TEXT("configure_compute_handover_terminals_and_datapad"),
+		TEXT("create_the_conclusion_mission"),
+		TEXT("set_compute_handover_next_the_conclusion"),
+		TEXT("configure_reactor_control_spine"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -256,6 +260,9 @@ namespace
 		TEXT("create_compute_handover_mission"),
 		TEXT("set_compute_entry_next_compute_handover"),
 		TEXT("configure_compute_handover_terminals_and_datapad"),
+		TEXT("create_the_conclusion_mission"),
+		TEXT("set_compute_handover_next_the_conclusion"),
+		TEXT("configure_reactor_control_spine"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -1577,7 +1584,7 @@ namespace
 		return TEXT("");
 	}
 
-	bool ParseSaveMapsPackages(const TSharedPtr<FJsonObject>& Args, TArray<FString>& OutPackages, bool& bAdminOnly, bool& bNeuroOnly, bool& bEpitopeOnly, bool& bCryoOnly, bool& bComputeOnly, FString& OutError)
+	bool ParseSaveMapsPackages(const TSharedPtr<FJsonObject>& Args, TArray<FString>& OutPackages, bool& bAdminOnly, bool& bNeuroOnly, bool& bEpitopeOnly, bool& bCryoOnly, bool& bComputeOnly, bool& bReactorOnly, FString& OutError)
 	{
 		OutPackages.Reset();
 		bAdminOnly = false;
@@ -1585,6 +1592,7 @@ namespace
 		bEpitopeOnly = false;
 		bCryoOnly = false;
 		bComputeOnly = false;
+		bReactorOnly = false;
 		const TArray<TSharedPtr<FJsonValue>>* PackagesArr = nullptr;
 		if (!Args.IsValid() || !Args->TryGetArrayField(TEXT("packages"), PackagesArr) || !PackagesArr)
 		{
@@ -1624,7 +1632,13 @@ namespace
 				bComputeOnly = true;
 				return true;
 			}
-			OutError = TEXT("single-package save_maps must be Admin, NeuroGenetics, Cryo, Compute, or Lvl_Epitope.");
+			if (PackagesEqual(Only, ReactorPackage))
+			{
+				OutPackages.Add(FString(ReactorPackage));
+				bReactorOnly = true;
+				return true;
+			}
+			OutError = TEXT("single-package save_maps must be Admin, NeuroGenetics, Cryo, Compute, Reactor, or Lvl_Epitope.");
 			return false;
 		}
 		if (PackagesArr->Num() == 2)
@@ -1855,8 +1869,9 @@ namespace
 		bool bEpitopeOnly = false;
 		bool bCryoOnly = false;
 		bool bComputeOnly = false;
+		bool bReactorOnly = false;
 		FString ParseError;
-		if (!ParseSaveMapsPackages(Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, bCryoOnly, bComputeOnly, ParseError))
+		if (!ParseSaveMapsPackages(Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, bCryoOnly, bComputeOnly, bReactorOnly, ParseError))
 		{
 			return ParseError;
 		}
@@ -1874,13 +1889,17 @@ namespace
 			{
 				return TEXT("Neuro-only save_maps must not include Admin or Lvl_Epitope.");
 			}
-			if (bCryoOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, EpitopePackage) || PackagesEqual(PackageName, NeuroPackage) || PackagesEqual(PackageName, ComputePackage)))
+			if (bCryoOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, EpitopePackage) || PackagesEqual(PackageName, NeuroPackage) || PackagesEqual(PackageName, ComputePackage) || PackagesEqual(PackageName, ReactorPackage)))
 			{
-				return TEXT("Cryo-only save_maps must not include Admin, NeuroGenetics, Compute, or Lvl_Epitope.");
+				return TEXT("Cryo-only save_maps must not include Admin, NeuroGenetics, Compute, Reactor, or Lvl_Epitope.");
 			}
-			if (bComputeOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, EpitopePackage) || PackagesEqual(PackageName, NeuroPackage) || PackagesEqual(PackageName, CryoPackage)))
+			if (bComputeOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, EpitopePackage) || PackagesEqual(PackageName, NeuroPackage) || PackagesEqual(PackageName, CryoPackage) || PackagesEqual(PackageName, ReactorPackage)))
 			{
-				return TEXT("Compute-only save_maps must not include Admin, NeuroGenetics, Cryo, or Lvl_Epitope.");
+				return TEXT("Compute-only save_maps must not include Admin, NeuroGenetics, Cryo, Reactor, or Lvl_Epitope.");
+			}
+			if (bReactorOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, EpitopePackage) || PackagesEqual(PackageName, NeuroPackage) || PackagesEqual(PackageName, CryoPackage) || PackagesEqual(PackageName, ComputePackage)))
+			{
+				return TEXT("Reactor-only save_maps must not include Admin, NeuroGenetics, Cryo, Compute, or Lvl_Epitope.");
 			}
 			if (bEpitopeOnly && (PackagesEqual(PackageName, AdminPackage) || PackagesEqual(PackageName, NeuroPackage)))
 			{
@@ -1973,6 +1992,46 @@ namespace
 			Proposed->SetBoolField(TEXT("save_all"), false);
 			Proposed->SetBoolField(TEXT("compile"), false);
 			Proposed->SetStringField(TEXT("result"), TEXT("Save SL_Epitope_Compute only. Does not save Admin, NeuroGenetics, Cryo, or Lvl_Epitope."));
+			return TEXT("");
+		}
+		if (bReactorOnly)
+		{
+			ULevel* ReactorLevel = FindLoadedLevelByPackage(World, ReactorPackage);
+			if (!ReactorLevel)
+			{
+				return TEXT("Destination /Game/Maps/Epitope/SL_Epitope_Reactor is not loaded.");
+			}
+			if (!FindPackageByName(ReactorPackage))
+			{
+				return TEXT("Reactor map package is not loaded in memory.");
+			}
+			if (GetPieWorld())
+			{
+				return TEXT("PIE is running. Stop Play before a Reactor-only save.");
+			}
+			TArray<AActor*> CheckpointMatches = FindByExactLabel(World, TEXT("Checkpoint_BasinRim"));
+			if (CheckpointMatches.Num() != 1 || !PackagesEqual(ActorOwningPackage(CheckpointMatches[0]), ReactorPackage) || !LocationMatches(CheckpointMatches[0]->GetActorLocation(), FVector(25.f, 0.f, -4740.f)))
+			{
+				return TEXT("Checkpoint_BasinRim must stay unique at (25, 0, -4740) on SL_Epitope_Reactor before Reactor save.");
+			}
+			Before->SetStringField(TEXT("persistent_package"), NormalizePackage(WorldPackageName(World)));
+			Before->SetBoolField(TEXT("pie_running"), false);
+			Before->SetBoolField(TEXT("on_game_thread"), IsInGameThread());
+			Before->SetBoolField(TEXT("reactor_only"), true);
+			Before->SetBoolField(TEXT("compute_only"), false);
+			Before->SetBoolField(TEXT("cryo_only"), false);
+			Before->SetBoolField(TEXT("neuro_only"), false);
+			Before->SetBoolField(TEXT("admin_only"), false);
+			TArray<TSharedPtr<FJsonValue>> ReactorPkgs;
+			ReactorPkgs.Add(MakeShared<FJsonValueString>(FString(ReactorPackage)));
+			Before->SetArrayField(TEXT("packages"), ReactorPkgs);
+			Proposed->SetArrayField(TEXT("packages"), ReactorPkgs);
+			Proposed->SetBoolField(TEXT("reactor_only"), true);
+			Proposed->SetStringField(TEXT("api"), TEXT("UEditorLoadingAndSavingUtils::SavePackages"));
+			Proposed->SetBoolField(TEXT("dialog"), false);
+			Proposed->SetBoolField(TEXT("save_all"), false);
+			Proposed->SetBoolField(TEXT("compile"), false);
+			Proposed->SetStringField(TEXT("result"), TEXT("Save SL_Epitope_Reactor only. Does not save Admin, NeuroGenetics, Cryo, Compute, or Lvl_Epitope."));
 			return TEXT("");
 		}
 		if (bNeuroOnly)
@@ -3335,6 +3394,9 @@ namespace
 #include "OrganoidAIBridgeComputeHandoverMission.inl"
 #include "OrganoidAIBridgeComputeEntryNextComputeHandover.inl"
 #include "OrganoidAIBridgeComputeHandoverTerminals.inl"
+#include "OrganoidAIBridgeTheConclusionMission.inl"
+#include "OrganoidAIBridgeComputeHandoverNextTheConclusion.inl"
+#include "OrganoidAIBridgeTheConclusionTerminal.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4101,6 +4163,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureComputeHandoverActors(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_the_conclusion_mission"))
+		{
+			PreflightError = PreflightCreateTheConclusionMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_compute_handover_next_the_conclusion"))
+		{
+			PreflightError = PreflightSetComputeHandoverNextTheConclusion(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_reactor_control_spine"))
+		{
+			PreflightError = PreflightConfigureReactorControlSpine(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4206,6 +4280,8 @@ namespace
 			|| Action == TEXT("set_cryo_evidence_next_compute_entry")
 			|| Action == TEXT("create_compute_handover_mission")
 			|| Action == TEXT("set_compute_entry_next_compute_handover")
+			|| Action == TEXT("create_the_conclusion_mission")
+			|| Action == TEXT("set_compute_handover_next_the_conclusion")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -4225,6 +4301,10 @@ namespace
 			|| Action == TEXT("configure_compute_handover_terminals_and_datapad"))
 		{
 			Package = ComputePackage;
+		}
+		else if (Action == TEXT("configure_reactor_control_spine"))
+		{
+			Package = ReactorPackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -4253,8 +4333,9 @@ namespace
 			bool bSaveEpitopeOnly = false;
 			bool bSaveCryoOnly = false;
 			bool bSaveComputeOnly = false;
+			bool bSaveReactorOnly = false;
 			FString SaveParseError;
-			if (ParseSaveMapsPackages(Args, SavePackages, bSaveAdminOnly, bSaveNeuroOnly, bSaveEpitopeOnly, bSaveCryoOnly, bSaveComputeOnly, SaveParseError) && bSaveNeuroOnly)
+			if (ParseSaveMapsPackages(Args, SavePackages, bSaveAdminOnly, bSaveNeuroOnly, bSaveEpitopeOnly, bSaveCryoOnly, bSaveComputeOnly, bSaveReactorOnly, SaveParseError) && bSaveNeuroOnly)
 			{
 				Package = NeuroPackage;
 			}
@@ -4265,6 +4346,10 @@ namespace
 			else if (bSaveComputeOnly)
 			{
 				Package = ComputePackage;
+			}
+			else if (bSaveReactorOnly)
+			{
+				Package = ReactorPackage;
 			}
 			else if (bSaveEpitopeOnly)
 			{
@@ -5037,8 +5122,9 @@ namespace
 		bool bEpitopeOnly = false;
 		bool bCryoOnly = false;
 		bool bComputeOnly = false;
+		bool bReactorOnly = false;
 		FString ParseError;
-		if (!ParseSaveMapsPackages(Change.Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, bCryoOnly, bComputeOnly, ParseError))
+		if (!ParseSaveMapsPackages(Change.Args, Packages, bAdminOnly, bNeuroOnly, bEpitopeOnly, bCryoOnly, bComputeOnly, bReactorOnly, ParseError))
 		{
 			return FailAudit(TEXT("bad_args"), ParseError, MakeShared<FBridgeChange>(Change));
 		}
@@ -5105,6 +5191,38 @@ namespace
 			Change.After->SetArrayField(TEXT("packages_saved"), SavedCompute);
 			LogAudit(TEXT("execute"), Change);
 			return bComputeSaved ? Ok(AuditBase(Change)) : FailAudit(TEXT("save_failed"), TEXT("SavePackages failed for SL_Epitope_Compute."), MakeShared<FBridgeChange>(Change));
+		}
+
+		if (bReactorOnly)
+		{
+			UPackage* ReactorPkg = FindPackageByName(ReactorPackage);
+			if (!ReactorPkg)
+			{
+				return FailAudit(TEXT("not_found"), TEXT("Reactor map package not loaded. ZERO writes."), MakeShared<FBridgeChange>(Change));
+			}
+			TArray<UPackage*> ReactorOnly;
+			ReactorOnly.Add(ReactorPkg);
+			const bool bReactorSaved = UEditorLoadingAndSavingUtils::SavePackages(ReactorOnly, /*bOnlyDirty=*/false);
+			Change.bExecuted = bReactorSaved;
+			Change.ExecutedAt = NowIso();
+			Change.bSavePerformed = bReactorSaved;
+			Change.Status = bReactorSaved ? TEXT("executed") : TEXT("execute_save_failed");
+			Change.After = MakeShared<FJsonObject>();
+			Change.After->SetBoolField(TEXT("on_game_thread"), IsInGameThread());
+			Change.After->SetBoolField(TEXT("reactor_saved"), bReactorSaved);
+			Change.After->SetBoolField(TEXT("reactor_only"), true);
+			Change.After->SetStringField(TEXT("api"), TEXT("UEditorLoadingAndSavingUtils::SavePackages"));
+			Change.After->SetBoolField(TEXT("dialog"), false);
+			Change.After->SetBoolField(TEXT("save_all"), false);
+			Change.After->SetBoolField(TEXT("compile"), false);
+			TArray<TSharedPtr<FJsonValue>> SavedReactor;
+			if (bReactorSaved)
+			{
+				SavedReactor.Add(MakeShared<FJsonValueString>(FString(ReactorPackage)));
+			}
+			Change.After->SetArrayField(TEXT("packages_saved"), SavedReactor);
+			LogAudit(TEXT("execute"), Change);
+			return bReactorSaved ? Ok(AuditBase(Change)) : FailAudit(TEXT("save_failed"), TEXT("SavePackages failed for SL_Epitope_Reactor."), MakeShared<FBridgeChange>(Change));
 		}
 
 		if (bEpitopeOnly)
@@ -5492,6 +5610,9 @@ namespace
 				|| Change->Action == TEXT("create_compute_handover_mission")
 				|| Change->Action == TEXT("set_compute_entry_next_compute_handover")
 				|| Change->Action == TEXT("configure_compute_handover_terminals_and_datapad")
+				|| Change->Action == TEXT("create_the_conclusion_mission")
+				|| Change->Action == TEXT("set_compute_handover_next_the_conclusion")
+				|| Change->Action == TEXT("configure_reactor_control_spine")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -5820,6 +5941,18 @@ namespace
 		if (Change->Action == TEXT("configure_compute_handover_terminals_and_datapad"))
 		{
 			return ExecuteConfigureComputeHandoverActors(*Change);
+		}
+		if (Change->Action == TEXT("create_the_conclusion_mission"))
+		{
+			return ExecuteCreateTheConclusionMission(*Change);
+		}
+		if (Change->Action == TEXT("set_compute_handover_next_the_conclusion"))
+		{
+			return ExecuteSetComputeHandoverNextTheConclusion(*Change);
+		}
+		if (Change->Action == TEXT("configure_reactor_control_spine"))
+		{
+			return ExecuteConfigureReactorControlSpine(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{

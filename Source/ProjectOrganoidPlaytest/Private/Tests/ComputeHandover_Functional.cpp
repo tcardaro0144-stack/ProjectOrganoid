@@ -30,8 +30,10 @@ namespace ComputeHandoverFunctional
 	constexpr TCHAR AdminPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	constexpr TCHAR ComputePackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Compute");
 	constexpr TCHAR HandoverSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ComputeHandover.DA_Mission_ComputeHandover");
+	constexpr TCHAR ConclusionSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_TheConclusion.DA_Mission_TheConclusion");
 	constexpr TCHAR EntrySoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ComputeEntry.DA_Mission_ComputeEntry");
 	constexpr TCHAR HandoverMissionId[] = TEXT("Mission_ComputeHandover");
+	constexpr TCHAR ConclusionMissionId[] = TEXT("Mission_TheConclusion");
 	constexpr TCHAR EntryMissionId[] = TEXT("Mission_ComputeEntry");
 	constexpr TCHAR HackObjectiveId[] = TEXT("Obj_HackComputeCore");
 	constexpr TCHAR ConfessionObjectiveId[] = TEXT("Obj_ReadSterlingConfession");
@@ -222,7 +224,7 @@ namespace ComputeHandoverFunctional
 			AssertTrue(Record, TEXT("asset.id"), Handover && Handover->MissionId == FName(HandoverMissionId), HandoverMissionId, Handover ? Handover->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.title"), Handover && Handover->MissionTitle.ToString() == TEXT("The Handover"), TEXT("The Handover"), Handover ? Handover->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.description"), Handover && Handover->MissionDescription.ToString().Contains(TEXT("recover Sterling's confession")), TEXT("confession"), Handover ? Handover->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.next_null"), Handover && Handover->NextMissionAsset.IsNull(), TEXT("null"), Handover && Handover->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.next_conclusion"), Handover && Handover->NextMissionAsset.ToSoftObjectPath().ToString() == ConclusionSoftPath, ConclusionSoftPath, Handover ? Handover->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.two_tasks"), Handover && Handover->Tasks.Num() == 2, TEXT("2"), Handover ? FString::FromInt(Handover->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.hack_id"), Hack && Hack->Objective.ObjectiveId == FName(HackObjectiveId), HackObjectiveId, Hack ? Hack->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.hack_main"), Hack && Hack->Objective.Type == EProjectOrganoidObjectiveType::Main, TEXT("Main"), Hack ? TEXT("other") : TEXT("missing"), TEXT("DA"));
@@ -384,7 +386,7 @@ namespace ComputeHandoverFunctional
 			const float ConfessionRemaining = Widget->GetTransientNotificationSecondsRemaining();
 			AssertTrue(Record, TEXT("read.interact"), bRead, TEXT("true"), BoolText(bRead), PadLabel);
 			AssertTrue(Record, TEXT("read.complete"), CountCompletedId(Objectives, FName(ConfessionObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(ConfessionObjectiveId))), ConfessionObjectiveId);
-			AssertTrue(Record, TEXT("read.mission"), Objectives->GetActiveMissionId() == FName(HandoverMissionId) && Objectives->IsMissionComplete(FName(HandoverMissionId)), HandoverMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("read.mission"), Objectives->GetActiveMissionId() == FName(ConclusionMissionId), ConclusionMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("read.line"), ConfessionShown.Contains(ConfessionLine) && ConfessionShown.StartsWith(TEXT("Nathan:")), ConfessionLine, ConfessionShown, TEXT("HUD"));
 			AssertTrue(Record, TEXT("read.duration"), ConfessionRemaining > 6.0f && ConfessionRemaining <= 7.0f, TEXT("7"), FString::SanitizeFloat(ConfessionRemaining), TEXT("HUD"));
 			AssertTrue(Record, TEXT("read.once"), Pad->CompletionNotificationCount == 1, TEXT("1"), FString::FromInt(Pad->CompletionNotificationCount), PadLabel);
@@ -396,7 +398,7 @@ namespace ComputeHandoverFunctional
 			AssertTrue(Record, TEXT("replay.once"), Pad->CompletionNotificationCount == 1 && Terminals[2]->CompletionNotificationCount == 1 && !Widget->GetLastResourceNotification().ToString().Contains(ConfessionLine), TEXT("1"), FString::FromInt(Pad->CompletionNotificationCount), PadLabel);
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
-			AssertTrue(Record, TEXT("save.wrote"), bSaved && Objectives->IsMissionComplete(FName(HandoverMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.wrote"), bSaved && Objectives->GetActiveMissionId() == FName(ConclusionMissionId), ConclusionMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.compute_captured"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute)), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
@@ -416,7 +418,7 @@ namespace ComputeHandoverFunctional
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::Compute, EProjectOrganoidPowerState::Blackout);
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(HandoverMissionId) && Objectives->IsMissionComplete(FName(HandoverMissionId)), HandoverMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(ConclusionMissionId), ConclusionMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.hack"), CountCompletedId(Objectives, FName(HackObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(HackObjectiveId))), HackObjectiveId);
 			AssertTrue(Record, TEXT("save.confession"), CountCompletedId(Objectives, FName(ConfessionObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(ConfessionObjectiveId))), ConfessionObjectiveId);
 			AssertTrue(Record, TEXT("save.compute_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute)), TEXT("save"));

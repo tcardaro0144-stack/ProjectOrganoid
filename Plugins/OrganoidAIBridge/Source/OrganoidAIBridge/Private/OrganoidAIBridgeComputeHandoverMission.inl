@@ -179,9 +179,11 @@
 		{
 			return TEXT("NextMissionAsset soft property missing.");
 		}
-		if (SoftProp->GetPropertyValue_InContainer(Asset).ToSoftObjectPath().IsValid())
+		const FString NextPath = SoftProp->GetPropertyValue_InContainer(Asset).ToSoftObjectPath().ToString();
+		const bool bConclusion = NextPath.Equals(TEXT("/Game/Data/Missions/DA_Mission_TheConclusion.DA_Mission_TheConclusion"), ESearchCase::CaseSensitive);
+		if (SoftProp->GetPropertyValue_InContainer(Asset).ToSoftObjectPath().IsValid() && !bConclusion)
 		{
-			return TEXT("NextMissionAsset must be null.");
+			return FString::Printf(TEXT("NextMissionAsset must be null or DA_Mission_TheConclusion, got '%s'"), *NextPath);
 		}
 		FArrayProperty* ArrayProp = CastField<FArrayProperty>(FindInstanceProperty(Asset, TEXT("Tasks")));
 		if (!ArrayProp)
