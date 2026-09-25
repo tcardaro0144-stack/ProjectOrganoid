@@ -329,7 +329,12 @@ void AProjectOrganoidHostBase::HandleHearingStimulus(
 		{
 			return;
 		}
-		ActivateEncounter();
+		// Gunfire wakes a dormant host only inside the authored proximity range.
+		// A shot from the hallway must not pull the host into melee.
+		if (!TryActivateEncounterFromProximity(NoiseInstigator))
+		{
+			return;
+		}
 	}
 
 	OnNoiseHeard.Broadcast(NoiseInstigator, NoiseTag);

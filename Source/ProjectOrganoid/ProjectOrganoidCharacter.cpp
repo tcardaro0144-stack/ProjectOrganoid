@@ -44,7 +44,11 @@
 #include "ProjectOrganoidCheckpoint.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "Components/BoxComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Engine/SkeletalMesh.h"
 #include "TimerManager.h"
+#include "UObject/ConstructorHelpers.h"
 #include "ProjectOrganoid.h"
 
 AProjectOrganoidCharacter::AProjectOrganoidCharacter()
@@ -54,13 +58,14 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
-	// Don't rotate when the controller rotates. Let that just affect the camera.
+	// Pitch stays on the camera. Yaw follows the look direction so the body stays in front of the shoulder camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
@@ -72,21 +77,39 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
+	// Close over-the-shoulder boom. A 320uu arm collapses to eye height in the facility corridors.
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
-	CameraBoom->TargetArmLength = 320.0f;
+	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 64.0f));
+	CameraBoom->TargetArmLength = 180.0f;
+	CameraBoom->SocketOffset = FVector(0.0f, 28.0f, 18.0f);
 	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->bDoCollisionTest = true;
-	CameraBoom->ProbeSize = 10.0f;
+	CameraBoom->ProbeSize = 12.0f;
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->CameraLagSpeed = 10.0f;
 
-	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
+	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> BodyMesh(
+		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+	if (BodyMesh.Succeeded())
+	{
+		GetMesh()->SetSkeletalMeshAsset(BodyMesh.Object);
+	}
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance> UnarmedAnim(
+		TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed"));
+	if (UnarmedAnim.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(UnarmedAnim.Class);
+	}
 
 	// Grid inventory (default 8x6 — tune on Blueprint defaults)
 	InventoryComponent = CreateDefaultSubobject<UProjectOrganoidInventoryComponent>(TEXT("InventoryComponent"));
@@ -166,6 +189,18 @@ void AProjectOrganoidCharacter::BeginPlay()
 
 	LastSafeTransform = GetActorTransform();
 	bHasLastSafeTransform = true;
+	if (CameraBoom)
+	{
+		const USkeletalMesh* Body = GetMesh() ? GetMesh()->GetSkeletalMeshAsset() : nullptr;
+		UE_LOG(LogProjectOrganoid, Log,
+			TEXT("Shoulder camera arm=%.0f socket=(%.0f,%.0f,%.0f) mesh=%s yawFollowsLook=%s"),
+			CameraBoom->TargetArmLength,
+			CameraBoom->SocketOffset.X,
+			CameraBoom->SocketOffset.Y,
+			CameraBoom->SocketOffset.Z,
+			Body ? *Body->GetName() : TEXT("none"),
+			bUseControllerRotationYaw ? TEXT("true") : TEXT("false"));
+	}
 	ApplyRuntimeMappingContext();
 	ApplyLookLimits();
 
