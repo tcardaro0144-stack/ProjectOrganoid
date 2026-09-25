@@ -24,7 +24,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnProjectOrganoidTerminalOpened, A
  *  unlocks linked security doors/gates and rewards data-log entries.
  */
 UCLASS(Blueprintable)
-class AProjectOrganoidTerminal : public AProjectOrganoidInteractable
+class PROJECTORGANOID_API AProjectOrganoidTerminal : public AProjectOrganoidInteractable
 {
 	GENERATED_BODY()
 
@@ -84,6 +84,26 @@ public:
 	/** Objective event fired on first successful hack */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Rewards")
 	FName SuccessObjectiveEventId = TEXT("Event_TerminalHackSuccess");
+
+	/** When set, a hack can start only while this objective is Active. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Rewards")
+	FName RequiredActiveObjectiveId = NAME_None;
+
+	/** Online prompt restored by the power handler. Empty keeps the default hack prompt. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Rewards")
+	FText CampaignHackPrompt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Rewards")
+	FText CompletionNotificationSpeaker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Rewards")
+	FText CompletionNotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal|Rewards")
+	float CompletionNotificationDurationSeconds = 7.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terminal|Rewards")
+	int32 CompletionNotificationCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terminal")
 	bool bSingleUse = true;
@@ -146,4 +166,7 @@ protected:
 	void GrantRewardLog(AProjectOrganoidCharacter* Character);
 	void NotifyObjectiveEvent(FName EventId) const;
 	void SetInputModeForUI(AProjectOrganoidCharacter* Character, bool bUIOnly);
+	bool IsRequiredObjectiveActive() const;
+	bool IsRequiredObjectiveCompleted() const;
+	void PresentCompletionNotification(AProjectOrganoidCharacter* Interactor);
 };

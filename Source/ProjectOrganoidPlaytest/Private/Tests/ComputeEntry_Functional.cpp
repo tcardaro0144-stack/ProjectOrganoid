@@ -29,9 +29,11 @@ namespace ComputeEntryFunctional
 	constexpr TCHAR AdminPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	constexpr TCHAR ComputePackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Compute");
 	constexpr TCHAR EntrySoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ComputeEntry.DA_Mission_ComputeEntry");
+	constexpr TCHAR HandoverSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ComputeHandover.DA_Mission_ComputeHandover");
 	constexpr TCHAR EvidenceSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoEvidence.DA_Mission_CryoEvidence");
 	constexpr TCHAR CryoEntrySoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoEntry.DA_Mission_CryoEntry");
 	constexpr TCHAR EntryMissionId[] = TEXT("Mission_ComputeEntry");
+	constexpr TCHAR HandoverMissionId[] = TEXT("Mission_ComputeHandover");
 	constexpr TCHAR EvidenceMissionId[] = TEXT("Mission_CryoEvidence");
 	constexpr TCHAR CryoEntryMissionId[] = TEXT("Mission_CryoEntry");
 	constexpr TCHAR EntryObjectiveId[] = TEXT("Obj_EnterCompute");
@@ -203,7 +205,7 @@ namespace ComputeEntryFunctional
 			AssertTrue(Record, TEXT("asset.entry_id"), Entry && Entry->MissionId == FName(EntryMissionId), EntryMissionId, Entry ? Entry->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.entry_title"), Entry && Entry->MissionTitle.ToString() == TEXT("The Substrate"), TEXT("The Substrate"), Entry ? Entry->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.entry_description"), Entry && Entry->MissionDescription.ToString().Contains(TEXT("wake the interface")), TEXT("wake the interface"), Entry ? Entry->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.entry_next_null"), Entry && Entry->NextMissionAsset.IsNull(), TEXT("null"), Entry && Entry->NextMissionAsset.IsNull() ? TEXT("null") : Entry->NextMissionAsset.ToSoftObjectPath().ToString(), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.entry_next_handover"), Entry && Entry->NextMissionAsset.ToSoftObjectPath().ToString() == HandoverSoftPath, HandoverSoftPath, Entry ? Entry->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_task"), Entry && Entry->Tasks.Num() == 1, TEXT("1"), Entry ? FString::FromInt(Entry->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(EntryObjectiveId), EntryObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_title"), Task && Task->Objective.Title.ToString() == TEXT("Enter Compute"), TEXT("Enter Compute"), Task ? Task->Objective.Title.ToString() : TEXT("missing"), TEXT("DA"));
@@ -361,7 +363,7 @@ namespace ComputeEntryFunctional
 			AssertTrue(Record, TEXT("success.interact"), bSuccess, TEXT("true"), BoolText(bSuccess), CheckpointLabel);
 			AssertTrue(Record, TEXT("success.fire"), Checkpoint->CampaignEventFireCount == 1, TEXT("1"), FString::FromInt(Checkpoint->CampaignEventFireCount), CheckpointLabel);
 			AssertTrue(Record, TEXT("success.objective"), CountCompletedId(Objectives, FName(EntryObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(EntryObjectiveId))), EntryObjectiveId);
-			AssertTrue(Record, TEXT("success.mission"), Objectives->GetActiveMissionId() == FName(EntryMissionId) && Objectives->IsMissionComplete(FName(EntryMissionId)), EntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("success.mission"), Objectives->GetActiveMissionId() == FName(HandoverMissionId), HandoverMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("success.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 			AssertTrue(Record, TEXT("success.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("Power"));
 			AssertTrue(Record, TEXT("success.admin_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin)), TEXT("Power"));
@@ -381,7 +383,7 @@ namespace ComputeEntryFunctional
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.wrote"), bSaved, TEXT("true"), BoolText(bSaved), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(EntryMissionId) && Objectives->IsMissionComplete(FName(EntryMissionId)), EntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(HandoverMissionId), HandoverMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.compute_captured"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute)), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
@@ -404,7 +406,7 @@ namespace ComputeEntryFunctional
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Emergency);
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(EntryMissionId) && Objectives->IsMissionComplete(FName(EntryMissionId)), EntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(HandoverMissionId), HandoverMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(EntryObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(EntryObjectiveId))), EntryObjectiveId);
 			AssertTrue(Record, TEXT("save.compute_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute)), TEXT("save"));
 			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("save"));

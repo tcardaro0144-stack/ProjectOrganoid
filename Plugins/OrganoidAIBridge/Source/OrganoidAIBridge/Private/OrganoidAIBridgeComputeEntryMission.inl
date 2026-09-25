@@ -53,9 +53,11 @@
 		if (FSoftObjectProperty* SoftProp = CastField<FSoftObjectProperty>(NextProp))
 		{
 			const FSoftObjectPtr Soft = SoftProp->GetPropertyValue_InContainer(Asset);
-			if (Soft.ToSoftObjectPath().IsValid())
+			const FString NextPath = Soft.ToSoftObjectPath().ToString();
+			const bool bHandover = NextPath.Equals(TEXT("/Game/Data/Missions/DA_Mission_ComputeHandover.DA_Mission_ComputeHandover"), ESearchCase::CaseSensitive);
+			if (Soft.ToSoftObjectPath().IsValid() && !bHandover)
 			{
-				return FString::Printf(TEXT("NextMissionAsset must be null, got '%s'"), *Soft.ToSoftObjectPath().ToString());
+				return FString::Printf(TEXT("NextMissionAsset must be null or DA_Mission_ComputeHandover, got '%s'"), *NextPath);
 			}
 		}
 		else

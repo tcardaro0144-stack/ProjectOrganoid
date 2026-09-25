@@ -3,12 +3,15 @@
 #include "ProjectOrganoidTerminal.h"
 #include "ProjectOrganoidHackingWidget.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidSecurityGate.h"
 #include "ProjectOrganoidDoorLock.h"
 #include "ProjectOrganoidSecuritySubsystem.h"
 #include "ProjectOrganoidSecurityTypes.h"
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "ProjectOrganoidStatsSubsystem.h"
 #include "Components/StaticMeshComponent.h"
@@ -63,6 +66,11 @@ bool AProjectOrganoidTerminal::CanInteract_Implementation(AProjectOrganoidCharac
 	}
 
 	if (bSingleUse && bHasBeenHacked)
+	{
+		return false;
+	}
+
+	if (!RequiredActiveObjectiveId.IsNone() && !IsRequiredObjectiveActive())
 	{
 		return false;
 	}
@@ -161,6 +169,7 @@ void AProjectOrganoidTerminal::ApplyHackRewards(AProjectOrganoidCharacter* Chara
 		return;
 	}
 
+	const bool bAlreadyComplete = IsRequiredObjectiveCompleted();
 	bHasBeenHacked = true;
 	UnlockLinkedSecurity();
 
@@ -181,6 +190,10 @@ void AProjectOrganoidTerminal::ApplyHackRewards(AProjectOrganoidCharacter* Chara
 	}
 
 	NotifyObjectiveEvent(SuccessObjectiveEventId);
+	if (!bAlreadyComplete && IsRequiredObjectiveCompleted())
+	{
+		PresentCompletionNotification(Character);
+	}
 
 	if (bApplyPowerChangeOnSuccess)
 	{
@@ -265,6 +278,48 @@ void AProjectOrganoidTerminal::GrantRewardLog(AProjectOrganoidCharacter* Charact
 	}
 }
 
+bool AProjectOrganoidTerminal::IsRequiredObjectiveActive() const
+{
+	if (RequiredActiveObjectiveId.IsNone())
+	{
+		return true;
+	}
+	const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	const UProjectOrganoidObjectiveSubsystem* Objectives = GI ? GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
+	FProjectOrganoidObjective Objective;
+	return Objectives && Objectives->GetObjective(RequiredActiveObjectiveId, Objective)
+		&& Objective.State == EProjectOrganoidObjectiveState::Active;
+}
+
+bool AProjectOrganoidTerminal::IsRequiredObjectiveCompleted() const
+{
+	if (RequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+	const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	const UProjectOrganoidObjectiveSubsystem* Objectives = GI ? GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
+	FProjectOrganoidObjective Objective;
+	return Objectives && Objectives->GetObjective(RequiredActiveObjectiveId, Objective)
+		&& Objective.State == EProjectOrganoidObjectiveState::Completed;
+}
+
+void AProjectOrganoidTerminal::PresentCompletionNotification(AProjectOrganoidCharacter* Interactor)
+{
+	if (CompletionNotificationText.IsEmpty() || CompletionNotificationCount > 0)
+	{
+		return;
+	}
+	APlayerController* PC = Interactor ? Cast<APlayerController>(Interactor->GetController()) : nullptr;
+	UWorld* World = GetWorld();
+	AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
+	UProjectOrganoidGameplayHUDController* HUD = GameMode && PC ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (HUD && HUD->ShowTransientNotification(CompletionNotificationSpeaker, CompletionNotificationText, CompletionNotificationDurationSeconds))
+	{
+		++CompletionNotificationCount;
+	}
+}
+
 void AProjectOrganoidTerminal::NotifyObjectiveEvent(FName EventId) const
 {
 	if (EventId.IsNone())
@@ -319,8 +374,11 @@ void AProjectOrganoidTerminal::HandlePowerStateChanged(EProjectOrganoidPowerStat
 	if (bDisableDuringBlackout && !(bSingleUse && bHasBeenHacked))
 	{
 		bIsInteractable = NewState != EProjectOrganoidPowerState::Blackout;
-		InteractionPrompt = bIsInteractable
+		const FText OnlinePrompt = CampaignHackPrompt.IsEmpty()
 			? FText::FromString(TEXT("Hack Terminal"))
+			: CampaignHackPrompt;
+		InteractionPrompt = bIsInteractable
+			? OnlinePrompt
 			: FText::FromString(TEXT("Terminal Offline"));
 	}
 

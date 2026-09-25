@@ -30,10 +30,12 @@ namespace CryoEvidenceFunctional
 	constexpr TCHAR CryoPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Cryo");
 	constexpr TCHAR EvidenceSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoEvidence.DA_Mission_CryoEvidence");
 	constexpr TCHAR EntrySoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoEntry.DA_Mission_CryoEntry");
+	constexpr TCHAR ComputeEntrySoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ComputeEntry.DA_Mission_ComputeEntry");
 	constexpr TCHAR AccessSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoAccess.DA_Mission_CryoAccess");
 	constexpr TCHAR RevelationSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroRevelation.DA_Mission_NeuroRevelation");
 	constexpr TCHAR EvidenceMissionId[] = TEXT("Mission_CryoEvidence");
 	constexpr TCHAR EntryMissionId[] = TEXT("Mission_CryoEntry");
+	constexpr TCHAR ComputeEntryMissionId[] = TEXT("Mission_ComputeEntry");
 	constexpr TCHAR EvidenceObjectiveId[] = TEXT("Obj_RecoverCryoEvidence");
 	constexpr TCHAR EvidenceEvent[] = TEXT("Event_CryoEvidenceRecovered");
 	constexpr TCHAR EntryEvent[] = TEXT("Event_CryoEntered");
@@ -202,7 +204,7 @@ namespace CryoEvidenceFunctional
 			AssertTrue(Record, TEXT("asset.id"), Evidence && Evidence->MissionId == FName(EvidenceMissionId), EvidenceMissionId, Evidence ? Evidence->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.title"), Evidence && Evidence->MissionTitle.ToString() == TEXT("Lot Numbers"), TEXT("Lot Numbers"), Evidence ? Evidence->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.description"), Evidence && Evidence->MissionDescription.ToString() == TEXT("The cryo manifests don't match the specimen logs. Recover the remaining facility documents downstairs."), TEXT("locked description"), Evidence ? Evidence->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.next_null"), Evidence && Evidence->NextMissionAsset.IsNull(), TEXT("null"), Evidence && Evidence->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.next_compute_entry"), Evidence && Evidence->NextMissionAsset.ToSoftObjectPath().ToString() == ComputeEntrySoftPath, ComputeEntrySoftPath, Evidence ? Evidence->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_task"), Evidence && Evidence->Tasks.Num() == 1, TEXT("1"), Evidence ? FString::FromInt(Evidence->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(EvidenceObjectiveId), EvidenceObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_main"), Task && Task->Objective.Type == EProjectOrganoidObjectiveType::Main, TEXT("Main"), Task ? TEXT("other") : TEXT("missing"), TEXT("DA"));
@@ -346,7 +348,7 @@ namespace CryoEvidenceFunctional
 			const FString Line = Widget->GetLastResourceNotification().ToString();
 			const float Remaining = Widget->GetTransientNotificationSecondsRemaining();
 			AssertTrue(Record, TEXT("read3.progress"), CountCompletedId(Objectives, FName(EvidenceObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(EvidenceObjectiveId))), EvidenceObjectiveId);
-			AssertTrue(Record, TEXT("read3.mission"), Objectives->IsMissionComplete(FName(EvidenceMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("read3.mission"), Objectives->GetActiveMissionId() == FName(ComputeEntryMissionId), ComputeEntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("read3.line"), Line.Contains(ExpectedLine) && Line.StartsWith(TEXT("Nathan:")), ExpectedLine, Line, TEXT("HUD"));
 			AssertTrue(Record, TEXT("read3.duration"), Remaining > 6.0f && Remaining <= 7.0f, TEXT("7"), FString::SanitizeFloat(Remaining), TEXT("HUD"));
 			AssertTrue(Record, TEXT("read3.once"), Pads[0]->CompletionNotificationCount + Pads[1]->CompletionNotificationCount + Pads[2]->CompletionNotificationCount == 1, TEXT("1"), FString::FromInt(Pads[2]->CompletionNotificationCount), TEXT("HUD"));
@@ -363,7 +365,7 @@ namespace CryoEvidenceFunctional
 			AssertTrue(Record, TEXT("replay.once"), Pads[2]->CompletionNotificationCount == 1 && !Widget->GetLastResourceNotification().ToString().Contains(ExpectedLine), TEXT("1"), FString::FromInt(Pads[2]->CompletionNotificationCount), PadLabels[2]);
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
-			AssertTrue(Record, TEXT("save.wrote"), bSaved && Objectives->IsMissionComplete(FName(EvidenceMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.wrote"), bSaved && Objectives->GetActiveMissionId() == FName(ComputeEntryMissionId), ComputeEntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.cryo_captured"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
@@ -386,7 +388,7 @@ namespace CryoEvidenceFunctional
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Emergency);
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->IsMissionComplete(FName(EvidenceMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(ComputeEntryMissionId), ComputeEntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(EvidenceObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(EvidenceObjectiveId))), EvidenceObjectiveId);
 			AssertTrue(Record, TEXT("save.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("save"));
 			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("save"));

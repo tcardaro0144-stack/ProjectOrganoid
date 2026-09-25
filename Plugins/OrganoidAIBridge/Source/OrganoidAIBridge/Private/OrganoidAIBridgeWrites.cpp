@@ -173,6 +173,9 @@ namespace
 		TEXT("create_compute_entry_mission"),
 		TEXT("set_cryo_evidence_next_compute_entry"),
 		TEXT("configure_compute_entry_checkpoint"),
+		TEXT("create_compute_handover_mission"),
+		TEXT("set_compute_entry_next_compute_handover"),
+		TEXT("configure_compute_handover_terminals_and_datapad"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -250,6 +253,9 @@ namespace
 		TEXT("create_compute_entry_mission"),
 		TEXT("set_cryo_evidence_next_compute_entry"),
 		TEXT("configure_compute_entry_checkpoint"),
+		TEXT("create_compute_handover_mission"),
+		TEXT("set_compute_entry_next_compute_handover"),
+		TEXT("configure_compute_handover_terminals_and_datapad"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3326,6 +3332,9 @@ namespace
 #include "OrganoidAIBridgeComputeEntryMission.inl"
 #include "OrganoidAIBridgeCryoEvidenceNextComputeEntry.inl"
 #include "OrganoidAIBridgeComputeEntryCheckpoint.inl"
+#include "OrganoidAIBridgeComputeHandoverMission.inl"
+#include "OrganoidAIBridgeComputeEntryNextComputeHandover.inl"
+#include "OrganoidAIBridgeComputeHandoverTerminals.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4080,6 +4089,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureComputeEntryCheckpoint(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_compute_handover_mission"))
+		{
+			PreflightError = PreflightCreateComputeHandoverMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_compute_entry_next_compute_handover"))
+		{
+			PreflightError = PreflightSetComputeEntryNextComputeHandover(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_compute_handover_terminals_and_datapad"))
+		{
+			PreflightError = PreflightConfigureComputeHandoverActors(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4183,6 +4204,8 @@ namespace
 			|| Action == TEXT("set_cryo_entry_next_cryo_evidence")
 			|| Action == TEXT("create_compute_entry_mission")
 			|| Action == TEXT("set_cryo_evidence_next_compute_entry")
+			|| Action == TEXT("create_compute_handover_mission")
+			|| Action == TEXT("set_compute_entry_next_compute_handover")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -4198,7 +4221,8 @@ namespace
 		{
 			Package = CryoPackage;
 		}
-		else if (Action == TEXT("configure_compute_entry_checkpoint"))
+		else if (Action == TEXT("configure_compute_entry_checkpoint")
+			|| Action == TEXT("configure_compute_handover_terminals_and_datapad"))
 		{
 			Package = ComputePackage;
 		}
@@ -5465,6 +5489,9 @@ namespace
 				|| Change->Action == TEXT("create_compute_entry_mission")
 				|| Change->Action == TEXT("set_cryo_evidence_next_compute_entry")
 				|| Change->Action == TEXT("configure_compute_entry_checkpoint")
+				|| Change->Action == TEXT("create_compute_handover_mission")
+				|| Change->Action == TEXT("set_compute_entry_next_compute_handover")
+				|| Change->Action == TEXT("configure_compute_handover_terminals_and_datapad")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -5781,6 +5808,18 @@ namespace
 		if (Change->Action == TEXT("configure_compute_entry_checkpoint"))
 		{
 			return ExecuteConfigureComputeEntryCheckpoint(*Change);
+		}
+		if (Change->Action == TEXT("create_compute_handover_mission"))
+		{
+			return ExecuteCreateComputeHandoverMission(*Change);
+		}
+		if (Change->Action == TEXT("set_compute_entry_next_compute_handover"))
+		{
+			return ExecuteSetComputeEntryNextComputeHandover(*Change);
+		}
+		if (Change->Action == TEXT("configure_compute_handover_terminals_and_datapad"))
+		{
+			return ExecuteConfigureComputeHandoverActors(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{

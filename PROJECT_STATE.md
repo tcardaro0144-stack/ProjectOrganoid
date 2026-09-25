@@ -3709,3 +3709,116 @@ Checkpoint, each once:
 
 - Beat 16 is implemented, persisted, and validated, with `COMPLETE_PASS` **51/51**.
 - Do not begin Beat 17 until separately authorized.
+
+## 2026-09-25 — Beat 17: The Handover
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **52/52**. Beep is **12/12** (fixed). `HostCombatLoop_Functional` **33/33**. `BiologicalAdaptation_Functional` **59/59**. Changes left **unstaged**. No commit / no push / no Beat 18.
+
+**Baseline:** published Beat 16 commit `7b0388200a844f3415efe4d661dfd8211611287d` (`feat: implement Compute entry`) on `origin/main`. Beat 17 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_ComputeEntry` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → ComputeHandover → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_ComputeHandover`
+  - Mission ID: `Mission_ComputeHandover`
+  - Title: `The Handover`
+  - Description: `The compute substrate has been running the lockdown. Wake the interface chamber and recover Sterling's confession.`
+  - Two Main tasks.
+  - `Obj_HackComputeCore` (autoactivate, target 3, no prerequisite). Objective title: `Hack Compute Core`. Objective description: `Hack the compute core.` Completes on `Event_ComputeCoreHacked` (Advance, progress delta 1, target 3).
+  - `Obj_ReadSterlingConfession` requires `Obj_HackComputeCore` Completed, target 1, not autoactive until that prerequisite is met. Objective title: `Read Sterling's Confession`. Objective description: `Read Sterling's confession.` Completes on `Event_SterlingConfessionRead` (Complete, target 1).
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_ComputeEntry.NextMissionAsset` → `DA_Mission_ComputeHandover`. CryoEvidence still points at `DA_Mission_ComputeEntry`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon. Hazards were unchanged.
+- Reused three existing terminals on `SL_Epitope_Compute`. They were not moved.
+  - `Terminal_CoreInterface_1` at `(-1760, -2150, -3500)`
+  - `Terminal_CoreInterface_2` at `(-1760, -1650, -3500)`
+  - `Terminal_CoreInterface_3` at `(-1760, -1150, -3500)`
+- Reused `DataPad_SterlingConfession` at `(-2425, -2275, -3510)`. It was not moved.
+- `DataPad_AutonomousDecisionLog` at `(0, -1650, -3510)` was left alone.
+- Terminals: sector Compute, restored Online, require `Obj_HackComputeCore` Active, prompt `Hack Compute Core`, event `Event_ComputeCoreHacked`, counting 3.
+- Datapad: sector Compute, restored Online, requires `Obj_ReadSterlingConfession` Active, prompt `Read Sterling's Confession`, event `Event_SterlingConfessionRead`.
+- Nathan line on the completing third hack, once, 7 seconds, replay guarded: `It's been running the lockdown the whole time. It didn't lose control.`
+- Nathan line on the confession read, once, 7 seconds, replay guarded: `He didn't lose control. He handed it over.`
+- Configure did not change sector power and did not unlock a door or gate. Compute stayed Online.
+
+### Gameplay behavior
+
+- Terminal and datapad hooks keep `bDiscoverPowerFailureBeforeRestore` false. Sector is Compute, restored state Online. The required objectives are Active `Obj_HackComputeCore` and Active `Obj_ReadSterlingConfession`.
+- Hack credit counts only while `Obj_HackComputeCore` is Active. Each of the three terminals advances `Event_ComputeCoreHacked` by 1. The Nathan line is shown on the transition to Completed (3/3).
+- The confession pad credits only while `Obj_ReadSterlingConfession` is Active, after the hack objective is Completed.
+- Before interact, Compute Online is preserved. After both events, Compute stays Online.
+- There is no unlock beyond the handover and no door. The terminals do not call `SetSectorPowerState` (`bApplyPowerChangeOnSuccess` is false).
+- Compute Online persists through SaveSubsystem. Both Nathan lines are transient HUD notifications and are not persisted.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `3390f101ad45e1a299abf1be8ec8b29615b987536adc847b4b7ce95543004279` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged in Beat 17; Next is ComputeEntry from Beat 16; Beat 15 recorded hash was `1009fcfe32a8541a44848793629672461e660ef36fc8905936551d3326e8adf5`)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (Next now ComputeHandover; Beat 16 recorded hash was `fee973b2293556396315a3d720dc91af3d4da5c7ff1b054f0f4ae68fef64d7ef`)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `9acb9fe98b28b8304fe759ca6da2fbf9b310bddc8649377bb3a9708336a06126` (three terminals and one datapad configured in place; Beat 16 recorded hash was `b5efadeacf584de79af451fe6f670c7125905a3da329e1aac20b5519a155e5ab`)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `6b472cb2e102c23327e10516175bd05d0609896a8fe6b65645aff43be6804aee` (new)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 21604, dirty 0, PIE stopped): **8/8**. Close of PID 21604 was clean: `CloseMainWindow` true, process count 0, no Save Content dialog. Log signatures were 0.
+  - `ComputeHandover_Functional` **101/101** — `ptr_f3733a4f-41d2-c93f-6a00-c5841b8352ad`
+  - `ComputeEntry_Functional` **78/78** — `ptr_1f255a7b-4f25-dcde-fb17-9896988ffb10`
+  - `CryoEvidence_Functional` **100/100** — `ptr_cbea42f4-4a2d-2e7d-cb17-11b080ea8a64`
+  - `CryoEntry_Functional` **78/78** — `ptr_9bca5839-483b-8b41-5541-cf85353a1e54`
+  - `CryoAccess_Functional` **78/78** — `ptr_de5307a2-4057-1110-3c7b-e9bbe1fb9bde`
+  - `NeuroRevelation_Functional` **88/88** — `ptr_3a2e3495-41ab-2282-e620-dfb4b3d37a72`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_bf1f5b57-43cc-bf9d-a7a5-0d97d98be636`
+  - `BeepClickInjection_Functional` **12/12** — `ptr_2a6ece91-47b6-8971-9871-1f80070d9c90`
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b17_targeted8`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b17_targeted_editor.log`
+- Complete catalog executed **52/52**. The catalog is 52 because `ComputeHandover_Functional` registered. Live order: `NeuroAdaptationConnection_Functional` index **15**, `NeuroRevelation_Functional` index **27**, `CryoAccess_Functional` index **10**, `CryoEntry_Functional` index **49**, `CryoEvidence_Functional` index **50**, `ComputeEntry_Functional` index **51**, `ComputeHandover_Functional` index **52**.
+  - Outcome `COMPLETE_PASS`. Script exit code **0**. Aggregate **4984** assertions. Editor PID 3152.
+  - `BeepClickInjection_Functional` **12/12** — `ptr_1ba48da2-443f-2fb4-45e2-43b2e53f4661`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_e756811b-4f6b-6257-e288-01ad2f30a898`
+  - `BiologicalAdaptation_Functional` **59/59** — `ptr_45b5f0a2-46b5-5aab-a10b-df94e38e36c4`
+  - `CryoEvidence_Functional` **100/100** — `ptr_4feeb20d-4ab0-a481-0008-9792304bd681`
+  - `ComputeEntry_Functional` **78/78** — `ptr_4f531c57-4ebd-cfd9-cd58-1794c88c0ca6`
+  - `ComputeHandover_Functional` **101/101** — `ptr_3352e50e-421a-b3b8-48a2-d2baac70ef80`
+  - Close of editor PID 3152: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0. Saves restored to `OrganoidAutosave.sav` only. The thirteen locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b17_complete52_9d25728223df4b47aae97d9bbf84d1c2`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b17_complete52_9d25728223df4b47aae97d9bbf84d1c2.log`
+  - Script: `C:\Users\tomca\AppData\Local\Temp\b17_complete52_proposed.ps1`
+- The diff is the Compute Entry successor link, the new Compute Handover mission, the Compute map configuration of three terminals and one datapad, the bridge allowlist for create / next / terminals and datapad, and `ComputeHandover_Functional`.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `BeepClickInjection_Functional` is **12/12**.
+2. `HostCombatLoop_Functional` was previously flaky. It passed **33/33** in the Beat 17 complete run. Still deferred as a preexisting isolation defect, not a Beat 17 regression.
+3. `BiologicalAdaptation_Functional` was previously an intermittent aim failure (**39/43**). It passed **59/59** in the Beat 17 complete pass. Still deferred as a preexisting isolation defect, not a Beat 17 regression.
+4. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+5. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 18 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 17 is implemented, persisted, and validated, with `COMPLETE_PASS` **52/52**.
+- Do not begin Beat 18 until separately authorized.
