@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidCheckpoint.h"
 #include "ProjectOrganoidGameMode.h"
 #include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidHUDWidget.h"
@@ -16,31 +17,32 @@
 #include "ProjectOrganoidLevelTypes.h"
 #include "ProjectOrganoidObjectiveDataAsset.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
-#include "ProjectOrganoidPowerPanel.h"
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 
-namespace CryoAccessFunctional
+namespace CryoEntryFunctional
 {
-	constexpr TCHAR TestId[] = TEXT("CryoAccess_Functional");
-	constexpr TCHAR DisplayName[] = TEXT("Cryo Access Functional");
+	constexpr TCHAR TestId[] = TEXT("CryoEntry_Functional");
+	constexpr TCHAR DisplayName[] = TEXT("Cryo Entry Functional");
 	constexpr TCHAR MapPackage[] = TEXT("/Game/Maps/Lvl_Epitope");
 	constexpr TCHAR AdminPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	constexpr TCHAR CryoPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Cryo");
-	constexpr TCHAR CryoSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoAccess.DA_Mission_CryoAccess");
+	constexpr TCHAR EntrySoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoEntry.DA_Mission_CryoEntry");
+	constexpr TCHAR AccessSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_CryoAccess.DA_Mission_CryoAccess");
 	constexpr TCHAR RevelationSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_NeuroRevelation.DA_Mission_NeuroRevelation");
-	constexpr TCHAR CryoMissionId[] = TEXT("Mission_CryoAccess");
+	constexpr TCHAR EntryMissionId[] = TEXT("Mission_CryoEntry");
+	constexpr TCHAR AccessMissionId[] = TEXT("Mission_CryoAccess");
 	constexpr TCHAR RevelationMissionId[] = TEXT("Mission_NeuroRevelation");
-	constexpr TCHAR CryoObjectiveId[] = TEXT("Obj_RestoreCryoPower");
-	constexpr TCHAR RevelationObjectiveId[] = TEXT("Obj_ReachNeuroRevelation");
-	constexpr TCHAR CryoEvent[] = TEXT("Event_CryoBackupEngaged");
+	constexpr TCHAR EntryObjectiveId[] = TEXT("Obj_EnterCryo");
+	constexpr TCHAR AccessObjectiveId[] = TEXT("Obj_RestoreCryoPower");
+	constexpr TCHAR EntryEvent[] = TEXT("Event_CryoEntered");
+	constexpr TCHAR AccessEvent[] = TEXT("Event_CryoBackupEngaged");
 	constexpr TCHAR RevelationEvent[] = TEXT("Event_NeuroRevelationReached");
-	constexpr TCHAR PanelLabel[] = TEXT("PowerPanel_CryoBackup");
 	constexpr TCHAR CheckpointLabel[] = TEXT("Checkpoint_FreightAirlock");
-	constexpr TCHAR SaveSlot[] = TEXT("OrganoidCryoAccessTest");
-	constexpr TCHAR ExpectedLine[] = TEXT("Cryo's backup came up. I can go in. I still don't know what they were keeping this cold.");
-	constexpr TCHAR ExpectedPrompt[] = TEXT("Engage Cryo Backup");
+	constexpr TCHAR SaveSlot[] = TEXT("OrganoidCryoEntryTest");
+	constexpr TCHAR ExpectedLine[] = TEXT("This isn't just storage. These were people. Or parts of people.");
+	constexpr TCHAR ExpectedPrompt[] = TEXT("Enter Cryo");
 	const FVector CheckpointLocation(1950.f, 0.f, -2340.f);
 
 	FString BoolText(bool bValue) { return bValue ? TEXT("true") : TEXT("false"); }
@@ -80,7 +82,7 @@ namespace CryoAccessFunctional
 		return Count;
 	}
 
-	class FCryoAccessFunctional : public IOrganoidPlaytestCase
+	class FCryoEntryFunctional : public IOrganoidPlaytestCase
 	{
 	public:
 		virtual FString GetTestId() const override { return TestId; }
@@ -95,9 +97,8 @@ namespace CryoAccessFunctional
 			bSecondSession = false;
 			bCampaignDone = false;
 			bReloadDone = false;
-			EditorPanelLocation = FVector::ZeroVector;
-			UGameplayStatics::DeleteGameInSlot(SaveSlot, 0);
 			Owner.SetStage(TEXT("Preflight"));
+			UGameplayStatics::DeleteGameInSlot(SaveSlot, 0);
 		}
 		virtual void Abort(UProjectOrganoidPlaytestEditorSubsystem& Owner) override
 		{
@@ -195,50 +196,47 @@ namespace CryoAccessFunctional
 
 		void TickPreflight(UProjectOrganoidPlaytestEditorSubsystem& Owner, FOrganoidPlaytestRecord& Record)
 		{
-			UProjectOrganoidObjectiveDataAsset* CryoMission = LoadObject<UProjectOrganoidObjectiveDataAsset>(nullptr, CryoSoftPath);
+			UProjectOrganoidObjectiveDataAsset* Entry = LoadObject<UProjectOrganoidObjectiveDataAsset>(nullptr, EntrySoftPath);
+			UProjectOrganoidObjectiveDataAsset* Access = LoadObject<UProjectOrganoidObjectiveDataAsset>(nullptr, AccessSoftPath);
 			UProjectOrganoidObjectiveDataAsset* Revelation = LoadObject<UProjectOrganoidObjectiveDataAsset>(nullptr, RevelationSoftPath);
-			const FProjectOrganoidMissionTaskDefinition* Task = CryoMission && CryoMission->Tasks.Num() == 1 ? &CryoMission->Tasks[0] : nullptr;
-			AssertTrue(Record, TEXT("asset.cryo_id"), CryoMission && CryoMission->MissionId == FName(CryoMissionId), CryoMissionId, CryoMission ? CryoMission->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.cryo_title"), CryoMission && CryoMission->MissionTitle.ToString() == TEXT("Open the Cryo Route"), TEXT("Open the Cryo Route"), CryoMission ? CryoMission->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.cryo_description"), CryoMission && CryoMission->MissionDescription.ToString().Contains(TEXT("emergency backup")), TEXT("emergency backup"), CryoMission ? CryoMission->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.cryo_next_entry"), CryoMission && CryoMission->NextMissionAsset.ToSoftObjectPath().ToString() == TEXT("/Game/Data/Missions/DA_Mission_CryoEntry.DA_Mission_CryoEntry"), TEXT("/Game/Data/Missions/DA_Mission_CryoEntry.DA_Mission_CryoEntry"), CryoMission ? CryoMission->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.one_task"), CryoMission && CryoMission->Tasks.Num() == 1, TEXT("1"), CryoMission ? FString::FromInt(CryoMission->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(CryoObjectiveId), CryoObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.task_title"), Task && Task->Objective.Title.ToString() == TEXT("Restore Cryo Power"), TEXT("Restore Cryo Power"), Task ? Task->Objective.Title.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.task_description"), Task && Task->Objective.Description.ToString().Contains(TEXT("Cryo backup")), TEXT("Cryo backup"), Task ? Task->Objective.Description.ToString() : TEXT("missing"), TEXT("DA"));
+			const FProjectOrganoidMissionTaskDefinition* Task = Entry && Entry->Tasks.Num() == 1 ? &Entry->Tasks[0] : nullptr;
+			AssertTrue(Record, TEXT("asset.entry_id"), Entry && Entry->MissionId == FName(EntryMissionId), EntryMissionId, Entry ? Entry->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.entry_title"), Entry && Entry->MissionTitle.ToString() == TEXT("What They Kept Cold"), TEXT("What They Kept Cold"), Entry ? Entry->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.entry_description"), Entry && Entry->MissionDescription.ToString().Contains(TEXT("preserving down here")), TEXT("preserving down here"), Entry ? Entry->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.entry_next_null"), Entry && Entry->NextMissionAsset.IsNull(), TEXT("null"), Entry && Entry->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.one_task"), Entry && Entry->Tasks.Num() == 1, TEXT("1"), Entry ? FString::FromInt(Entry->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(EntryObjectiveId), EntryObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.task_title"), Task && Task->Objective.Title.ToString() == TEXT("Enter Cryo"), TEXT("Enter Cryo"), Task ? Task->Objective.Title.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.task_description"), Task && Task->Objective.Description.ToString().Contains(TEXT("Cryo wing")), TEXT("Cryo wing"), Task ? Task->Objective.Description.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_main"), Task && Task->Objective.Type == EProjectOrganoidObjectiveType::Main, TEXT("Main"), Task ? TEXT("other") : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_target"), Task && Task->Objective.TargetProgress == 1, TEXT("1"), Task ? FString::FromInt(Task->Objective.TargetProgress) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_auto"), Task && Task->bAutoActivate, TEXT("true"), Task ? BoolText(Task->bAutoActivate) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_no_prereq"), Task && Task->Objective.PrerequisiteObjectiveIds.Num() == 0, TEXT("0"), Task ? FString::FromInt(Task->Objective.PrerequisiteObjectiveIds.Num()) : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.task_event"), Task && Task->EventTriggers.Num() == 1 && Task->EventTriggers[0].EventId == FName(CryoEvent), CryoEvent, Task && Task->EventTriggers.Num() == 1 ? Task->EventTriggers[0].EventId.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.revelation_next_cryo"), Revelation && Revelation->NextMissionAsset.ToSoftObjectPath().ToString() == CryoSoftPath, CryoSoftPath, Revelation ? Revelation->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.task_event"), Task && Task->EventTriggers.Num() == 1 && Task->EventTriggers[0].EventId == FName(EntryEvent), EntryEvent, Task && Task->EventTriggers.Num() == 1 ? Task->EventTriggers[0].EventId.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.access_next_entry"), Access && Access->NextMissionAsset.ToSoftObjectPath().ToString() == EntrySoftPath, EntrySoftPath, Access ? Access->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.revelation_next_access"), Revelation && Revelation->NextMissionAsset.ToSoftObjectPath().ToString() == AccessSoftPath, AccessSoftPath, Revelation ? Revelation->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 
 			UWorld* EditorWorld = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
-			TArray<AActor*> Panels = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, PanelLabel) : TArray<AActor*>();
-			AProjectOrganoidPowerPanel* Panel = Panels.Num() == 1 ? Cast<AProjectOrganoidPowerPanel>(Panels[0]) : nullptr;
-			TArray<AActor*> Checkpoints = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, CheckpointLabel) : TArray<AActor*>();
-			AActor* Checkpoint = Checkpoints.Num() == 1 ? Checkpoints[0] : nullptr;
-			const FString PanelPackage = Panel && Panel->GetOutermost() ? Panel->GetOutermost()->GetName() : TEXT("missing");
-			if (Panel) EditorPanelLocation = Panel->GetActorLocation();
-			AssertTrue(Record, TEXT("panel.editor_count"), Panels.Num() == 1, TEXT("1"), FString::FromInt(Panels.Num()), PanelLabel);
-			AssertTrue(Record, TEXT("panel.editor_class"), Panel != nullptr, TEXT("PowerPanel"), Panels.Num() == 1 && Panels[0] ? Panels[0]->GetClass()->GetName() : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.editor_package"), PanelPackage.Contains(TEXT("SL_Epitope_Cryo")), CryoPackage, PanelPackage, PanelLabel);
-			AssertTrue(Record, TEXT("panel.sector"), Panel && Panel->PowerSector == EProjectOrganoidPowerSector::Cryo, TEXT("Cryo"), Panel ? TEXT("other") : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.restored"), Panel && Panel->RestoredState == EProjectOrganoidPowerState::Online, TEXT("Online"), Panel ? PowerText(Panel->RestoredState) : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.required"), Panel && Panel->RequiredActiveObjectiveId == FName(CryoObjectiveId), CryoObjectiveId, Panel ? Panel->RequiredActiveObjectiveId.ToString() : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.prompt"), Panel && Panel->InteractionPrompt.ToString() == ExpectedPrompt, ExpectedPrompt, Panel ? Panel->InteractionPrompt.ToString() : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.event"), Panel && Panel->SuccessObjectiveEventId == FName(CryoEvent), CryoEvent, Panel ? Panel->SuccessObjectiveEventId.ToString() : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.line"), Panel && Panel->RestoreSuccessNotificationText.ToString() == ExpectedLine, ExpectedLine, Panel ? Panel->RestoreSuccessNotificationText.ToString() : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.duration"), Panel && FMath::IsNearlyEqual(Panel->RestoreSuccessNotificationDurationSeconds, 6.f), TEXT("6"), Panel ? FString::SanitizeFloat(Panel->RestoreSuccessNotificationDurationSeconds) : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.discovery_gate"), Panel && Panel->bDiscoverPowerFailureBeforeRestore, TEXT("true"), Panel ? BoolText(Panel->bDiscoverPowerFailureBeforeRestore) : TEXT("missing"), PanelLabel);
-			AssertTrue(Record, TEXT("panel.discovery_event_none"), Panel && Panel->DiscoveryObjectiveEventId.IsNone(), TEXT("None"), Panel ? Panel->DiscoveryObjectiveEventId.ToString() : TEXT("missing"), PanelLabel);
+			TArray<AActor*> Found = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, CheckpointLabel) : TArray<AActor*>();
+			AProjectOrganoidCheckpoint* Checkpoint = Found.Num() == 1 ? Cast<AProjectOrganoidCheckpoint>(Found[0]) : nullptr;
+			const FString PackageName = Checkpoint && Checkpoint->GetOutermost() ? Checkpoint->GetOutermost()->GetName() : TEXT("missing");
+			AssertTrue(Record, TEXT("checkpoint.count"), Found.Num() == 1, TEXT("1"), FString::FromInt(Found.Num()), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.class"), Checkpoint != nullptr, TEXT("Checkpoint"), Found.Num() == 1 && Found[0] ? Found[0]->GetClass()->GetName() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.package"), PackageName.Contains(TEXT("SL_Epitope_Cryo")), CryoPackage, PackageName, CheckpointLabel);
 			AssertTrue(Record, TEXT("checkpoint.location"), Checkpoint && Checkpoint->GetActorLocation().Equals(CheckpointLocation, 1.f), TEXT("1950,0,-2340"), Checkpoint ? Checkpoint->GetActorLocation().ToString() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.objective"), Checkpoint && Checkpoint->CampaignRequiredActiveObjectiveId == FName(EntryObjectiveId), EntryObjectiveId, Checkpoint ? Checkpoint->CampaignRequiredActiveObjectiveId.ToString() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.event"), Checkpoint && Checkpoint->CampaignSuccessEventId == FName(EntryEvent), EntryEvent, Checkpoint ? Checkpoint->CampaignSuccessEventId.ToString() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.prompt"), Checkpoint && Checkpoint->CampaignEntryPrompt.ToString() == ExpectedPrompt, ExpectedPrompt, Checkpoint ? Checkpoint->CampaignEntryPrompt.ToString() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.speaker"), Checkpoint && Checkpoint->CampaignNotificationSpeaker.ToString() == TEXT("Nathan"), TEXT("Nathan"), Checkpoint ? Checkpoint->CampaignNotificationSpeaker.ToString() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.line"), Checkpoint && Checkpoint->CampaignNotificationText.ToString() == ExpectedLine, ExpectedLine, Checkpoint ? Checkpoint->CampaignNotificationText.ToString() : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.duration"), Checkpoint && FMath::IsNearlyEqual(Checkpoint->CampaignNotificationDurationSeconds, 7.f), TEXT("7"), Checkpoint ? FString::SanitizeFloat(Checkpoint->CampaignNotificationDurationSeconds) : TEXT("missing"), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.save_slot_default"), Checkpoint && Checkpoint->SaveSlotOverride.IsEmpty(), TEXT("empty"), Checkpoint ? Checkpoint->SaveSlotOverride : TEXT("missing"), CheckpointLabel);
 			AssertTrue(Record, TEXT("dirty.root_clean"), !PackageIsDirty(MapPackage), TEXT("clean"), PackageIsDirty(MapPackage) ? TEXT("dirty") : TEXT("clean"), MapPackage);
 			AssertTrue(Record, TEXT("dirty.admin_clean"), !PackageIsDirty(AdminPackage), TEXT("clean"), PackageIsDirty(AdminPackage) ? TEXT("dirty") : TEXT("clean"), AdminPackage);
 			AssertTrue(Record, TEXT("dirty.cryo_clean"), !PackageIsDirty(CryoPackage), TEXT("clean"), PackageIsDirty(CryoPackage) ? TEXT("dirty") : TEXT("clean"), CryoPackage);
-			if (bAnyAssertFailed || !CryoMission || !Revelation || !Panel || !Checkpoint)
+			if (bAnyAssertFailed || !Entry || !Access || !Revelation || !Checkpoint)
 			{
-				Owner.CompleteActive(EOrganoidPlaytestState::Blocked, Record.FailureReason.IsEmpty() ? TEXT("Beat 13 mission contract missing.") : Record.FailureReason);
+				Owner.CompleteActive(EOrganoidPlaytestState::Blocked, Record.FailureReason.IsEmpty() ? TEXT("Beat 14 mission contract missing.") : Record.FailureReason);
 				return;
 			}
 			Stage = EStage::StartPie;
@@ -273,13 +271,13 @@ namespace CryoAccessFunctional
 					bRequestedCryoStream = true;
 				}
 			}
-			if (Character && bRequestedCryoStream && World && OrganoidPlaytestActions::FindActorsByLabel(World, PanelLabel).Num() == 1)
+			if (Character && bRequestedCryoStream && World && OrganoidPlaytestActions::FindActorsByLabel(World, CheckpointLabel).Num() == 1)
 			{
 				Stage = EStage::Proof;
 				WaitSeconds = 0.f;
 				return;
 			}
-			if (WaitSeconds > 30.f) FailAndStop(Owner, Record, TEXT("PIE did not become ready with PowerPanel_CryoBackup."));
+			if (WaitSeconds > 30.f) FailAndStop(Owner, Record, TEXT("PIE did not become ready with Checkpoint_FreightAirlock."));
 		}
 
 		void TickProof(UProjectOrganoidPlaytestEditorSubsystem& Owner, FOrganoidPlaytestRecord& Record, float DeltaTime)
@@ -310,74 +308,76 @@ namespace CryoAccessFunctional
 			UProjectOrganoidObjectiveSubsystem* Objectives = World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
 			UProjectOrganoidSaveSubsystem* Saves = World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UProjectOrganoidSaveSubsystem>() : nullptr;
 			UProjectOrganoidPowerSubsystem* Power = World ? World->GetSubsystem<UProjectOrganoidPowerSubsystem>() : nullptr;
-			TArray<AActor*> Panels = World ? OrganoidPlaytestActions::FindActorsByLabel(World, PanelLabel) : TArray<AActor*>();
-			AProjectOrganoidPowerPanel* Panel = Panels.Num() == 1 ? Cast<AProjectOrganoidPowerPanel>(Panels[0]) : nullptr;
-			TArray<AActor*> Checkpoints = World ? OrganoidPlaytestActions::FindActorsByLabel(World, CheckpointLabel) : TArray<AActor*>();
-			if (!World || !Character || !Objectives || !Saves || !Power || !Panel || Checkpoints.Num() != 1 || !Widget)
+			TArray<AActor*> Found = World ? OrganoidPlaytestActions::FindActorsByLabel(World, CheckpointLabel) : TArray<AActor*>();
+			AProjectOrganoidCheckpoint* Checkpoint = Found.Num() == 1 ? Cast<AProjectOrganoidCheckpoint>(Found[0]) : nullptr;
+			if (!World || !Character || !Objectives || !Saves || !Power || !Checkpoint || !Widget)
 			{
-				FailAndStop(Owner, Record, TEXT("Beat 13 actors or subsystems missing."));
+				FailAndStop(Owner, Record, TEXT("Beat 14 actors or subsystems missing."));
 				return;
 			}
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::FacilityWide, EProjectOrganoidPowerState::Online);
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::Admin, EProjectOrganoidPowerState::Online);
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Online);
-			Power->SetSectorPowerState(EProjectOrganoidPowerSector::Cryo, EProjectOrganoidPowerState::Blackout);
+			Power->SetSectorPowerState(EProjectOrganoidPowerSector::Cryo, EProjectOrganoidPowerState::Online);
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::Compute, EProjectOrganoidPowerState::Online);
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::Reactor, EProjectOrganoidPowerState::Emergency);
-			const FString PiePackage = Panel->GetOutermost() ? Panel->GetOutermost()->GetName() : TEXT("missing");
-			AssertTrue(Record, TEXT("panel.pie_package"), PiePackage.Contains(TEXT("SL_Epitope_Cryo")), CryoPackage, PiePackage, PanelLabel);
-			AssertTrue(Record, TEXT("panel.not_moved"), Panel->GetActorLocation().Equals(EditorPanelLocation, 5.f), EditorPanelLocation.ToString(), Panel->GetActorLocation().ToString(), PanelLabel);
+			AssertTrue(Record, TEXT("power.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 			AssertTrue(Record, TEXT("power.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("Power"));
-			AssertTrue(Record, TEXT("power.cryo_blackout"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Blackout, TEXT("Blackout"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 			AssertTrue(Record, TEXT("power.admin_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin)), TEXT("Power"));
 			AssertTrue(Record, TEXT("power.facility_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::FacilityWide) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::FacilityWide)), TEXT("Power"));
 			AssertTrue(Record, TEXT("power.compute_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute)), TEXT("Power"));
 			AssertTrue(Record, TEXT("power.reactor_emergency"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor) == EProjectOrganoidPowerState::Emergency, TEXT("Emergency"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor)), TEXT("Power"));
+			AssertTrue(Record, TEXT("checkpoint.unmoved"), Checkpoint->GetActorLocation().Equals(CheckpointLocation, 5.f), TEXT("1950,0,-2340"), Checkpoint->GetActorLocation().ToString(), CheckpointLabel);
+			AssertTrue(Record, TEXT("checkpoint.prompt_live"), Checkpoint->InteractionPrompt.ToString() == ExpectedPrompt, ExpectedPrompt, Checkpoint->InteractionPrompt.ToString(), CheckpointLabel);
 
 			UProjectOrganoidObjectiveDataAsset* Revelation = LoadObject<UProjectOrganoidObjectiveDataAsset>(nullptr, RevelationSoftPath);
 			const bool bRevelation = Revelation && Objectives->LoadMission(Revelation, false);
 			AssertTrue(Record, TEXT("reject.revelation_loaded"), bRevelation && Objectives->GetActiveMissionId() == FName(RevelationMissionId), RevelationMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
-			AssertTrue(Record, TEXT("reject.cryo_not_active"), CountActiveId(Objectives, FName(CryoObjectiveId)) == 0, TEXT("0"), FString::FromInt(CountActiveId(Objectives, FName(CryoObjectiveId))), CryoObjectiveId);
-			const bool bRejected = Panel->Interact(Character);
-			AssertTrue(Record, TEXT("reject.interact"), bRejected, TEXT("true"), BoolText(bRejected), PanelLabel);
-			AssertTrue(Record, TEXT("reject.no_credit"), Panel->SuccessEventFireCount == 0 && CountCompletedId(Objectives, FName(CryoObjectiveId)) == 0, TEXT("0"), FString::FromInt(Panel->SuccessEventFireCount), PanelLabel);
-			AssertTrue(Record, TEXT("reject.cryo_blackout"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Blackout, TEXT("Blackout"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
-			AssertTrue(Record, TEXT("reject.not_engaged"), !Panel->bHasBeenEngaged, TEXT("false"), BoolText(Panel->bHasBeenEngaged), PanelLabel);
+			Objectives->TriggerEvent(FName(RevelationEvent));
+			AssertTrue(Record, TEXT("reject.access_current"), Objectives->GetActiveMissionId() == FName(AccessMissionId), AccessMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("reject.enter_not_active"), CountActiveId(Objectives, FName(EntryObjectiveId)) == 0, TEXT("0"), FString::FromInt(CountActiveId(Objectives, FName(EntryObjectiveId))), EntryObjectiveId);
+			Checkpoint->SaveSlotOverride = SaveSlot;
+			const bool bRejected = Checkpoint->Interact(Character);
+			AssertTrue(Record, TEXT("reject.interact"), bRejected, TEXT("true"), BoolText(bRejected), CheckpointLabel);
+			AssertTrue(Record, TEXT("reject.no_credit"), Checkpoint->CampaignEventFireCount == 0, TEXT("0"), FString::FromInt(Checkpoint->CampaignEventFireCount), CheckpointLabel);
+			AssertTrue(Record, TEXT("reject.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 
-			const int32 Revealed = Objectives->TriggerEvent(FName(RevelationEvent));
-			AssertTrue(Record, TEXT("chain.revelation_event"), Revealed > 0, TEXT(">0"), FString::FromInt(Revealed), RevelationEvent);
-			AssertTrue(Record, TEXT("chain.cryo_current"), Objectives->GetActiveMissionId() == FName(CryoMissionId), CryoMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
-			AssertTrue(Record, TEXT("chain.objective_active"), CountActiveId(Objectives, FName(CryoObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountActiveId(Objectives, FName(CryoObjectiveId))), CryoObjectiveId);
+			const int32 Engaged = Objectives->TriggerEvent(FName(AccessEvent));
+			AssertTrue(Record, TEXT("chain.backup_event"), Engaged > 0, TEXT(">0"), FString::FromInt(Engaged), AccessEvent);
+			AssertTrue(Record, TEXT("chain.entry_current"), Objectives->GetActiveMissionId() == FName(EntryMissionId), EntryMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("chain.objective_active"), CountActiveId(Objectives, FName(EntryObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountActiveId(Objectives, FName(EntryObjectiveId))), EntryObjectiveId);
+			AssertTrue(Record, TEXT("chain.access_completed"), CountCompletedId(Objectives, FName(AccessObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(AccessObjectiveId))), AccessObjectiveId);
 			AssertTrue(Record, TEXT("chain.opening_not_complete"), !Objectives->IsMissionComplete(FName(TEXT("Mission_OpeningFoundation"))), TEXT("false"), BoolText(Objectives->IsMissionComplete(FName(TEXT("Mission_OpeningFoundation")))), TEXT("mission"));
+			AssertTrue(Record, TEXT("chain.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 
 			Widget->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);
-			const bool bSuccess = Panel->Interact(Character);
+			const bool bSuccess = Checkpoint->Interact(Character);
 			const FString Line = Widget->GetLastResourceNotification().ToString();
 			const float Remaining = Widget->GetTransientNotificationSecondsRemaining();
-			AssertTrue(Record, TEXT("success.interact"), bSuccess, TEXT("true"), BoolText(bSuccess), PanelLabel);
-			AssertTrue(Record, TEXT("success.fire"), Panel->SuccessEventFireCount == 1, TEXT("1"), FString::FromInt(Panel->SuccessEventFireCount), PanelLabel);
-			AssertTrue(Record, TEXT("success.objective"), CountCompletedId(Objectives, FName(CryoObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(CryoObjectiveId))), CryoObjectiveId);
-			AssertTrue(Record, TEXT("success.mission"), Objectives->GetActiveMissionId() == FName(TEXT("Mission_CryoEntry")), TEXT("Mission_CryoEntry"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("success.interact"), bSuccess, TEXT("true"), BoolText(bSuccess), CheckpointLabel);
+			AssertTrue(Record, TEXT("success.fire"), Checkpoint->CampaignEventFireCount == 1, TEXT("1"), FString::FromInt(Checkpoint->CampaignEventFireCount), CheckpointLabel);
+			AssertTrue(Record, TEXT("success.objective"), CountCompletedId(Objectives, FName(EntryObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(EntryObjectiveId))), EntryObjectiveId);
+			AssertTrue(Record, TEXT("success.mission"), Objectives->IsMissionComplete(FName(EntryMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("success.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 			AssertTrue(Record, TEXT("success.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("Power"));
 			AssertTrue(Record, TEXT("success.admin_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin)), TEXT("Power"));
+			AssertTrue(Record, TEXT("success.compute_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Compute)), TEXT("Power"));
 			AssertTrue(Record, TEXT("success.reactor_emergency"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor) == EProjectOrganoidPowerState::Emergency, TEXT("Emergency"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor)), TEXT("Power"));
-			AssertTrue(Record, TEXT("success.notification"), Panel->RestoreSuccessNotificationCount == 1, TEXT("1"), FString::FromInt(Panel->RestoreSuccessNotificationCount), TEXT("HUD"));
+			AssertTrue(Record, TEXT("success.notification"), Checkpoint->CampaignNotificationCount == 1, TEXT("1"), FString::FromInt(Checkpoint->CampaignNotificationCount), TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.line"), Line.Contains(ExpectedLine) && Line.StartsWith(TEXT("Nathan:")), ExpectedLine, Line, TEXT("HUD"));
-			AssertTrue(Record, TEXT("success.duration"), Remaining > 5.0f && Remaining <= 6.0f, TEXT("6"), FString::SanitizeFloat(Remaining), TEXT("HUD"));
-			AssertTrue(Record, TEXT("success.no_door"), Checkpoints.Num() == 1 && Checkpoints[0]->GetActorLocation().Equals(CheckpointLocation, 5.f), TEXT("checkpoint"), Checkpoints[0]->GetActorLocation().ToString(), CheckpointLabel);
-			AssertTrue(Record, TEXT("success.panel_unmoved"), Panel->GetActorLocation().Equals(EditorPanelLocation, 5.f), EditorPanelLocation.ToString(), Panel->GetActorLocation().ToString(), PanelLabel);
+			AssertTrue(Record, TEXT("success.duration"), Remaining > 6.0f && Remaining <= 7.0f, TEXT("7"), FString::SanitizeFloat(Remaining), TEXT("HUD"));
+			AssertTrue(Record, TEXT("success.no_door"), Found.Num() == 1 && Checkpoint->GetActorLocation().Equals(CheckpointLocation, 5.f), TEXT("checkpoint"), Checkpoint->GetActorLocation().ToString(), CheckpointLabel);
 
 			Widget->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);
-			Panel->Interact(Character);
-			AssertTrue(Record, TEXT("replay.fire_once"), Panel->SuccessEventFireCount == 1 && Panel->RestoreSuccessNotificationCount == 1, TEXT("1"), FString::Printf(TEXT("fire=%d notes=%d"), Panel->SuccessEventFireCount, Panel->RestoreSuccessNotificationCount), PanelLabel);
+			Checkpoint->Interact(Character);
+			AssertTrue(Record, TEXT("replay.fire_once"), Checkpoint->CampaignEventFireCount == 1 && Checkpoint->CampaignNotificationCount == 1, TEXT("1"), FString::Printf(TEXT("fire=%d notes=%d"), Checkpoint->CampaignEventFireCount, Checkpoint->CampaignNotificationCount), CheckpointLabel);
 			AssertTrue(Record, TEXT("replay.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
 			AssertTrue(Record, TEXT("replay.line_cleared"), !Widget->GetLastResourceNotification().ToString().Contains(ExpectedLine), TEXT("cleared"), Widget->GetLastResourceNotification().ToString(), TEXT("HUD"));
 
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.wrote"), bSaved, TEXT("true"), BoolText(bSaved), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(TEXT("Mission_CryoEntry")), TEXT("Mission_CryoEntry"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->IsMissionComplete(FName(EntryMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.cryo_captured"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
@@ -389,9 +389,9 @@ namespace CryoAccessFunctional
 			UProjectOrganoidObjectiveSubsystem* Objectives = World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
 			UProjectOrganoidSaveSubsystem* Saves = World && World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UProjectOrganoidSaveSubsystem>() : nullptr;
 			UProjectOrganoidPowerSubsystem* Power = World ? World->GetSubsystem<UProjectOrganoidPowerSubsystem>() : nullptr;
-			TArray<AActor*> Panels = World ? OrganoidPlaytestActions::FindActorsByLabel(World, PanelLabel) : TArray<AActor*>();
-			AProjectOrganoidPowerPanel* Panel = Panels.Num() == 1 ? Cast<AProjectOrganoidPowerPanel>(Panels[0]) : nullptr;
-			if (!Objectives || !Saves || !Power || !Panel || !Character)
+			TArray<AActor*> Found = World ? OrganoidPlaytestActions::FindActorsByLabel(World, CheckpointLabel) : TArray<AActor*>();
+			AProjectOrganoidCheckpoint* Checkpoint = Found.Num() == 1 ? Cast<AProjectOrganoidCheckpoint>(Found[0]) : nullptr;
+			if (!Objectives || !Saves || !Power || !Checkpoint || !Character || !Widget)
 			{
 				FailAndStop(Owner, Record, TEXT("Reload actors missing."));
 				return;
@@ -400,15 +400,14 @@ namespace CryoAccessFunctional
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Emergency);
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(TEXT("Mission_CryoEntry")), TEXT("Mission_CryoEntry"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
-			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(CryoObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(CryoObjectiveId))), CryoObjectiveId);
-			AssertTrue(Record, TEXT("save.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("Power"));
-			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("Power"));
-			AssertTrue(Record, TEXT("save.admin_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Admin)), TEXT("Power"));
-			Widget->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);
-			Panel->Interact(Character);
-			AssertTrue(Record, TEXT("save.replay_no_fire"), Panel->SuccessEventFireCount == 0, TEXT("0"), FString::FromInt(Panel->SuccessEventFireCount), PanelLabel);
-			AssertTrue(Record, TEXT("save.notification_absent"), Panel->RestoreSuccessNotificationCount == 0, TEXT("0"), FString::FromInt(Panel->RestoreSuccessNotificationCount), TEXT("HUD"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->IsMissionComplete(FName(EntryMissionId)), TEXT("complete"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(EntryObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(EntryObjectiveId))), EntryObjectiveId);
+			AssertTrue(Record, TEXT("save.cryo_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Cryo)), TEXT("save"));
+			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("save"));
+			Checkpoint->SaveSlotOverride = SaveSlot;
+			Checkpoint->Interact(Character);
+			AssertTrue(Record, TEXT("save.replay_no_fire"), Checkpoint->CampaignEventFireCount == 0, TEXT("0"), FString::FromInt(Checkpoint->CampaignEventFireCount), CheckpointLabel);
+			AssertTrue(Record, TEXT("save.unmoved"), Checkpoint->GetActorLocation().Equals(CheckpointLocation, 5.f), TEXT("1950,0,-2340"), Checkpoint->GetActorLocation().ToString(), CheckpointLabel);
 			AssertTrue(Record, TEXT("dirty.reload_cryo"), !PackageIsDirty(CryoPackage), TEXT("clean"), PackageIsDirty(CryoPackage) ? TEXT("dirty") : TEXT("clean"), CryoPackage);
 			AssertTrue(Record, TEXT("dirty.reload_admin"), !PackageIsDirty(AdminPackage), TEXT("clean"), PackageIsDirty(AdminPackage) ? TEXT("dirty") : TEXT("clean"), AdminPackage);
 			AssertTrue(Record, TEXT("dirty.reload_root"), !PackageIsDirty(MapPackage), TEXT("clean"), PackageIsDirty(MapPackage) ? TEXT("dirty") : TEXT("clean"), MapPackage);
@@ -423,7 +422,6 @@ namespace CryoAccessFunctional
 		bool bSecondSession = false;
 		bool bCampaignDone = false;
 		bool bReloadDone = false;
-		FVector EditorPanelLocation = FVector::ZeroVector;
 	};
 
 	struct FRegister
@@ -434,9 +432,9 @@ namespace CryoAccessFunctional
 			Entry.TestId = TestId;
 			Entry.DisplayName = DisplayName;
 			Entry.MapPackage = MapPackage;
-			Entry.Factory = []() -> TSharedRef<IOrganoidPlaytestCase> { return MakeShared<FCryoAccessFunctional>(); };
+			Entry.Factory = []() -> TSharedRef<IOrganoidPlaytestCase> { return MakeShared<FCryoEntryFunctional>(); };
 			FOrganoidPlaytestRegistry::Register(Entry);
 		}
 	};
-	static FRegister GRegister;
+	static FRegister RegisterCryoEntryFunctional;
 }

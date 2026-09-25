@@ -67,6 +67,35 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Checkpoint")
 	FOnProjectOrganoidCheckpointUsed OnCheckpointUsed;
 
+	/**
+	 * Optional campaign entry. None disables it and leaves every checkpoint on the save path.
+	 * When set, one interact while that objective is Active fires CampaignSuccessEventId and
+	 * presents the Nathan line once. It does not change sector power and does not move the actor.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Campaign")
+	FName CampaignRequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Campaign")
+	FName CampaignSuccessEventId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Campaign")
+	FText CampaignEntryPrompt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Campaign")
+	FText CampaignNotificationSpeaker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Campaign")
+	FText CampaignNotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Checkpoint|Campaign", meta = (ClampMin = "0.0"))
+	float CampaignNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Checkpoint|Campaign", Transient)
+	int32 CampaignEventFireCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Checkpoint|Campaign", Transient)
+	int32 CampaignNotificationCount = 0;
+
 	virtual bool CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const override;
 	virtual bool Interact_Implementation(AProjectOrganoidCharacter* Interactor) override;
 
@@ -91,4 +120,7 @@ protected:
 
 	FString ResolveSaveSlot() const;
 	void ApplyHealthStabilizationFloor(AProjectOrganoidCharacter* Character) const;
+	void TryCampaignEntry(AProjectOrganoidCharacter* Character);
+	bool IsCampaignObjectiveActive() const;
+	bool IsCampaignObjectiveCompleted() const;
 };

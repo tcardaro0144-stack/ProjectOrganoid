@@ -2,6 +2,9 @@
 
 #include "ProjectOrganoidCheckpoint.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidGameMode.h"
+#include "ProjectOrganoidGameplayHUDController.h"
+#include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
@@ -34,7 +37,11 @@ void AProjectOrganoidCheckpoint::BeginPlay()
 		AutosaveVolume->OnComponentBeginOverlap.AddUniqueDynamic(this, &AProjectOrganoidCheckpoint::OnAutosaveVolumeBeginOverlap);
 	}
 
-	if (!CheckpointDisplayName.IsEmpty())
+	if (!CampaignRequiredActiveObjectiveId.IsNone() && !CampaignEntryPrompt.IsEmpty())
+	{
+		InteractionPrompt = CampaignEntryPrompt;
+	}
+	else if (!CheckpointDisplayName.IsEmpty())
 	{
 		InteractionPrompt = FText::Format(NSLOCTEXT("ProjectOrganoid", "CheckpointPrompt", "Save — {0}"), CheckpointDisplayName);
 	}
@@ -52,9 +59,74 @@ bool AProjectOrganoidCheckpoint::Interact_Implementation(AProjectOrganoidCharact
 		return false;
 	}
 
+	TryCampaignEntry(Interactor);
 	const bool bSucceeded = TriggerCheckpointSave(Interactor);
 	OnInteracted.Broadcast(this, Interactor);
 	return bSucceeded;
+}
+
+void AProjectOrganoidCheckpoint::TryCampaignEntry(AProjectOrganoidCharacter* Character)
+{
+	if (CampaignRequiredActiveObjectiveId.IsNone() || CampaignSuccessEventId.IsNone() || !Character)
+	{
+		return;
+	}
+	if (!IsCampaignObjectiveActive() || IsCampaignObjectiveCompleted())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(CampaignSuccessEventId);
+			++CampaignEventFireCount;
+		}
+	}
+
+	APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	UWorld* World = GetWorld();
+	AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
+	UProjectOrganoidGameplayHUDController* HUD = GameMode && PC ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (HUD && HUD->ShowTransientNotification(CampaignNotificationSpeaker, CampaignNotificationText, CampaignNotificationDurationSeconds))
+	{
+		++CampaignNotificationCount;
+	}
+}
+
+bool AProjectOrganoidCheckpoint::IsCampaignObjectiveActive() const
+{
+	if (CampaignRequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI ? GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
+	if (!Objectives)
+	{
+		return false;
+	}
+	FProjectOrganoidObjective Objective;
+	return Objectives->GetObjective(CampaignRequiredActiveObjectiveId, Objective)
+		&& Objective.State == EProjectOrganoidObjectiveState::Active;
+}
+
+bool AProjectOrganoidCheckpoint::IsCampaignObjectiveCompleted() const
+{
+	if (CampaignRequiredActiveObjectiveId.IsNone())
+	{
+		return false;
+	}
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI ? GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
+	if (!Objectives)
+	{
+		return false;
+	}
+	FProjectOrganoidObjective Objective;
+	return Objectives->GetObjective(CampaignRequiredActiveObjectiveId, Objective)
+		&& Objective.State == EProjectOrganoidObjectiveState::Completed;
 }
 
 bool AProjectOrganoidCheckpoint::TriggerCheckpointSave(AProjectOrganoidCharacter* Character)

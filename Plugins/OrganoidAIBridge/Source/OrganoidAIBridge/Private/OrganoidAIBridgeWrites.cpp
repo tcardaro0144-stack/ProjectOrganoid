@@ -163,6 +163,9 @@ namespace
 		TEXT("create_cryo_access_mission"),
 		TEXT("set_neuro_revelation_next_cryo_access"),
 		TEXT("configure_cryo_backup_power_panel"),
+		TEXT("create_cryo_entry_mission"),
+		TEXT("set_cryo_access_next_cryo_entry"),
+		TEXT("configure_cryo_entry_checkpoint"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -231,6 +234,9 @@ namespace
 		TEXT("create_cryo_access_mission"),
 		TEXT("set_neuro_revelation_next_cryo_access"),
 		TEXT("configure_cryo_backup_power_panel"),
+		TEXT("create_cryo_entry_mission"),
+		TEXT("set_cryo_access_next_cryo_entry"),
+		TEXT("configure_cryo_entry_checkpoint"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3247,6 +3253,9 @@ namespace
 #include "OrganoidAIBridgeCryoAccessMission.inl"
 #include "OrganoidAIBridgeNeuroRevelationNextCryoAccess.inl"
 #include "OrganoidAIBridgeCryoBackupPowerPanel.inl"
+#include "OrganoidAIBridgeCryoEntryMission.inl"
+#include "OrganoidAIBridgeCryoAccessNextCryoEntry.inl"
+#include "OrganoidAIBridgeCryoEntryCheckpoint.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -3965,6 +3974,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureCryoBackupPowerPanel(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_cryo_entry_mission"))
+		{
+			PreflightError = PreflightCreateCryoEntryMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_cryo_access_next_cryo_entry"))
+		{
+			PreflightError = PreflightSetCryoAccessNextCryoEntry(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_cryo_entry_checkpoint"))
+		{
+			PreflightError = PreflightConfigureCryoEntryCheckpoint(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4062,6 +4083,8 @@ namespace
 			|| Action == TEXT("configure_neuro_revelation_observation")
 			|| Action == TEXT("create_cryo_access_mission")
 			|| Action == TEXT("set_neuro_revelation_next_cryo_access")
+			|| Action == TEXT("create_cryo_entry_mission")
+			|| Action == TEXT("set_cryo_access_next_cryo_entry")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -4071,7 +4094,8 @@ namespace
 		{
 			Package = NeuroPackage;
 		}
-		else if (Action == TEXT("configure_cryo_backup_power_panel"))
+		else if (Action == TEXT("configure_cryo_backup_power_panel")
+			|| Action == TEXT("configure_cryo_entry_checkpoint"))
 		{
 			Package = CryoPackage;
 		}
@@ -5291,6 +5315,9 @@ namespace
 				|| Change->Action == TEXT("configure_neuro_revelation_observation")
 				|| Change->Action == TEXT("create_cryo_access_mission")
 				|| Change->Action == TEXT("set_neuro_revelation_next_cryo_access")
+				|| Change->Action == TEXT("create_cryo_entry_mission")
+				|| Change->Action == TEXT("set_cryo_access_next_cryo_entry")
+				|| Change->Action == TEXT("configure_cryo_entry_checkpoint")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -5569,6 +5596,18 @@ namespace
 		if (Change->Action == TEXT("configure_cryo_backup_power_panel"))
 		{
 			return ExecuteConfigureCryoBackupPowerPanel(*Change);
+		}
+		if (Change->Action == TEXT("create_cryo_entry_mission"))
+		{
+			return ExecuteCreateCryoEntryMission(*Change);
+		}
+		if (Change->Action == TEXT("set_cryo_access_next_cryo_entry"))
+		{
+			return ExecuteSetCryoAccessNextCryoEntry(*Change);
+		}
+		if (Change->Action == TEXT("configure_cryo_entry_checkpoint"))
+		{
+			return ExecuteConfigureCryoEntryCheckpoint(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
