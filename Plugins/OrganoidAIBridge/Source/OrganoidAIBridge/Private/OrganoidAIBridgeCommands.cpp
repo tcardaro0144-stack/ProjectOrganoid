@@ -541,6 +541,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_cryo_evidence_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_cryo_entry_next_cryo_evidence")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_cryo_evidence_datapads")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_compute_entry_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_cryo_evidence_next_compute_entry")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_compute_entry_checkpoint")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -636,6 +639,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_cryo_evidence_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_cryo_entry_next_cryo_evidence")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_cryo_evidence_datapads")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_compute_entry_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_cryo_evidence_next_compute_entry")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_compute_entry_checkpoint")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1879,6 +1885,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_cryo_evidence_mission")
 		|| Normalized == TEXT("set_cryo_entry_next_cryo_evidence")
 		|| Normalized == TEXT("configure_cryo_evidence_datapads")
+		|| Normalized == TEXT("create_compute_entry_mission")
+		|| Normalized == TEXT("set_cryo_evidence_next_compute_entry")
+		|| Normalized == TEXT("configure_compute_entry_checkpoint")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")

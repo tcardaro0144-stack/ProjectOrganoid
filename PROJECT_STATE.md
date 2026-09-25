@@ -3602,3 +3602,110 @@ Checkpoint, each once:
 - The beep was the dormant Security officer hearing a gunshot at about 616 units. Hearing range was 1800, so the officer woke, landed one 15-point melee, and health went from 100 to 85. That started the alarm at the Security stop only. Gunfire now wakes a dormant host only inside the authored 200-unit proximity. A shot beside the officer still wakes them. The first proving rerun was 12/12 `ptr_503288b3-4a16-4f86-9b6f-9ebf8a270fdb`, Security quiet. This audit rerun was 12/12 `ptr_58a9bc83-40e1-e34d-ddaa-2f8a5e0bfa08`. `route.no_lmb_combat` expected false, actual false. The Security stop stayed quiet.
 - Validation: closed-editor Win64 Development build succeeded. Targeted 5/5. `BeepClickInjection_Functional` 12/12 `ptr_58a9bc83-40e1-e34d-ddaa-2f8a5e0bfa08`. `HostCombatLoop_Functional` 33/33 `ptr_1c5fbccf-4ee0-2c72-8bab-0aa57f51c61d`. `BiologicalAdaptation_Functional` 59/59 `ptr_90456e9e-493e-a63a-df9b-e8b9a925dc79`. `CryoEvidence_Functional` 100/100 `ptr_63c65f73-4e11-0523-0d10-13a4b0c7db75`. `CryoEntry_Functional` 78/78 `ptr_0b91a7df-4ce3-8adc-425b-ce97f46a7103`. Log signatures 0. `CloseMainWindow` true, processes remaining 0, editor PID 36716. Saves only `OrganoidAutosave.sav`. The ten Beat 15 hashes were unchanged. Because Beep is now 12/12, a future complete catalog can record `COMPLETE_PASS` instead of `DEFERRED_BEEP_EXCEPTION`.
 - The source fix is commit `edf852f56e9b769bb28165f3331659782cd31869` on top of `ef4064aa2d90252ba6331d439f03ad1feb4ea323`. No new mission and no map change. Beat 16 has not been started.
+
+## 2026-09-25 — Beat 16: The Substrate
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **51/51**. Beep is now **12/12** (the deferred `route.no_lmb_combat` exception is fixed). `HostCombatLoop_Functional` **33/33**. `BiologicalAdaptation_Functional` **59/59**. Changes left **unstaged**. No commit / no push / no Beat 17.
+
+**Baseline:** published Beat 15 plus the camera and beep fixes, commit `870199f51dac84fc92d67b271534d297bf185ad8` on `origin/main`. Beat 16 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_CryoEvidence` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_ComputeEntry`
+  - Mission ID: `Mission_ComputeEntry`
+  - Title: `The Substrate`
+  - Description: `The compute substrate has been running the lockdown. Enter the compute wing and wake the interface.`
+  - Exactly one Main task: `Obj_EnterCompute` (autoactivate, target 1, no prerequisite)
+  - Objective title: `Enter Compute`
+  - Objective description: `Enter the compute wing.`
+  - Completes on `Event_ComputeEntered` (Complete, target 1)
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_CryoEvidence.NextMissionAsset` → `DA_Mission_ComputeEntry`. Revelation still points at `DA_Mission_CryoAccess`. CryoAccess still points at `DA_Mission_CryoEntry`. CryoEntry still points at `DA_Mission_CryoEvidence`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon. Hazards were unchanged.
+- Reused `Checkpoint_InterfaceChamber` at `(-2425, -1650, -3540)` on `SL_Epitope_Compute`. It was not moved.
+- `Checkpoint_BasinRim` at `(25, 0, -4740)` was left alone.
+- The interface chamber is sector Compute, restored Online, requires `Obj_EnterCompute` Active, prompt `Enter Compute`, event `Event_ComputeEntered`.
+- Nathan line, once, 7 seconds, replay guarded: `The compute substrate is still running. It's been running the whole lockdown.`
+- Configure did not change sector power. Compute stayed Online.
+
+### Gameplay behavior
+
+- Checkpoint hook `bDiscoverPowerFailureBeforeRestore` is false. Sector is Compute, restored state Online. The required objective is Active `Obj_EnterCompute`.
+- Credit only when `Obj_EnterCompute` is Active and the exact actor interact succeeds.
+- Before interact, Compute Online is preserved. After `Event_ComputeEntered`, Compute stays Online. Cryo, Neuro, and Admin are preserved.
+- There is no unlock beyond entry and no door. The checkpoint does not call `SetSectorPowerState`.
+- Compute Online persists through SaveSubsystem. The Nathan line is a transient HUD notification and is not persisted.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `3390f101ad45e1a299abf1be8ec8b29615b987536adc847b4b7ce95543004279` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (Next now ComputeEntry; Beat 15 recorded hash was `1009fcfe32a8541a44848793629672461e660ef36fc8905936551d3326e8adf5`)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `fee973b2293556396315a3d720dc91af3d4da5c7ff1b054f0f4ae68fef64d7ef` (new)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `b5efadeacf584de79af451fe6f670c7125905a3da329e1aac20b5519a155e5ab` (new; was not in the previous lock)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 38804, dirty 0, PIE stopped): **8/8**. Close of PID 38804 was clean: `CloseMainWindow` true, process count 0, no Save Content dialog. Log signatures were 0.
+  - `ComputeEntry_Functional` **78/78** — `ptr_e17a591b-4071-ac18-e785-609fc4b02966`
+  - `CryoEvidence_Functional` **100/100** — `ptr_c5a38504-4441-d4b0-c427-0897e0c75397`
+  - `CryoEntry_Functional` **78/78** — `ptr_36c1be44-496f-5c54-7c3e-6f99f04ad817`
+  - `CryoAccess_Functional` **78/78** — `ptr_d6291752-4a1f-f80e-fa3c-239267718a75`
+  - `NeuroRevelation_Functional` **88/88** — `ptr_b90472e4-49f9-ec5a-a87b-3c9bdc1ecd07`
+  - `NeuroAdaptationConnection_Functional` **86/86** — `ptr_82e2fd5f-4d52-d6dc-019f-88a7680e3122`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_f7798933-4e9f-66c1-0b98-f6873c2dfacc`
+  - `BeepClickInjection_Functional` **12/12** — `ptr_92be3ccf-4f21-20da-5d02-b8b1c2ab5e93` (the camera and beep fix is verified)
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b16_targeted8`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b16_targeted_editor.log`
+- Complete catalog attempt 1 executed **51/51**. Outcome `FAIL`. Script exit code **3**. Beep route lost the PIE pawn.
+  - `BeepClickInjection_Functional` **9/12** — `ptr_a80ed67d-41d5-ab0b-bea0-9cbe747e4221`, 3 failed. Failure reason: `Lost PIE pawn during admin click route.`
+- Complete catalog retry executed **51/51**. The catalog is 51 because `ComputeEntry_Functional` registered. Live order: `NeuroAdaptationConnection_Functional` index **15**, `NeuroRevelation_Functional` index **27**, `CryoAccess_Functional` index **10**, `CryoEntry_Functional` index **49**, `CryoEvidence_Functional` index **50**, `ComputeEntry_Functional` index **51**.
+  - Outcome `COMPLETE_PASS`. Script exit code **0**. Aggregate **4883** assertions. Editor PID 32272.
+  - `BeepClickInjection_Functional` **12/12** — `ptr_c24acbc4-4438-da75-ad23-5d9015e3f00a`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_c642d535-4ae4-d475-85e8-778639302f94`
+  - `BiologicalAdaptation_Functional` **59/59** — `ptr_3a56dc85-4759-2c68-dd67-daa2fca4726b`
+  - `CryoEvidence_Functional` **100/100** — `ptr_3807fb32-4416-8858-79e3-82be23ca650e`
+  - `ComputeEntry_Functional` **78/78** — `ptr_37ef3046-449a-2817-5d38-b98179976ebd`
+  - Close of editor PID 32272: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0. Saves restored to `OrganoidAutosave.sav` only. The twelve locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b16_complete51_2359ab4464e048ce8a01dd14a2f1f856`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b16_complete51_2359ab4464e048ce8a01dd14a2f1f856.log`
+  - Script: `C:\Users\tomca\AppData\Local\Temp\b16_complete51_proposed.ps1`
+- The diff is the Cryo Evidence successor link, the new Compute Entry mission, the Compute map interface-chamber configuration, the bridge allowlist for create / next / checkpoint, `ComputeEntry_Functional`, the Cryo Evidence handoff expectation, and the playtest catalog order pin that keeps Compute Entry at index 51.
+
+### Deferred issues (not fixed)
+
+1. `route.no_lmb_combat` is fixed. Beep is **12/12**. It was the deferred simulated-click exception.
+2. `HostCombatLoop_Functional` `no_invalid_range_damage` was previously flaky. It passed **33/33** in both Beat 16 complete runs. Still deferred as a preexisting isolation defect, not a Beat 16 regression.
+3. `BiologicalAdaptation_Functional` was previously an intermittent aim failure (**39/43**). It passed **59/59** in the Beat 16 complete pass. Still deferred as a preexisting isolation defect, not a Beat 16 regression.
+4. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+5. The earlier first-person versus intended third-person deferral is fixed in the published camera commit. The view is arm 180, socket `(0, 28, 18)`, mesh `SKM_Manny_Simple`, `yawFollowsLook` true. That fix is already published in `870199f51dac84fc92d67b271534d297bf185ad8`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 17 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 16 is implemented, persisted, and validated, with `COMPLETE_PASS` **51/51**.
+- Do not begin Beat 17 until separately authorized.
