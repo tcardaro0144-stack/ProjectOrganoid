@@ -3595,3 +3595,10 @@ Checkpoint, each once:
 
 - Beat 15 is implemented, persisted, and validated, with the deferred Beep exception documented above. HostCombatLoop passed **33/33** in both complete runs. Biological Adaptation passed **59/59** on the catalog retry.
 - Do not begin Beat 16 until separately authorized.
+
+## 2026-09-25 — Fix: Camera + Beep
+
+- Camera was a 320 arm with no mesh, collapsing to eye height in corridors. It is now a close over-the-shoulder view: arm 180, socket (0, 28, 18), mesh `SKM_Manny_Simple`, yaw follows look. A play session logged `arm=180 socket=(0,28,18) mesh=SKM_Manny_Simple yawFollowsLook=true`.
+- The beep was the dormant Security officer hearing a gunshot at about 616 units. Hearing range was 1800, so the officer woke, landed one 15-point melee, and health went from 100 to 85. That started the alarm at the Security stop only. Gunfire now wakes a dormant host only inside the authored 200-unit proximity. A shot beside the officer still wakes them. The first proving rerun was 12/12 `ptr_503288b3-4a16-4f86-9b6f-9ebf8a270fdb`, Security quiet. This audit rerun was 12/12 `ptr_58a9bc83-40e1-e34d-ddaa-2f8a5e0bfa08`. `route.no_lmb_combat` expected false, actual false. The Security stop stayed quiet.
+- Validation: closed-editor Win64 Development build succeeded. Targeted 5/5. `BeepClickInjection_Functional` 12/12 `ptr_58a9bc83-40e1-e34d-ddaa-2f8a5e0bfa08`. `HostCombatLoop_Functional` 33/33 `ptr_1c5fbccf-4ee0-2c72-8bab-0aa57f51c61d`. `BiologicalAdaptation_Functional` 59/59 `ptr_90456e9e-493e-a63a-df9b-e8b9a925dc79`. `CryoEvidence_Functional` 100/100 `ptr_63c65f73-4e11-0523-0d10-13a4b0c7db75`. `CryoEntry_Functional` 78/78 `ptr_0b91a7df-4ce3-8adc-425b-ce97f46a7103`. Log signatures 0. `CloseMainWindow` true, processes remaining 0, editor PID 36716. Saves only `OrganoidAutosave.sav`. The ten Beat 15 hashes were unchanged. Because Beep is now 12/12, a future complete catalog can record `COMPLETE_PASS` instead of `DEFERRED_BEEP_EXCEPTION`.
+- The source fix is commit `edf852f56e9b769bb28165f3331659782cd31869` on top of `ef4064aa2d90252ba6331d439f03ad1feb4ea323`. No new mission and no map change. Beat 16 has not been started.
