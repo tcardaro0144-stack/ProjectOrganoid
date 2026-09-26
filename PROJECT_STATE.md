@@ -3930,3 +3930,23 @@ Checkpoint, each once:
 
 - Beat 18 is implemented, persisted, and validated, with `COMPLETE_PASS` **53/53**. The current spine is complete: Admin → Neuro → Cryo → Compute → Reactor.
 - Do not begin Beat 19 until separately authorized.
+
+## 2026-09-25 — Roadmap: Flesh-out Order Locked (Owner-Approved)
+
+Owner-approved order so Arena does not have to keep asking. This locks the next production sequence after the full Epitope spine Admin → Neuro → Cryo → Compute → Reactor (Beats 11-18), published at `63829bfc538f5833ed61526844ab96c66552e92d`, plus the camera and beep fix at `870199f51dac84fc92d67b271534d297bf185ad8` and the Nathan Grant look at `4fb6a20c80efa0c787ad73416a1fa80324fc684c`.
+
+Current `HEAD` and `origin/main` are `4fb6a20c80efa0c787ad73416a1fa80324fc684c`: Beat 18 The Conclusion and the Nathan Grant look (Drake age and looks, Requiem hot-uncle demeanor). The fifteen mission and map hashes are exact. Complete catalog is `COMPLETE_PASS` **53/53**. `BeepClickInjection_Functional` is **12/12**. The `SW_AlarmPulse` looping UI beep is still audible in PIE and stays deferred. The camera arm 180 is fixed. Saves are only `OrganoidAutosave.sav`. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains unreachable.
+
+### Locked order
+
+1. **Beat 19: Research Stations.** Free reconfiguration of already-unlocked elements. No currency and no respec penalty. Not during combat or a boss. Introduce when the player has enough context, which is now, after the full spine. Reuse the existing station actor. No Sterling shop.
+2. **Beat 20: Syringe kit.** Full abilities beyond Neural Slow. `DA_Adaptation_NeuralSlow` (`2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009`) is the first. Distinct tactical roles. Show biological evidence before explanation.
+3. **Beat 21: Weapon roster.** Five remaining weapons beyond the Lytic Cannon. The Lytic Cannon is a scarce emergency biological payload. Distinct roles. The Arc Gun does not duplicate the Lytic Cannon.
+4. **Beat 22: Pursuer first introduction.** Recurring Mr. X / Nemesis-style presence. Teach through gameplay that standing still to kill it with current resources is the wrong assumption. Extreme resilience, recovery from damage, environmental destruction, an obvious escape, and a temporary stagger. Biology, appearance, identity, origin, HP, and attacks stay unfinalized. Implement the first authored appearance. Authored appearances stay broadly consistent across difficulties. Difficulty changes damage, durability, aggression, stagger recovery, pursuit persistence, and detection.
+5. **Beat 23+.** Transformed-scientist encounters, the first transformed-human encounter, the first meaningful combat encounter, exact Neuro room order, required versus optional Neuro discoveries, biological-targeting tutorial beats (Locomotor Nerve Cluster, Optical Nodes, Exposed Core, Neural Stems, and Auditory Nodes as effect-language examples, not a locked roster), and enemy and boss implementation schedules.
+6. **Final.** Node Zero implementation details beyond the locked concept, the complete Neuro transformation mechanism, who or what directs the process, why it is occurring, the full relationship to the larger Epitope program, the final vaccine mechanism, the final Sterling role, the exact opening tutorial sequence and guidance UI, storage-box specifics, Overcharged PE Pulse disposition, the public name of the tactical resource currently called PE, NG+ route details, and the final choice at Control Spine.
+7. **Deferred to last.** Beep `SW_AlarmPulse` looping UI beep. It is a 1.2s 880 Hz double pulse, looping on `OrganoidCombatLayer`, `SetUISound` true, volume 1.0, for `CombatLingerSeconds` 8s, and in critical health at combat layer 0.2 plus critical layer 1.0. The fix is a one-shot on the rising edge, or a non-tonal bed. The 8s linger does not keep a looping 880 Hz UI voice. Critical health keeps the pulse playing only while combat is active. Diagnosis: `%TEMP%\b18_beep_diag`, editor PID 1856. Proposal: `%TEMP%\b18_beep_fix`. Also deferred: the NavMesh needs to be rebuilt warning, and remaining audio polish.
+
+This order prioritizes player-facing gameplay. Testing is the safety net. Additions stay Blueprint-safe and modular. A global C++ or engine refactor stays out of this sequence. Deferred technical debt, held under Phase 5 policy: uncompiled C++ build, legacy toolchain warnings, partition streaming notices, `IMC_Default`, ray-tracing and Lumen warnings, and Intel/VTune DLL load failures.
+
+Beat 19 stays unauthorized until a separate authorization. When Beat 19 is authorized, follow this locked order.
