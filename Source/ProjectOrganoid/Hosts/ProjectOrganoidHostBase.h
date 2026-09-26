@@ -402,6 +402,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Host|Biological")
 	float GetBiologicalLocomotorSlowMultiplier() const { return BiologicalLocomotorSlowMultiplier; }
 
+	/**
+	 * Temporary optical-node blind for Biological Adaptations.
+	 * Does not stagger, damage, strip bio-shield, or destroy the optical nodes.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Host|Biological")
+	bool ApplyBiologicalOpticalBlind(float DurationSeconds);
+
+	UFUNCTION(BlueprintPure, Category = "Host|Biological")
+	bool IsBiologicalOpticalBlindActive() const { return bBiologicalOpticalBlindActive; }
+
 protected:
 
 	float CachedWalkSpeed = 350.0f;
@@ -409,6 +419,7 @@ protected:
 	FTimerHandle LocomotorSlowTimer;
 	FTimerHandle OpticalBlindTimer;
 	bool bBiologicalLocomotorSlowActive = false;
+	bool bBiologicalOpticalBlindActive = false;
 	float BiologicalLocomotorSlowMultiplier = 1.0f;
 	double BiologicalLocomotorSlowExpireRealTime = 0.0;
 	FTimerHandle StaggerTimer;

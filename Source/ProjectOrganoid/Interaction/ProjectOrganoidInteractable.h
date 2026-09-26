@@ -50,5 +50,5 @@ public:
 	virtual bool Interact_Implementation(AProjectOrganoidCharacter* Interactor);
 
 	UFUNCTION(BlueprintPure, Category = "Interaction")
-	FText GetInteractionPrompt() const { return InteractionPrompt; }
+	virtual FText GetInteractionPrompt() const { return InteractionPrompt; }
 };

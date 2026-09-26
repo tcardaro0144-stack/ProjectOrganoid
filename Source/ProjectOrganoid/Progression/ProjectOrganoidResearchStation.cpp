@@ -2,6 +2,8 @@
 
 #include "ProjectOrganoidResearchStation.h"
 #include "ProjectOrganoidBiologicalAdaptationComponent.h"
+#include "ProjectOrganoidBiologicalAdaptation_LocomotorDisrupt.h"
+#include "ProjectOrganoidBiologicalAdaptation_OpticalDisrupt.h"
 #include "ProjectOrganoidCharacter.h"
 #include "ProjectOrganoidEncounterPresenceSubsystem.h"
 #include "ProjectOrganoidGameMode.h"
@@ -74,8 +76,18 @@ bool AProjectOrganoidResearchStation::Interact_Implementation(AProjectOrganoidCh
 		return false;
 	}
 
+	TryAwardSyringeKitCredit(Interactor);
 	TryAwardRespecUseCredit(Interactor);
 	return true;
+}
+
+FText AProjectOrganoidResearchStation::GetInteractionPrompt() const
+{
+	if (IsSyringeObjectiveActive() && !SyringePrompt.IsEmpty())
+	{
+		return SyringePrompt;
+	}
+	return Super::GetInteractionPrompt();
 }
 
 bool AProjectOrganoidResearchStation::IsStationUIOpen() const
@@ -441,5 +453,96 @@ void AProjectOrganoidResearchStation::PresentRespecNotification(AProjectOrganoid
 			RespecNotificationDurationSeconds))
 	{
 		++RespecNotificationCount;
+	}
+}
+
+bool AProjectOrganoidResearchStation::IsSyringeContractConfigured() const
+{
+	return !SyringeRequiredActiveObjectiveId.IsNone()
+		&& !SyringeSuccessObjectiveEventId.IsNone()
+		&& !SyringeReplayGuardObjectiveId.IsNone()
+		&& !SyringePrompt.IsEmpty()
+		&& !SyringeNotificationText.IsEmpty()
+		&& SyringeNotificationDurationSeconds > 0.0f;
+}
+
+bool AProjectOrganoidResearchStation::IsSyringeObjectiveActive() const
+{
+	return IsCampaignObjectiveInState(SyringeRequiredActiveObjectiveId, EProjectOrganoidObjectiveState::Active);
+}
+
+bool AProjectOrganoidResearchStation::IsSyringeReplayGuardCompleted() const
+{
+	return IsCampaignObjectiveInState(SyringeReplayGuardObjectiveId, EProjectOrganoidObjectiveState::Completed);
+}
+
+void AProjectOrganoidResearchStation::TryAwardSyringeKitCredit(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor
+		|| !IsSyringeContractConfigured()
+		|| SyringeEventFireCount >= 2
+		|| !IsSyringeObjectiveActive()
+		|| IsSyringeReplayGuardCompleted())
+	{
+		return;
+	}
+
+	UProjectOrganoidBiologicalAdaptationComponent* Adapt = Interactor->GetBiologicalAdaptationComponent();
+	UProjectOrganoidBiologicalAdaptationData* Locomotor = UProjectOrganoidBiologicalAdaptation_LocomotorDisrupt::Resolve();
+	UProjectOrganoidBiologicalAdaptationData* Optical = UProjectOrganoidBiologicalAdaptation_OpticalDisrupt::Resolve();
+	if (!Adapt || !Locomotor || !Optical)
+	{
+		return;
+	}
+
+	const bool bFirstSyringe = SyringeEventFireCount == 0;
+	UProjectOrganoidBiologicalAdaptationData* ToUnlock = bFirstSyringe ? Locomotor : Optical;
+	if (!Adapt->UnlockAdaptation(ToUnlock))
+	{
+		return;
+	}
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GameInstance->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(SyringeSuccessObjectiveEventId);
+		}
+	}
+
+	++SyringeEventFireCount;
+	if (bFirstSyringe)
+	{
+		PresentSyringeNotification(Interactor);
+	}
+}
+
+void AProjectOrganoidResearchStation::PresentSyringeNotification(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor || SyringeNotificationText.IsEmpty() || SyringeNotificationDurationSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
+	UWorld* World = GetWorld();
+	if (!PC || !World)
+	{
+		return;
+	}
+
+	AProjectOrganoidGameMode* GameMode = World->GetAuthGameMode<AProjectOrganoidGameMode>();
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (!HUDController)
+	{
+		return;
+	}
+
+	if (HUDController->ShowTransientNotification(
+			SyringeNotificationSpeaker,
+			SyringeNotificationText,
+			SyringeNotificationDurationSeconds))
+	{
+		++SyringeNotificationCount;
 	}
 }

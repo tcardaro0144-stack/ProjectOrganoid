@@ -553,6 +553,11 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_research_station_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_the_conclusion_next_research_station")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_research_station")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_locomotor_disrupt_adaptation")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_optical_disrupt_adaptation")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_syringe_kit_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_research_station_next_syringe_kit")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_research_station_syringe_kit")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -661,6 +666,11 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_research_station_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_the_conclusion_next_research_station")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_research_station")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_locomotor_disrupt_adaptation")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_optical_disrupt_adaptation")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_syringe_kit_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_research_station_next_syringe_kit")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_research_station_syringe_kit")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -1917,6 +1927,11 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_research_station_mission")
 		|| Normalized == TEXT("set_the_conclusion_next_research_station")
 		|| Normalized == TEXT("configure_research_station")
+		|| Normalized == TEXT("create_locomotor_disrupt_adaptation")
+		|| Normalized == TEXT("create_optical_disrupt_adaptation")
+		|| Normalized == TEXT("create_syringe_kit_mission")
+		|| Normalized == TEXT("set_research_station_next_syringe_kit")
+		|| Normalized == TEXT("configure_research_station_syringe_kit")
 		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")

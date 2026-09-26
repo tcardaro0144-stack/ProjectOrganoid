@@ -4061,3 +4061,135 @@ Beat 19 stays unauthorized until a separate authorization. When Beat 19 is autho
 
 - Beat 19 is implemented, persisted, and validated, with `COMPLETE_PASS` **54/54**.
 - Do not begin Beat 20 until separately authorized. The locked roadmap order continues with the syringe kit.
+
+## 2026-09-25 — Beat 20: Syringe Kit
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **57/57**. Beep is **12/12** (fixed). `HostCombatLoop_Functional` **33/33**. `BiologicalAdaptation_Functional` **59/59**. `LocomotorDisrupt_Functional` **17/17**. `OpticalDisrupt_Functional` **16/16**. Changes left **unstaged**. No commit / no push / no Beat 21.
+
+**Baseline:** published Beat 19 commit `522776a03af9dabb1f3b7fbfe726e959c419abb4` (`feat: implement Research Station free respec`) on `origin/main`. Beat 20 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_ResearchStation` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → ComputeHandover → TheConclusion → ResearchStation → SyringeKit → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_SyringeKit`
+  - Mission ID: `Mission_SyringeKit`
+  - Title: `Syringe Kit`
+  - Description: `The Research Station reveals the full Epitope syringe kit. Recover additional adaptations to expand tactical options.`
+  - One Main task.
+  - `Obj_RecoverSyringeKit` (autoactivate, target 2, no prerequisite). Objective title: `Recover Syringe Kit`. Objective description: `Recover the Locomotor Disrupt and Optical Disrupt syringes.` Completes on `Event_SyringeKitRecovered` (Advance by 1, target 2).
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_ResearchStation.NextMissionAsset` → `DA_Mission_SyringeKit`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon.
+- Reused existing `ResearchStation_NeuroGenetics` at `(800, -1600, -1100)` on `SL_Epitope_NeuroGenetics`. It was not moved.
+- Neuro Online was preserved. The Neural Slow intro contract and the free-respec contract are still on the actor.
+- The syringe kit is a third contract: required Active `Obj_RecoverSyringeKit`, prompt `Recover Syringe Kit`, event `Event_SyringeKitRecovered`.
+- Nathan line, once, 7 seconds, replay guarded: `More syringes. Each one targets a different system. Movement, vision... Epitope was building a toolkit.`
+
+### New adaptations
+
+- Both are data assets under `/Game/Data/Adaptations/`, copied from the `DA_Adaptation_NeuralSlow` structure (`2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009`).
+- `DA_Adaptation_LocomotorDisrupt`
+  - ID: `Adaptation_LocomotorDisrupt`
+  - Title: `Locomotor Disrupt`
+  - Description: `Disrupts locomotor nerve clusters to impair movement`
+  - Cost: 20 PE. Effect: impair movement.
+- `DA_Adaptation_OpticalDisrupt`
+  - ID: `Adaptation_OpticalDisrupt`
+  - Title: `Optical Disrupt`
+  - Description: `Disrupts optical nodes to impair vision`
+  - Cost: 20 PE. Effect: impair vision.
+
+### Gameplay behavior
+
+- The station hook keeps `bDiscoverPowerFailureBeforeRestore` false. Sector is Neuro, restored state Online. The required objective is Active `Obj_RecoverSyringeKit`.
+- Credit counts while `Obj_RecoverSyringeKit` is Active and the exact actor interact succeeds. Each success fires `Event_SyringeKitRecovered` once. Target is 2. The first credit unlocks Locomotor Disrupt and shows the Nathan line once. The second credit unlocks Optical Disrupt and completes the objective. A later interact is replay guarded.
+- Before interact, Neuro Online is preserved. After the event, Neuro stays Online.
+- There is no unlock beyond the syringe kit and no door. The station does not call `SetSectorPowerState`.
+- Neuro Online persists through SaveSubsystem. The Nathan line is a transient HUD notification and is not persisted.
+- `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle before activation, the same way Neural Slow does. The first targeted pass missed the host because the aim check still saw the previous camera frame. After that settle they are **17/17** and **16/16**.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `3109ff84565b90e6f1bf42ec934f0c498ef1ec7863ec50538d99e99ac4ddd351` (Research Station third contract; Beat 19 recorded hash was `7b4f58371d29572d6780a566db3a89d5acaf12c89e15f4368a181a07de31b192`)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `3390f101ad45e1a299abf1be8ec8b29615b987536adc847b4b7ce95543004279` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `9acb9fe98b28b8304fe759ca6da2fbf9b310bddc8649377bb3a9708336a06126` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (unchanged)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `853b4c01ec6110d612810837edcf306a88ff17f622a09c86fcda8c6dd661aa50` (unchanged)
+- `Content/Data/Missions/DA_Mission_ResearchStation.uasset` SHA-256: `16c1c32d257108e4e5ec64451bb1be6f96e7c7a2b7cbeed400491294ed1185b2` (Next now SyringeKit; Beat 19 recorded hash was `a29caa6c8b18dcd463e832e3e2849a539f7d43750229f01e0aacd8294c0d3d5d`)
+- `Content/Data/Adaptations/DA_Adaptation_LocomotorDisrupt.uasset` SHA-256: `ed8ef82dd5ac1c261858c886eeb227e16c6204fe51a19d75b579328d48e4c325` (new)
+- `Content/Data/Adaptations/DA_Adaptation_OpticalDisrupt.uasset` SHA-256: `d2807c9a3ba6416b40e327d28334e9a9b3a377c39964ffcf047cb2070d1f0cc0` (new)
+- `Content/Data/Missions/DA_Mission_SyringeKit.uasset` SHA-256: `951b1be036aefb595f2c933f4ff70ebb379f9757be127a4601c9a4bcc07759c3` (new)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 9236, dirty 0, PIE stopped): **8/8**. Close of PID 9236 was clean: `CloseMainWindow` true, process count 0, no Save Content dialog. Log signatures were 0.
+  - `SyringeKit_Functional` **46/46** — `ptr_eee0b8a8-45f0-d8e7-fb40-3dbb3f748303`
+  - `LocomotorDisrupt_Functional` **17/17** — `ptr_97ab05b9-493f-9db7-a937-c3b77a65105d`
+  - `OpticalDisrupt_Functional` **16/16** — `ptr_499a8627-40aa-7a0f-adca-17a116ae00cf`
+  - `ResearchStationRespec_Functional` **78/78** — `ptr_4ebcc68a-4fa3-0a22-b95b-25a49eed97ec`
+  - `TheConclusion_Functional` **78/78** — `ptr_a0998096-4485-d998-7414-82b4c0db0a3b`
+  - `ComputeHandover_Functional` **101/101** — `ptr_a0820e48-4907-ff72-aedd-e29bb514e2f2`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_da37b652-4b13-5c6a-79a2-4cb04a2d07e2`
+  - `BeepClickInjection_Functional` **12/12** — `ptr_ff18e751-4cc2-5809-4c90-26b7a0820d8f`
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b20_targeted8`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b20_targeted_editor.log`
+- Complete catalog executed **57/57**. The catalog is 57 because `SyringeKit_Functional`, `LocomotorDisrupt_Functional`, and `OpticalDisrupt_Functional` registered after the published 54. Live order: `NeuroAdaptationConnection_Functional` index **15**, `NeuroRevelation_Functional` index **27**, `CryoAccess_Functional` index **10**, `CryoEntry_Functional` index **49**, `CryoEvidence_Functional` index **50**, `ComputeEntry_Functional` index **51**, `ComputeHandover_Functional` index **52**, `TheConclusion_Functional` index **53**, `ResearchStationRespec_Functional` index **54**, `SyringeKit_Functional` index **55**, `LocomotorDisrupt_Functional` index **56**, `OpticalDisrupt_Functional` index **57**.
+  - Outcome `COMPLETE_PASS`. Script exit code **0**. Aggregate **5219** assertions. Editor PID 9420.
+  - `BeepClickInjection_Functional` **12/12** — `ptr_4ff66668-42fe-f27d-11cf-c6a50b3c2144`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_428acf18-4f12-39ed-888d-089b5013aff6`
+  - `BiologicalAdaptation_Functional` **59/59** — `ptr_802ab5dc-4100-51e8-9d42-01a33b4a4aae`
+  - `CryoEvidence_Functional` **100/100** — `ptr_e9d28cdd-4eb5-a38a-3f3d-799855c92354`
+  - `ComputeEntry_Functional` **78/78** — `ptr_cb0eadb2-489b-c936-7c04-ea86298b33b1`
+  - `ComputeHandover_Functional` **101/101** — `ptr_853eedc9-468c-4b11-2648-8183f5499893`
+  - `TheConclusion_Functional` **78/78** — `ptr_11126031-45f4-6d17-89c9-8d9e2237a5fc`
+  - `ResearchStationRespec_Functional` **78/78** — `ptr_108f4dbc-4b1b-0650-1045-f8b18767cb76`
+  - `SyringeKit_Functional` **46/46** — `ptr_3c4844d4-41cc-f5d0-b19e-12a612b645b2`
+  - `LocomotorDisrupt_Functional` **17/17** — `ptr_68919f0a-48a9-f71c-2ed1-76bf9eb7c31f`
+  - `OpticalDisrupt_Functional` **16/16** — `ptr_82ef963c-4ebf-e8e3-207a-e49d4363e77b`
+  - Close of editor PID 9420: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0. Saves restored to `OrganoidAutosave.sav` only. The nineteen locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b20_complete55_68250564b3154112bb2cbb00a32bfe90` (`summary.json`)
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b20_complete55_68250564b3154112bb2cbb00a32bfe90.log`
+  - Script: `C:\Users\tomca\AppData\Local\Temp\b20_complete55_proposed.ps1`
+- The diff is the Research Station successor link, the new Syringe Kit mission, the NeuroGenetics map third contract, the view-settle aim fix, the two new adaptations, the bridge allowlist for create / next / station / adaptations, and `SyringeKit_Functional`, `LocomotorDisrupt_Functional`, and `OpticalDisrupt_Functional`. Existing `ResearchStation_Functional` stays at catalog index 34. `ResearchStationRespec_Functional` stays at catalog index 54.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `BeepClickInjection_Functional` is **12/12**.
+2. `HostCombatLoop_Functional` was previously flaky. It passed **33/33** in the Beat 20 complete run. Still deferred as a preexisting isolation defect, not a Beat 20 regression.
+3. `BiologicalAdaptation_Functional` was previously an intermittent aim failure (**39/43**). It passed **59/59** in the Beat 20 complete pass. Still deferred as a preexisting isolation defect, not a Beat 20 regression.
+4. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` missed the host on the first targeted pass because the aim check still saw the previous camera frame. They now wait for the view to settle, the same way Neural Slow does, and passed **17/17** and **16/16**. That miss is not a Beat 20 regression.
+5. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+6. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+7. The Nathan Grant visual first pass is done in the published look commit `4fb6a20c80efa0c787ad73416a1fa80324fc684c`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 21 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 20 is implemented, persisted, and validated, with `COMPLETE_PASS` **57/57**.
+- Do not begin Beat 21 until separately authorized. The locked roadmap order continues with the weapon roster.

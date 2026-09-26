@@ -29,6 +29,8 @@ namespace ResearchStationRespecFunctional
 	constexpr TCHAR AdminPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_Admin");
 	constexpr TCHAR NeuroPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_NeuroGenetics");
 	constexpr TCHAR ResearchSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ResearchStation.DA_Mission_ResearchStation");
+	constexpr TCHAR SyringeSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_SyringeKit.DA_Mission_SyringeKit");
+	constexpr TCHAR SyringeMissionId[] = TEXT("Mission_SyringeKit");
 	constexpr TCHAR ConclusionSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_TheConclusion.DA_Mission_TheConclusion");
 	constexpr TCHAR HandoverSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ComputeHandover.DA_Mission_ComputeHandover");
 	constexpr TCHAR ResearchMissionId[] = TEXT("Mission_ResearchStation");
@@ -202,7 +204,7 @@ namespace ResearchStationRespecFunctional
 			AssertTrue(Record, TEXT("asset.research_id"), Research && Research->MissionId == FName(ResearchMissionId), ResearchMissionId, Research ? Research->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.research_title"), Research && Research->MissionTitle.ToString() == TEXT("Research Station"), TEXT("Research Station"), Research ? Research->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.research_description"), Research && Research->MissionDescription.ToString().Contains(TEXT("rethink your build")), TEXT("rethink your build"), Research ? Research->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.research_next_null"), Research && Research->NextMissionAsset.IsNull(), TEXT("null"), Research && Research->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.research_next_syringe"), Research && Research->NextMissionAsset.ToSoftObjectPath().ToString() == SyringeSoftPath, SyringeSoftPath, Research ? Research->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_task"), Research && Research->Tasks.Num() == 1, TEXT("1"), Research ? FString::FromInt(Research->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(ResearchObjectiveId), ResearchObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_title"), Task && Task->Objective.Title.ToString() == TEXT("Use Research Station"), TEXT("Use Research Station"), Task ? Task->Objective.Title.ToString() : TEXT("missing"), TEXT("DA"));
@@ -356,7 +358,7 @@ namespace ResearchStationRespecFunctional
 			AssertTrue(Record, TEXT("success.interact"), bUsed, TEXT("true"), BoolText(bUsed), StationLabel);
 			AssertTrue(Record, TEXT("success.fire"), Station->RespecEventFireCount == 1, TEXT("1"), FString::FromInt(Station->RespecEventFireCount), StationLabel);
 			AssertTrue(Record, TEXT("success.objective"), CountCompletedId(Objectives, FName(ResearchObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(ResearchObjectiveId))), ResearchObjectiveId);
-			AssertTrue(Record, TEXT("success.mission"), Objectives->GetActiveMissionId() == FName(ResearchMissionId) && Objectives->IsMissionComplete(FName(ResearchMissionId)), ResearchMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("success.mission"), Objectives->GetActiveMissionId() == FName(SyringeMissionId) && CountCompletedId(Objectives, FName(ResearchObjectiveId)) == 1, SyringeMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("success.notification"), Station->RespecNotificationCount == 1, TEXT("1"), FString::FromInt(Station->RespecNotificationCount), TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.line"), Line.Contains(ExpectedLine) && Line.StartsWith(TEXT("Nathan:")), ExpectedLine, Line, TEXT("HUD"));
 			AssertTrue(Record, TEXT("success.duration"), Remaining > 6.0f && Remaining <= 7.0f, TEXT("7"), FString::SanitizeFloat(Remaining), TEXT("HUD"));
@@ -378,7 +380,7 @@ namespace ResearchStationRespecFunctional
 			Saves->DeleteSave(SaveSlot);
 			const bool bSaved = Saves->SavePlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.wrote"), bSaved, TEXT("true"), BoolText(bSaved), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(ResearchMissionId) && Objectives->IsMissionComplete(FName(ResearchMissionId)), ResearchMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(SyringeMissionId), SyringeMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.neuro_captured"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("save"));
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
@@ -400,7 +402,7 @@ namespace ResearchStationRespecFunctional
 			Power->SetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics, EProjectOrganoidPowerState::Blackout);
 			const bool bLoaded = Saves->LoadPlayerProgress(Character, SaveSlot);
 			AssertTrue(Record, TEXT("save.loaded"), bLoaded, TEXT("true"), BoolText(bLoaded), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(ResearchMissionId) && Objectives->IsMissionComplete(FName(ResearchMissionId)), ResearchMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(SyringeMissionId), SyringeMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.objective"), CountCompletedId(Objectives, FName(ResearchObjectiveId)) == 1, TEXT("1"), FString::FromInt(CountCompletedId(Objectives, FName(ResearchObjectiveId))), ResearchObjectiveId);
 			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("save"));
 			Widget->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);

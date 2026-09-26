@@ -1033,8 +1033,35 @@ void AProjectOrganoidHostBase::ClearBiologicalLocomotorSlow()
 	OnHostStateChanged.Broadcast(TEXT("BiologicalLocomotorSlowCleared"));
 }
 
+bool AProjectOrganoidHostBase::ApplyBiologicalOpticalBlind(float DurationSeconds)
+{
+	if (bIsDead || bIsIncapacitated || bOpticalNodesDestroyed)
+	{
+		return false;
+	}
+
+	bBiologicalOpticalBlindActive = true;
+	SetBlinded(true);
+	if (HostPerception)
+	{
+		HostPerception->SetSightEnabled(false);
+	}
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			OpticalBlindTimer,
+			this,
+			&AProjectOrganoidHostBase::RestoreOpticalSight,
+			FMath::Max(0.1f, DurationSeconds),
+			false);
+	}
+	OnHostStateChanged.Broadcast(TEXT("BiologicalOpticalBlind"));
+	return true;
+}
+
 void AProjectOrganoidHostBase::RestoreOpticalSight()
 {
+	bBiologicalOpticalBlindActive = false;
 	if (bIsIncapacitated || bIsDead)
 	{
 		return;
@@ -1067,6 +1094,7 @@ void AProjectOrganoidHostBase::ClearStatusEffects()
 
 	bIsStaggered = false;
 	bIsBlinded = false;
+	bBiologicalOpticalBlindActive = false;
 	ClearBiologicalLocomotorSlow();
 
 	if (!bIsIncapacitated && !bIsDead)

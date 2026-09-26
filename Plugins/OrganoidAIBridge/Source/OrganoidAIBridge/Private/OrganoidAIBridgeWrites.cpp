@@ -36,6 +36,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "FileHelpers.h"
+#include "Misc/App.h"
 #include "GameFramework/Actor.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -186,6 +187,11 @@ namespace
 		TEXT("create_research_station_mission"),
 		TEXT("set_the_conclusion_next_research_station"),
 		TEXT("configure_research_station"),
+		TEXT("create_locomotor_disrupt_adaptation"),
+		TEXT("create_optical_disrupt_adaptation"),
+		TEXT("create_syringe_kit_mission"),
+		TEXT("set_research_station_next_syringe_kit"),
+		TEXT("configure_research_station_syringe_kit"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -273,6 +279,11 @@ namespace
 		TEXT("create_research_station_mission"),
 		TEXT("set_the_conclusion_next_research_station"),
 		TEXT("configure_research_station"),
+		TEXT("create_locomotor_disrupt_adaptation"),
+		TEXT("create_optical_disrupt_adaptation"),
+		TEXT("create_syringe_kit_mission"),
+		TEXT("set_research_station_next_syringe_kit"),
+		TEXT("configure_research_station_syringe_kit"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3411,6 +3422,10 @@ namespace
 #include "OrganoidAIBridgeResearchStationMission.inl"
 #include "OrganoidAIBridgeTheConclusionNextResearchStation.inl"
 #include "OrganoidAIBridgeResearchStationConfigure.inl"
+#include "OrganoidAIBridgeSyringeKitAdaptations.inl"
+#include "OrganoidAIBridgeSyringeKitMission.inl"
+#include "OrganoidAIBridgeResearchStationNextSyringeKit.inl"
+#include "OrganoidAIBridgeResearchStationSyringeKit.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4202,6 +4217,26 @@ namespace
 		{
 			PreflightError = PreflightConfigureResearchStation(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_locomotor_disrupt_adaptation"))
+		{
+			PreflightError = PreflightCreateLocomotorDisruptAdaptation(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_optical_disrupt_adaptation"))
+		{
+			PreflightError = PreflightCreateOpticalDisruptAdaptation(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_syringe_kit_mission"))
+		{
+			PreflightError = PreflightCreateSyringeKitMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_research_station_next_syringe_kit"))
+		{
+			PreflightError = PreflightSetResearchStationNextSyringeKit(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_research_station_syringe_kit"))
+		{
+			PreflightError = PreflightConfigureResearchStationSyringeKit(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4316,6 +4351,9 @@ namespace
 			|| Action == TEXT("create_research_station_mission")
 			|| Action == TEXT("set_the_conclusion_next_research_station")
 			|| Action == TEXT("configure_research_station")
+			|| Action == TEXT("create_syringe_kit_mission")
+			|| Action == TEXT("set_research_station_next_syringe_kit")
+			|| Action == TEXT("configure_research_station_syringe_kit")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -4358,6 +4396,14 @@ namespace
 		else if (Action == TEXT("create_neural_slow_adaptation_asset"))
 		{
 			Package = NeuralSlowAdaptationPackage;
+		}
+		else if (Action == TEXT("create_locomotor_disrupt_adaptation"))
+		{
+			Package = LocomotorDisruptPackage;
+		}
+		else if (Action == TEXT("create_optical_disrupt_adaptation"))
+		{
+			Package = OpticalDisruptPackage;
 		}
 		else if (Action == TEXT("trim_spine_landing_admin"))
 		{
@@ -4651,9 +4697,19 @@ namespace
 
 		TArray<UPackage*> Packages;
 		Packages.Add(Package);
-		const FEditorFileUtils::EPromptReturnCode SaveResult = FEditorFileUtils::PromptForCheckoutAndSave(
-			Packages, /*bCheckDirty=*/false, /*bPromptToSave=*/false);
-		const bool bSaved = (SaveResult == FEditorFileUtils::PR_Success);
+		// -unattended makes PromptForCheckoutAndSave return PR_Cancelled before it writes.
+		// SavePackages is the same API save_maps already uses, and it does not open a dialog.
+		bool bSaved = false;
+		if (FApp::IsUnattended())
+		{
+			bSaved = UEditorLoadingAndSavingUtils::SavePackages(Packages, /*bOnlyDirty=*/false);
+		}
+		else
+		{
+			const FEditorFileUtils::EPromptReturnCode SaveResult = FEditorFileUtils::PromptForCheckoutAndSave(
+				Packages, /*bCheckDirty=*/false, /*bPromptToSave=*/false);
+			bSaved = (SaveResult == FEditorFileUtils::PR_Success);
+		}
 		Change.bExecuted = true;
 		Change.ExecutedAt = NowIso();
 		Change.bSavePerformed = bSaved;
@@ -5654,6 +5710,11 @@ namespace
 				|| Change->Action == TEXT("create_research_station_mission")
 				|| Change->Action == TEXT("set_the_conclusion_next_research_station")
 				|| Change->Action == TEXT("configure_research_station")
+				|| Change->Action == TEXT("create_locomotor_disrupt_adaptation")
+				|| Change->Action == TEXT("create_optical_disrupt_adaptation")
+				|| Change->Action == TEXT("create_syringe_kit_mission")
+				|| Change->Action == TEXT("set_research_station_next_syringe_kit")
+				|| Change->Action == TEXT("configure_research_station_syringe_kit")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -6007,6 +6068,26 @@ namespace
 		if (Change->Action == TEXT("configure_research_station"))
 		{
 			return ExecuteConfigureResearchStation(*Change);
+		}
+		if (Change->Action == TEXT("create_locomotor_disrupt_adaptation"))
+		{
+			return ExecuteCreateLocomotorDisruptAdaptation(*Change);
+		}
+		if (Change->Action == TEXT("create_optical_disrupt_adaptation"))
+		{
+			return ExecuteCreateOpticalDisruptAdaptation(*Change);
+		}
+		if (Change->Action == TEXT("create_syringe_kit_mission"))
+		{
+			return ExecuteCreateSyringeKitMission(*Change);
+		}
+		if (Change->Action == TEXT("set_research_station_next_syringe_kit"))
+		{
+			return ExecuteSetResearchStationNextSyringeKit(*Change);
+		}
+		if (Change->Action == TEXT("configure_research_station_syringe_kit"))
+		{
+			return ExecuteConfigureResearchStationSyringeKit(*Change);
 		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{

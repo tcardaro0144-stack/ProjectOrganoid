@@ -144,6 +144,39 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|Respec")
 	int32 RespecEventFireCount = 0;
 
+	/**
+	 * Beat 20 syringe-kit contract. Default off, so the intro and free-respec contracts stay intact.
+	 * Two successful interacts while Obj_RecoverSyringeKit is active each advance the objective by 1.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit")
+	FName SyringeRequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit")
+	FName SyringeSuccessObjectiveEventId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit")
+	FName SyringeReplayGuardObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit")
+	FText SyringePrompt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit")
+	FText SyringeNotificationSpeaker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit")
+	FText SyringeNotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|SyringeKit", meta = (ClampMin = "0.0"))
+	float SyringeNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|SyringeKit")
+	int32 SyringeNotificationCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|SyringeKit")
+	int32 SyringeEventFireCount = 0;
+
+	virtual FText GetInteractionPrompt() const override;
+
 protected:
 
 	UPROPERTY()
@@ -165,4 +198,9 @@ protected:
 	bool IsRespecReplayGuardCompleted() const;
 	void TryAwardRespecUseCredit(AProjectOrganoidCharacter* Interactor);
 	void PresentRespecNotification(AProjectOrganoidCharacter* Interactor);
+	bool IsSyringeContractConfigured() const;
+	bool IsSyringeObjectiveActive() const;
+	bool IsSyringeReplayGuardCompleted() const;
+	void TryAwardSyringeKitCredit(AProjectOrganoidCharacter* Interactor);
+	void PresentSyringeNotification(AProjectOrganoidCharacter* Interactor);
 };
