@@ -3950,3 +3950,114 @@ Current `HEAD` and `origin/main` are `4fb6a20c80efa0c787ad73416a1fa80324fc684c`:
 This order prioritizes player-facing gameplay. Testing is the safety net. Additions stay Blueprint-safe and modular. A global C++ or engine refactor stays out of this sequence. Deferred technical debt, held under Phase 5 policy: uncompiled C++ build, legacy toolchain warnings, partition streaming notices, `IMC_Default`, ray-tracing and Lumen warnings, and Intel/VTune DLL load failures.
 
 Beat 19 stays unauthorized until a separate authorization. When Beat 19 is authorized, follow this locked order.
+
+## 2026-09-25 — Beat 19: Research Station (Free Respec)
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **54/54**. Beep is **12/12** (fixed). `HostCombatLoop_Functional` **33/33**. `BiologicalAdaptation_Functional` **59/59**. Changes left **unstaged**. No commit / no push / no Beat 20.
+
+**Baseline:** published roadmap commit `749b62e9d676516c8871c1e2ebb0cefb897f0076` (`docs: lock flesh-out roadmap order`) on `origin/main`. Beat 19 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Before this beat the chain ended at `DA_Mission_TheConclusion` with `NextMissionAsset` null.
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → ComputeHandover → TheConclusion → ResearchStation → null.
+- New mission asset: `/Game/Data/Missions/DA_Mission_ResearchStation`
+  - Mission ID: `Mission_ResearchStation`
+  - Title: `Research Station`
+  - Description: `The Research Station allows free reconfiguration of already-unlocked adaptations and weapons. Use it to rethink your build.`
+  - One Main task.
+  - `Obj_UseResearchStation` (autoactivate, target 1, no prerequisite). Objective title: `Use Research Station`. Objective description: `Use the Research Station.` Completes on `Event_ResearchStationUsed` (Complete, target 1).
+  - `NextMissionAsset` = null
+- Handoff: `DA_Mission_TheConclusion.NextMissionAsset` → `DA_Mission_ResearchStation`.
+
+### Encounter and actor reuse
+
+- No new door, transit, pursuer, enemy, or weapon.
+- Reused existing `ResearchStation_NeuroGenetics` at `(800, -1600, -1100)` on `SL_Epitope_NeuroGenetics`. It was not moved.
+- Neuro Online was preserved. The Neural Slow intro contract is still on the actor.
+- Free respec is a second contract: required Active `Obj_UseResearchStation`, event `Event_ResearchStationUsed`, prompt `Use Research Station`.
+- Nathan line, once, 7 seconds, replay guarded: `Free respec, no penalty. This is where I rethink the build. No currency, no shop — just reconfiguration.`
+- Currency, a shop, and the actual respec rules are not in this beat. Interact credits the objective.
+
+### Gameplay behavior
+
+- The station hook keeps `bDiscoverPowerFailureBeforeRestore` false. Sector is Neuro, restored state Online. The required objective is Active `Obj_UseResearchStation`.
+- Credit applies only while `Obj_UseResearchStation` is Active and the exact actor interact succeeds. The event is `Event_ResearchStationUsed`. The Nathan line is shown on the transition to Completed.
+- Before interact, Neuro Online is preserved. After the event, Neuro stays Online.
+- There is no unlock beyond the respec presentation and no door. The station does not call `SetSectorPowerState`.
+- Neuro Online persists through SaveSubsystem. The Nathan line is a transient HUD notification and is not persisted.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `7b4f58371d29572d6780a566db3a89d5acaf12c89e15f4368a181a07de31b192` (Research Station second contract; Beat 18 recorded hash was `1cf675d8a20182b896f56728d53348587625fd69678c1c485170b354805b6882`)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `3390f101ad45e1a299abf1be8ec8b29615b987536adc847b4b7ce95543004279` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `9acb9fe98b28b8304fe759ca6da2fbf9b310bddc8649377bb3a9708336a06126` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (unchanged)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` (Next now ResearchStation; Beat 18 recorded hash was `c126f553984bce0b612cbbf50f2651ff3a071a491b8639e55346ac25167512e9`)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `853b4c01ec6110d612810837edcf306a88ff17f622a09c86fcda8c6dd661aa50` (unchanged)
+- `Content/Data/Missions/DA_Mission_ResearchStation.uasset` SHA-256: `a29caa6c8b18dcd463e832e3e2849a539f7d43750229f01e0aacd8294c0d3d5d` (new)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite after a fresh `Lvl_Epitope` launch (PID 384, dirty 0, PIE stopped): **8/8**. Close of PID 384 was clean: `CloseMainWindow` true, process count 0, no Save Content dialog. Log signatures were 0.
+  - `ResearchStationRespec_Functional` **78/78** — `ptr_44816ce1-4438-3bd8-502b-64b7ff5a9847`
+  - `TheConclusion_Functional` **78/78** — `ptr_82ba0492-4bd6-7433-7087-53a959c45317`
+  - `ComputeHandover_Functional` **101/101** — `ptr_4c4e5457-4989-a5f8-a285-608e983e7d5c`
+  - `ComputeEntry_Functional` **78/78** — `ptr_d62e1d9d-44a5-ccca-e430-d0b2cd3ac7b1`
+  - `CryoEvidence_Functional` **100/100** — `ptr_f78d0b49-43d5-9539-c07c-95b057cce74f`
+  - `NeuroRevelation_Functional` **88/88** — `ptr_e73fa1ab-4c98-5556-bf6e-35b6c93f9fad`
+  - `CheckpointHealth_Functional` **70/70** — `ptr_f84ff490-4281-14a2-d94a-668a66c34bbf`
+  - `BeepClickInjection_Functional` **12/12** — `ptr_edf507ba-4c8f-bc6e-4466-378ebbd27a96`
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b19_targeted8`
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b19_targeted_editor.log`
+- Complete catalog executed **54/54**. The catalog is 54 because `ResearchStationRespec_Functional` registered. Live order: `NeuroAdaptationConnection_Functional` index **15**, `NeuroRevelation_Functional` index **27**, `CryoAccess_Functional` index **10**, `CryoEntry_Functional` index **49**, `CryoEvidence_Functional` index **50**, `ComputeEntry_Functional` index **51**, `ComputeHandover_Functional` index **52**, `TheConclusion_Functional` index **53**, `ResearchStationRespec_Functional` index **54**.
+  - Outcome `COMPLETE_PASS`. Script exit code **0**. Aggregate **5140** assertions. Editor PID 26916.
+  - `BeepClickInjection_Functional` **12/12** — `ptr_de8cd25b-4f96-20fa-b8f9-8fa300e52342`
+  - `HostCombatLoop_Functional` **33/33** — `ptr_5e15ae6c-4f4c-a7f8-1bb6-869f2154042c`
+  - `BiologicalAdaptation_Functional` **59/59** — `ptr_bbfb5f79-423f-9cad-2cca-cfaded4c4c93`
+  - `CryoEvidence_Functional` **100/100** — `ptr_32d7a3e8-4810-659a-e3f5-7f800c153579`
+  - `ComputeEntry_Functional` **78/78** — `ptr_4ca97d21-4fbd-7e35-656c-d9938b1af15f`
+  - `ComputeHandover_Functional` **101/101** — `ptr_4e91c417-415e-ff36-7d36-84ab33534283`
+  - `TheConclusion_Functional` **78/78** — `ptr_56458f70-4361-ddd3-d826-a5993d7842de`
+  - `ResearchStationRespec_Functional` **78/78** — `ptr_910dcd98-455e-1ab3-4c4c-e19b636a7812`
+  - Close of editor PID 26916: `CloseMainWindow` true, processes remaining 0, no Save Content dialog.
+  - Log signature counts were 0. Saves restored to `OrganoidAutosave.sav` only. The sixteen locked hashes were unchanged. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object remained unreachable.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b19_complete54_968885df25b4493387274c5d8865200c` (`summary.json`)
+  - Log: `C:\Users\tomca\AppData\Local\Temp\b19_complete54_968885df25b4493387274c5d8865200c.log`
+  - Script: `C:\Users\tomca\AppData\Local\Temp\b19_complete54_proposed.ps1`
+- The diff is the The Conclusion successor link, the new Research Station mission, the NeuroGenetics map second contract, the bridge allowlist for create / next / station, and `ResearchStationRespec_Functional`. Existing `ResearchStation_Functional` stays at catalog index 34.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `BeepClickInjection_Functional` is **12/12**.
+2. `HostCombatLoop_Functional` was previously flaky. It passed **33/33** in the Beat 19 complete run. Still deferred as a preexisting isolation defect, not a Beat 19 regression.
+3. `BiologicalAdaptation_Functional` was previously an intermittent aim failure (**39/43**). It passed **59/59** in the Beat 19 complete pass. Still deferred as a preexisting isolation defect, not a Beat 19 regression.
+4. Startup “NavMesh needs to be rebuilt” warning remains unresolved.
+5. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+6. The Nathan Grant visual first pass is done in the published look commit `4fb6a20c80efa0c787ad73416a1fa80324fc684c`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 20 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 19 is implemented, persisted, and validated, with `COMPLETE_PASS` **54/54**.
+- Do not begin Beat 20 until separately authorized. The locked roadmap order continues with the syringe kit.

@@ -116,6 +116,34 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|Campaign")
 	int32 CampaignSuccessEventFireCount = 0;
 
+	/**
+	 * Beat 19 presentation contract. Default off, so the Neural Slow intro contract is unchanged.
+	 * When configured, a successful interact credits Obj_UseResearchStation once. No currency and no shop.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Respec")
+	FName RespecRequiredActiveObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Respec")
+	FName RespecSuccessObjectiveEventId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Respec")
+	FName RespecReplayGuardObjectiveId = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Respec")
+	FText RespecNotificationSpeaker;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Respec")
+	FText RespecNotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ResearchStation|Respec", meta = (ClampMin = "0.0"))
+	float RespecNotificationDurationSeconds = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|Respec")
+	int32 RespecNotificationCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ResearchStation|Respec")
+	int32 RespecEventFireCount = 0;
+
 protected:
 
 	UPROPERTY()
@@ -132,4 +160,9 @@ protected:
 	void TryReconcileCampaignIfAlreadyEquipped(AProjectOrganoidCharacter* Interactor);
 	void AwardCampaignEquipCredit(AProjectOrganoidCharacter* Interactor);
 	void PresentCampaignSuccessNotification(AProjectOrganoidCharacter* Interactor);
+	bool IsRespecContractConfigured() const;
+	bool IsRespecObjectiveActive() const;
+	bool IsRespecReplayGuardCompleted() const;
+	void TryAwardRespecUseCredit(AProjectOrganoidCharacter* Interactor);
+	void PresentRespecNotification(AProjectOrganoidCharacter* Interactor);
 };

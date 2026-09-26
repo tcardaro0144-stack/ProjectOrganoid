@@ -183,6 +183,9 @@ namespace
 		TEXT("create_the_conclusion_mission"),
 		TEXT("set_compute_handover_next_the_conclusion"),
 		TEXT("configure_reactor_control_spine"),
+		TEXT("create_research_station_mission"),
+		TEXT("set_the_conclusion_next_research_station"),
+		TEXT("configure_research_station"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -267,6 +270,9 @@ namespace
 		TEXT("create_the_conclusion_mission"),
 		TEXT("set_compute_handover_next_the_conclusion"),
 		TEXT("configure_reactor_control_spine"),
+		TEXT("create_research_station_mission"),
+		TEXT("set_the_conclusion_next_research_station"),
+		TEXT("configure_research_station"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3402,6 +3408,9 @@ namespace
 #include "OrganoidAIBridgeTheConclusionMission.inl"
 #include "OrganoidAIBridgeComputeHandoverNextTheConclusion.inl"
 #include "OrganoidAIBridgeTheConclusionTerminal.inl"
+#include "OrganoidAIBridgeResearchStationMission.inl"
+#include "OrganoidAIBridgeTheConclusionNextResearchStation.inl"
+#include "OrganoidAIBridgeResearchStationConfigure.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4181,6 +4190,18 @@ namespace
 		{
 			PreflightError = PreflightConfigureReactorControlSpine(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_research_station_mission"))
+		{
+			PreflightError = PreflightCreateRespecBeatMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_the_conclusion_next_research_station"))
+		{
+			PreflightError = PreflightSetTheConclusionNextResearchStation(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_research_station"))
+		{
+			PreflightError = PreflightConfigureResearchStation(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4292,6 +4313,9 @@ namespace
 			|| Action == TEXT("set_compute_entry_next_compute_handover")
 			|| Action == TEXT("create_the_conclusion_mission")
 			|| Action == TEXT("set_compute_handover_next_the_conclusion")
+			|| Action == TEXT("create_research_station_mission")
+			|| Action == TEXT("set_the_conclusion_next_research_station")
+			|| Action == TEXT("configure_research_station")
 			|| Action == TEXT("spawn_neuro_adaptation_subject")
 			|| Action == TEXT("spawn_neuro_neural_mapping_array")
 			|| Action == TEXT("spawn_neuro_research_load_cutoff")
@@ -5627,6 +5651,9 @@ namespace
 				|| Change->Action == TEXT("create_the_conclusion_mission")
 				|| Change->Action == TEXT("set_compute_handover_next_the_conclusion")
 				|| Change->Action == TEXT("configure_reactor_control_spine")
+				|| Change->Action == TEXT("create_research_station_mission")
+				|| Change->Action == TEXT("set_the_conclusion_next_research_station")
+				|| Change->Action == TEXT("configure_research_station")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -5968,6 +5995,18 @@ namespace
 		if (Change->Action == TEXT("configure_reactor_control_spine"))
 		{
 			return ExecuteConfigureReactorControlSpine(*Change);
+		}
+		if (Change->Action == TEXT("create_research_station_mission"))
+		{
+			return ExecuteCreateRespecBeatMission(*Change);
+		}
+		if (Change->Action == TEXT("set_the_conclusion_next_research_station"))
+		{
+			return ExecuteSetTheConclusionNextResearchStation(*Change);
+		}
+		if (Change->Action == TEXT("configure_research_station"))
+		{
+			return ExecuteConfigureResearchStation(*Change);
 		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{

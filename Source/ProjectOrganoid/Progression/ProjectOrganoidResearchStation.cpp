@@ -69,7 +69,13 @@ bool AProjectOrganoidResearchStation::Interact_Implementation(AProjectOrganoidCh
 
 	ApplyCampaignUnlockIfActive(Interactor);
 	TryReconcileCampaignIfAlreadyEquipped(Interactor);
-	return OpenResearchStationUI(Interactor) != nullptr;
+	if (OpenResearchStationUI(Interactor) == nullptr)
+	{
+		return false;
+	}
+
+	TryAwardRespecUseCredit(Interactor);
+	return true;
 }
 
 bool AProjectOrganoidResearchStation::IsStationUIOpen() const
@@ -363,5 +369,77 @@ void AProjectOrganoidResearchStation::PresentCampaignSuccessNotification(AProjec
 			CampaignSuccessNotificationDurationSeconds))
 	{
 		++CampaignSuccessNotificationCount;
+	}
+}
+
+bool AProjectOrganoidResearchStation::IsRespecContractConfigured() const
+{
+	return !RespecRequiredActiveObjectiveId.IsNone()
+		&& !RespecSuccessObjectiveEventId.IsNone()
+		&& !RespecReplayGuardObjectiveId.IsNone()
+		&& !RespecNotificationText.IsEmpty()
+		&& RespecNotificationDurationSeconds > 0.0f;
+}
+
+bool AProjectOrganoidResearchStation::IsRespecObjectiveActive() const
+{
+	return IsCampaignObjectiveInState(RespecRequiredActiveObjectiveId, EProjectOrganoidObjectiveState::Active);
+}
+
+bool AProjectOrganoidResearchStation::IsRespecReplayGuardCompleted() const
+{
+	return IsCampaignObjectiveInState(RespecReplayGuardObjectiveId, EProjectOrganoidObjectiveState::Completed);
+}
+
+void AProjectOrganoidResearchStation::TryAwardRespecUseCredit(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor
+		|| !IsRespecContractConfigured()
+		|| RespecEventFireCount > 0
+		|| !IsRespecObjectiveActive()
+		|| IsRespecReplayGuardCompleted())
+	{
+		return;
+	}
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GameInstance->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			Objectives->TriggerEvent(RespecSuccessObjectiveEventId);
+		}
+	}
+
+	++RespecEventFireCount;
+	PresentRespecNotification(Interactor);
+}
+
+void AProjectOrganoidResearchStation::PresentRespecNotification(AProjectOrganoidCharacter* Interactor)
+{
+	if (!Interactor || RespecNotificationText.IsEmpty() || RespecNotificationDurationSeconds <= 0.0f)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
+	UWorld* World = GetWorld();
+	if (!PC || !World)
+	{
+		return;
+	}
+
+	AProjectOrganoidGameMode* GameMode = World->GetAuthGameMode<AProjectOrganoidGameMode>();
+	UProjectOrganoidGameplayHUDController* HUDController = GameMode ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (!HUDController)
+	{
+		return;
+	}
+
+	if (HUDController->ShowTransientNotification(
+			RespecNotificationSpeaker,
+			RespecNotificationText,
+			RespecNotificationDurationSeconds))
+	{
+		++RespecNotificationCount;
 	}
 }

@@ -84,7 +84,8 @@ namespace
 			TEXT("CryoEvidence_Functional"),
 			TEXT("ComputeEntry_Functional"),
 			TEXT("ComputeHandover_Functional"),
-			TEXT("TheConclusion_Functional")
+			TEXT("TheConclusion_Functional"),
+			TEXT("ResearchStationRespec_Functional")
 		};
 		Catalog.StableSort([](const FOrganoidPlaytestCatalogEntry& A, const FOrganoidPlaytestCatalogEntry& B)
 		{
