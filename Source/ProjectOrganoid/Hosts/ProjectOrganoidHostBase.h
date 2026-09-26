@@ -10,6 +10,7 @@
 #include "ProjectOrganoidPerceptionTypes.h"
 #include "ProjectOrganoidHostCombatTypes.h"
 #include "ProjectOrganoidBiologicalAdaptationTypes.h"
+#include "ProjectOrganoidWeaponData.h"
 #include "ProjectOrganoidHostBase.generated.h"
 
 class USphereComponent;
@@ -411,6 +412,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Host|Biological")
 	bool IsBiologicalOpticalBlindActive() const { return bBiologicalOpticalBlindActive; }
+
+	/** Stun, stagger, cryo slow, or a small burn. Weak-point damage stays on the ballistic hit. */
+	UFUNCTION(BlueprintCallable, Category = "Host|Biological")
+	void ApplyWeaponRosterImpact(EProjectOrganoidWeaponRosterEffect Effect);
 
 protected:
 

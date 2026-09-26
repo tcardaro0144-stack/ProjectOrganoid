@@ -192,6 +192,14 @@ namespace
 		TEXT("create_syringe_kit_mission"),
 		TEXT("set_research_station_next_syringe_kit"),
 		TEXT("configure_research_station_syringe_kit"),
+		TEXT("create_weapon_biostabilizer_pistol"),
+		TEXT("create_weapon_pulse_carbine"),
+		TEXT("create_weapon_cryo_injector"),
+		TEXT("create_weapon_denaturing_shotgun"),
+		TEXT("create_weapon_incinerator_lance"),
+		TEXT("create_weapon_roster_mission"),
+		TEXT("set_syringe_kit_next_weapon_roster"),
+		TEXT("configure_weapon_roster_armory"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -284,6 +292,14 @@ namespace
 		TEXT("create_syringe_kit_mission"),
 		TEXT("set_research_station_next_syringe_kit"),
 		TEXT("configure_research_station_syringe_kit"),
+		TEXT("create_weapon_biostabilizer_pistol"),
+		TEXT("create_weapon_pulse_carbine"),
+		TEXT("create_weapon_cryo_injector"),
+		TEXT("create_weapon_denaturing_shotgun"),
+		TEXT("create_weapon_incinerator_lance"),
+		TEXT("create_weapon_roster_mission"),
+		TEXT("set_syringe_kit_next_weapon_roster"),
+		TEXT("configure_weapon_roster_armory"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3426,6 +3442,10 @@ namespace
 #include "OrganoidAIBridgeSyringeKitMission.inl"
 #include "OrganoidAIBridgeResearchStationNextSyringeKit.inl"
 #include "OrganoidAIBridgeResearchStationSyringeKit.inl"
+#include "OrganoidAIBridgeWeaponRosterWeapons.inl"
+#include "OrganoidAIBridgeWeaponRosterMission.inl"
+#include "OrganoidAIBridgeSyringeKitNextWeaponRoster.inl"
+#include "OrganoidAIBridgeWeaponRosterDatapads.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4237,6 +4257,38 @@ namespace
 		{
 			PreflightError = PreflightConfigureResearchStationSyringeKit(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_weapon_biostabilizer_pistol"))
+		{
+			PreflightError = PreflightCreateWeaponBioStabilizerPistol(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_weapon_pulse_carbine"))
+		{
+			PreflightError = PreflightCreateWeaponPulseCarbine(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_weapon_cryo_injector"))
+		{
+			PreflightError = PreflightCreateWeaponCryoInjector(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_weapon_denaturing_shotgun"))
+		{
+			PreflightError = PreflightCreateWeaponDenaturingShotgun(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_weapon_incinerator_lance"))
+		{
+			PreflightError = PreflightCreateWeaponIncineratorLance(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_weapon_roster_mission"))
+		{
+			PreflightError = PreflightCreateWeaponRosterMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_syringe_kit_next_weapon_roster"))
+		{
+			PreflightError = PreflightSetSyringeKitNextWeaponRoster(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("configure_weapon_roster_armory"))
+		{
+			PreflightError = PreflightConfigureWeaponRosterArmory(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4404,6 +4456,38 @@ namespace
 		else if (Action == TEXT("create_optical_disrupt_adaptation"))
 		{
 			Package = OpticalDisruptPackage;
+		}
+		else if (Action == TEXT("create_weapon_biostabilizer_pistol"))
+		{
+			Package = WeaponRosterSpecs[0].Package;
+		}
+		else if (Action == TEXT("create_weapon_pulse_carbine"))
+		{
+			Package = WeaponRosterSpecs[1].Package;
+		}
+		else if (Action == TEXT("create_weapon_cryo_injector"))
+		{
+			Package = WeaponRosterSpecs[2].Package;
+		}
+		else if (Action == TEXT("create_weapon_denaturing_shotgun"))
+		{
+			Package = WeaponRosterSpecs[3].Package;
+		}
+		else if (Action == TEXT("create_weapon_incinerator_lance"))
+		{
+			Package = WeaponRosterSpecs[4].Package;
+		}
+		else if (Action == TEXT("create_weapon_roster_mission"))
+		{
+			Package = WeaponRosterMissionPackage;
+		}
+		else if (Action == TEXT("set_syringe_kit_next_weapon_roster"))
+		{
+			Package = SyringeKitMissionPackage;
+		}
+		else if (Action == TEXT("configure_weapon_roster_armory"))
+		{
+			Package = CryoPackage;
 		}
 		else if (Action == TEXT("trim_spine_landing_admin"))
 		{
@@ -5715,6 +5799,14 @@ namespace
 				|| Change->Action == TEXT("create_syringe_kit_mission")
 				|| Change->Action == TEXT("set_research_station_next_syringe_kit")
 				|| Change->Action == TEXT("configure_research_station_syringe_kit")
+				|| Change->Action == TEXT("create_weapon_biostabilizer_pistol")
+				|| Change->Action == TEXT("create_weapon_pulse_carbine")
+				|| Change->Action == TEXT("create_weapon_cryo_injector")
+				|| Change->Action == TEXT("create_weapon_denaturing_shotgun")
+				|| Change->Action == TEXT("create_weapon_incinerator_lance")
+				|| Change->Action == TEXT("create_weapon_roster_mission")
+				|| Change->Action == TEXT("set_syringe_kit_next_weapon_roster")
+				|| Change->Action == TEXT("configure_weapon_roster_armory")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -6088,6 +6180,38 @@ namespace
 		if (Change->Action == TEXT("configure_research_station_syringe_kit"))
 		{
 			return ExecuteConfigureResearchStationSyringeKit(*Change);
+		}
+		if (Change->Action == TEXT("create_weapon_biostabilizer_pistol"))
+		{
+			return ExecuteCreateWeaponBioStabilizerPistol(*Change);
+		}
+		if (Change->Action == TEXT("create_weapon_pulse_carbine"))
+		{
+			return ExecuteCreateWeaponPulseCarbine(*Change);
+		}
+		if (Change->Action == TEXT("create_weapon_cryo_injector"))
+		{
+			return ExecuteCreateWeaponCryoInjector(*Change);
+		}
+		if (Change->Action == TEXT("create_weapon_denaturing_shotgun"))
+		{
+			return ExecuteCreateWeaponDenaturingShotgun(*Change);
+		}
+		if (Change->Action == TEXT("create_weapon_incinerator_lance"))
+		{
+			return ExecuteCreateWeaponIncineratorLance(*Change);
+		}
+		if (Change->Action == TEXT("create_weapon_roster_mission"))
+		{
+			return ExecuteCreateWeaponRosterMission(*Change);
+		}
+		if (Change->Action == TEXT("set_syringe_kit_next_weapon_roster"))
+		{
+			return ExecuteSetSyringeKitNextWeaponRoster(*Change);
+		}
+		if (Change->Action == TEXT("configure_weapon_roster_armory"))
+		{
+			return ExecuteConfigureWeaponRosterArmory(*Change);
 		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{

@@ -558,6 +558,14 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_syringe_kit_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_research_station_next_syringe_kit")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_research_station_syringe_kit")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_biostabilizer_pistol")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_pulse_carbine")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_cryo_injector")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_denaturing_shotgun")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_incinerator_lance")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_roster_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_syringe_kit_next_weapon_roster")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_weapon_roster_armory")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -671,6 +679,14 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_syringe_kit_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_research_station_next_syringe_kit")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_research_station_syringe_kit")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_biostabilizer_pistol")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_pulse_carbine")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_cryo_injector")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_denaturing_shotgun")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_incinerator_lance")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_roster_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_syringe_kit_next_weapon_roster")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_weapon_roster_armory")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -1932,6 +1948,14 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_syringe_kit_mission")
 		|| Normalized == TEXT("set_research_station_next_syringe_kit")
 		|| Normalized == TEXT("configure_research_station_syringe_kit")
+		|| Normalized == TEXT("create_weapon_biostabilizer_pistol")
+		|| Normalized == TEXT("create_weapon_pulse_carbine")
+		|| Normalized == TEXT("create_weapon_cryo_injector")
+		|| Normalized == TEXT("create_weapon_denaturing_shotgun")
+		|| Normalized == TEXT("create_weapon_incinerator_lance")
+		|| Normalized == TEXT("create_weapon_roster_mission")
+		|| Normalized == TEXT("set_syringe_kit_next_weapon_roster")
+		|| Normalized == TEXT("configure_weapon_roster_armory")
 		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")

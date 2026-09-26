@@ -15,6 +15,7 @@
 #include "TimerManager.h"
 #include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/DamageType.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidObjectiveTypes.h"
 #include "ProjectOrganoidBiologicalAdaptationComponent.h"
@@ -1057,6 +1058,26 @@ bool AProjectOrganoidHostBase::ApplyBiologicalOpticalBlind(float DurationSeconds
 	}
 	OnHostStateChanged.Broadcast(TEXT("BiologicalOpticalBlind"));
 	return true;
+}
+
+void AProjectOrganoidHostBase::ApplyWeaponRosterImpact(EProjectOrganoidWeaponRosterEffect Effect)
+{
+	if (bIsDead || bIsIncapacitated || Effect == EProjectOrganoidWeaponRosterEffect::None
+		|| Effect == EProjectOrganoidWeaponRosterEffect::WeakPoint)
+	{
+		return;
+	}
+	if (Effect == EProjectOrganoidWeaponRosterEffect::CryoSlow)
+	{
+		ApplyBiologicalLocomotorSlow(0.5f, 3.0f);
+		return;
+	}
+	if (Effect == EProjectOrganoidWeaponRosterEffect::Burn)
+	{
+		UGameplayStatics::ApplyDamage(this, 6.0f, nullptr, nullptr, UDamageType::StaticClass());
+		return;
+	}
+	SetStaggered(true);
 }
 
 void AProjectOrganoidHostBase::RestoreOpticalSight()

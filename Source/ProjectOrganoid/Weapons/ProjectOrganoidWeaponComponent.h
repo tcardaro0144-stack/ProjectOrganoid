@@ -9,6 +9,7 @@
 
 class AProjectOrganoidWeapon;
 class AProjectOrganoidCharacter;
+class UProjectOrganoidWeaponData;
 
 /**
  *  Equips and fires Avery's active weapon. Attach to AProjectOrganoidCharacter.
@@ -68,6 +69,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	int32 GetHolsteredMagazineCount(TSubclassOf<AProjectOrganoidWeapon> WeaponClass) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Roster")
+	bool UnlockWeaponRoster(FName WeaponId);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Roster")
+	bool EquipWeaponRoster(FName WeaponId);
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Roster")
+	bool IsWeaponRosterUnlocked(FName WeaponId) const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Roster")
+	TArray<FSoftObjectPath> GetUnlockedWeaponRosterPaths() const { return UnlockedWeaponRoster; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Roster")
+	FSoftObjectPath GetEquippedWeaponRosterPath() const { return EquippedWeaponRoster; }
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Roster")
+	void ApplySavedWeaponRoster(const TArray<FSoftObjectPath>& Unlocked, const FSoftObjectPath& Equipped);
+
 protected:
 
 	void SpawnDefaultWeapon();
@@ -78,4 +97,10 @@ protected:
 	/** Holstered / unequipped magazine snapshots keyed by weapon class path. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Ammo")
 	TArray<FProjectOrganoidWeaponMagazineState> HolsteredMagazineStates;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Roster")
+	TArray<FSoftObjectPath> UnlockedWeaponRoster;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Roster")
+	FSoftObjectPath EquippedWeaponRoster;
 };

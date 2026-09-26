@@ -141,6 +141,19 @@ public:
 	FSoftObjectPath EquippedAdaptation;
 
 	/**
+	 *  Unlocked roster firearms beyond the opening pistol. False on old saves.
+	 *  Lytic stays the scarce emergency payload and is not one of these entries.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Roster")
+	bool bHasWeaponRoster = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Roster")
+	TArray<FSoftObjectPath> UnlockedWeapons;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Save|Weapon|Roster")
+	FSoftObjectPath EquippedWeaponRoster;
+
+	/**
 	 *  Per-weapon loaded magazine snapshots (weapon state only).
 	 *  False on old saves — do not treat missing data as empty magazines.
 	 *  Future holstered weapons append additional entries; do not replace

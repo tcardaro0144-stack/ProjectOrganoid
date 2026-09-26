@@ -3,6 +3,7 @@
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidDefaultWeapon.h"
+#include "ProjectOrganoidWeaponData.h"
 #include "ProjectOrganoidCharacter.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
@@ -81,6 +82,61 @@ AProjectOrganoidWeapon* UProjectOrganoidWeaponComponent::EquipWeaponClass(TSubcl
 	}
 
 	return EquippedWeapon;
+}
+
+bool UProjectOrganoidWeaponComponent::UnlockWeaponRoster(FName WeaponId)
+{
+	UProjectOrganoidWeaponData* Data = UProjectOrganoidWeaponData::ResolveById(WeaponId);
+	if (!Data)
+	{
+		return false;
+	}
+	const FSoftObjectPath Path(Data);
+	if (!UnlockedWeaponRoster.Contains(Path))
+	{
+		UnlockedWeaponRoster.Add(Path);
+	}
+	return true;
+}
+
+bool UProjectOrganoidWeaponComponent::IsWeaponRosterUnlocked(FName WeaponId) const
+{
+	UProjectOrganoidWeaponData* Data = UProjectOrganoidWeaponData::ResolveById(WeaponId);
+	return Data && UnlockedWeaponRoster.Contains(FSoftObjectPath(Data));
+}
+
+bool UProjectOrganoidWeaponComponent::EquipWeaponRoster(FName WeaponId)
+{
+	if (!IsWeaponRosterUnlocked(WeaponId))
+	{
+		return false;
+	}
+	UProjectOrganoidWeaponData* Data = UProjectOrganoidWeaponData::ResolveById(WeaponId);
+	AProjectOrganoidWeapon* Weapon = EquipWeaponClass(AProjectOrganoidDefaultWeapon::StaticClass());
+	if (!Weapon || !Data)
+	{
+		return false;
+	}
+	Weapon->ApplyRosterData(Data);
+	EquippedWeaponRoster = FSoftObjectPath(Data);
+	return true;
+}
+
+void UProjectOrganoidWeaponComponent::ApplySavedWeaponRoster(const TArray<FSoftObjectPath>& Unlocked, const FSoftObjectPath& Equipped)
+{
+	UnlockedWeaponRoster = Unlocked;
+	EquippedWeaponRoster = Equipped;
+	if (Equipped.IsNull())
+	{
+		return;
+	}
+	if (UProjectOrganoidWeaponData* Data = Cast<UProjectOrganoidWeaponData>(Equipped.TryLoad()))
+	{
+		if (AProjectOrganoidWeapon* Weapon = EquipWeaponClass(AProjectOrganoidDefaultWeapon::StaticClass()))
+		{
+			Weapon->ApplyRosterData(Data);
+		}
+	}
 }
 
 bool UProjectOrganoidWeaponComponent::FireEquippedWeapon()

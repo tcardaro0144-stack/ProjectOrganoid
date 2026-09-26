@@ -350,6 +350,9 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 
 		SaveGame->WeaponMagazineStates = WeaponComp->CaptureMagazineStates();
 		SaveGame->bHasWeaponMagazineStates = true;
+		SaveGame->UnlockedWeapons = WeaponComp->GetUnlockedWeaponRosterPaths();
+		SaveGame->EquippedWeaponRoster = WeaponComp->GetEquippedWeaponRosterPath();
+		SaveGame->bHasWeaponRoster = true;
 	}
 
 	if (UProjectOrganoidBiologicalAdaptationComponent* AdaptComp = Character->GetBiologicalAdaptationComponent())
@@ -488,6 +491,10 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 		if (SaveGame->bHasWeaponMagazineStates)
 		{
 			WeaponComp->ApplyMagazineStates(SaveGame->WeaponMagazineStates);
+		}
+		if (SaveGame->bHasWeaponRoster)
+		{
+			WeaponComp->ApplySavedWeaponRoster(SaveGame->UnlockedWeapons, SaveGame->EquippedWeaponRoster);
 		}
 	}
 

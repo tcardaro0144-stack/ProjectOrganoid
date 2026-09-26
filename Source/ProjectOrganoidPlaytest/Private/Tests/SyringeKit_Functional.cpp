@@ -30,6 +30,7 @@ namespace SyringeKitFunctional
 	constexpr TCHAR MapPackage[] = TEXT("/Game/Maps/Lvl_Epitope");
 	constexpr TCHAR NeuroPackage[] = TEXT("/Game/Maps/Epitope/SL_Epitope_NeuroGenetics");
 	constexpr TCHAR SyringeSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_SyringeKit.DA_Mission_SyringeKit");
+	constexpr TCHAR WeaponRosterSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_WeaponRoster.DA_Mission_WeaponRoster");
 	constexpr TCHAR ResearchSoftPath[] = TEXT("/Game/Data/Missions/DA_Mission_ResearchStation.DA_Mission_ResearchStation");
 	constexpr TCHAR StationLabel[] = TEXT("ResearchStation_NeuroGenetics");
 	constexpr TCHAR SyringeMissionId[] = TEXT("Mission_SyringeKit");
@@ -176,7 +177,7 @@ namespace SyringeKitFunctional
 			AssertTrue(Record, TEXT("asset.id"), Syringe && Syringe->MissionId == FName(SyringeMissionId), SyringeMissionId, Syringe ? Syringe->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.title"), Syringe && Syringe->MissionTitle.ToString() == TEXT("Syringe Kit"), TEXT("Syringe Kit"), Syringe ? Syringe->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.description"), Syringe && Syringe->MissionDescription.ToString().Contains(TEXT("full Epitope syringe kit")), TEXT("full Epitope syringe kit"), Syringe ? Syringe->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.next_null"), Syringe && Syringe->NextMissionAsset.IsNull(), TEXT("null"), Syringe && Syringe->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.next_weapon_roster"), Syringe && Syringe->NextMissionAsset.ToSoftObjectPath().ToString() == WeaponRosterSoftPath, WeaponRosterSoftPath, Syringe ? Syringe->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_main"), Task && Task->Objective.Type == EProjectOrganoidObjectiveType::Main && Task->Objective.ObjectiveId == FName(SyringeObjectiveId), SyringeObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.auto"), Task && Task->bAutoActivate && Task->Objective.PrerequisiteObjectiveIds.Num() == 0, TEXT("auto"), Task ? TEXT("checked") : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.target_2"), Task && Task->Objective.TargetProgress == 2, TEXT("2"), Task ? FString::FromInt(Task->Objective.TargetProgress) : TEXT("missing"), TEXT("DA"));
@@ -322,7 +323,7 @@ namespace SyringeKitFunctional
 			AssertTrue(Record, TEXT("second.not_equipped"), Adapt->GetEquippedAdaptation() != Locomotor && Adapt->GetEquippedAdaptation() != Optical, TEXT("unequipped"), Adapt->GetEquippedAdaptation() ? Adapt->GetEquippedAdaptation()->GetName() : TEXT("none"), TEXT("adapt"));
 			AssertTrue(Record, TEXT("second.fire"), Station->SyringeEventFireCount == 2 && Station->SyringeNotificationCount == 1, TEXT("2"), FString::Printf(TEXT("fire=%d notes=%d"), Station->SyringeEventFireCount, Station->SyringeNotificationCount), StationLabel);
 			AssertTrue(Record, TEXT("second.line_once"), !Widget->GetLastResourceNotification().ToString().Contains(ExpectedLine), TEXT("once"), Widget->GetLastResourceNotification().ToString(), TEXT("HUD"));
-			AssertTrue(Record, TEXT("second.mission"), Objectives->GetActiveMissionId() == FName(SyringeMissionId) && Objectives->IsMissionComplete(FName(SyringeMissionId)), SyringeMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("second.mission"), Objectives->GetActiveMissionId() == FName(TEXT("Mission_WeaponRoster")) && Progress == 2 && State == EProjectOrganoidObjectiveState::Completed, TEXT("Mission_WeaponRoster"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 
 			Widget->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.0f);
 			Station->Interact(Character);
@@ -334,7 +335,7 @@ namespace SyringeKitFunctional
 			const bool bRestored = Saves->LoadPlayerProgress(Character, SaveSlot);
 			ObjectiveProgress(Objectives, Progress, State);
 			AssertTrue(Record, TEXT("save.wrote"), bSaved && bRestored, TEXT("true"), bSaved && bRestored ? TEXT("true") : TEXT("false"), TEXT("save"));
-			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(SyringeMissionId) && Progress == 2 && State == EProjectOrganoidObjectiveState::Completed, TEXT("2"), FString::FromInt(Progress), TEXT("save"));
+			AssertTrue(Record, TEXT("save.mission"), Objectives->GetActiveMissionId() == FName(TEXT("Mission_WeaponRoster")) && Progress == 2 && State == EProjectOrganoidObjectiveState::Completed, TEXT("Mission_WeaponRoster"), Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.adaptations"), Adapt->IsAdaptationUnlocked(Locomotor) && Adapt->IsAdaptationUnlocked(Optical), TEXT("both"), TEXT("missing"), TEXT("save"));
 			AssertTrue(Record, TEXT("save.neuro_online"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics) == EProjectOrganoidPowerState::Online, TEXT("Online"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::NeuroGenetics)), TEXT("save"));
 			AssertTrue(Record, TEXT("dirty.neuro"), !PackageIsDirty(NeuroPackage), TEXT("clean"), PackageIsDirty(NeuroPackage) ? TEXT("dirty") : TEXT("clean"), NeuroPackage);

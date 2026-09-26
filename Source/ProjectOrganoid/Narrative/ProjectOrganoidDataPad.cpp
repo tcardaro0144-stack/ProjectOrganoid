@@ -7,8 +7,10 @@
 #include "ProjectOrganoidLogComponent.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidObjectiveTypes.h"
+#include "ProjectOrganoidWeaponComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 
 AProjectOrganoidDataPad::AProjectOrganoidDataPad()
@@ -60,6 +62,27 @@ bool AProjectOrganoidDataPad::CanInteract_Implementation(AProjectOrganoidCharact
 		|| Objective.State == EProjectOrganoidObjectiveState::Completed;
 }
 
+FText AProjectOrganoidDataPad::GetInteractionPrompt() const
+{
+	if (WeaponRosterWeaponId.IsNone())
+	{
+		return Super::GetInteractionPrompt();
+	}
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UProjectOrganoidObjectiveSubsystem* Objectives = GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>())
+		{
+			FProjectOrganoidObjective Objective;
+			if (Objectives->GetObjective(TEXT("Obj_RecoverWeaponRoster"), Objective)
+				&& Objective.State == EProjectOrganoidObjectiveState::Active)
+			{
+				return FText::FromString(TEXT("Recover Weapon Roster"));
+			}
+		}
+	}
+	return Super::GetInteractionPrompt();
+}
+
 bool AProjectOrganoidDataPad::Interact_Implementation(AProjectOrganoidCharacter* Interactor)
 {
 	if (!Super::Interact_Implementation(Interactor) || !Interactor)
@@ -103,8 +126,61 @@ bool AProjectOrganoidDataPad::Interact_Implementation(AProjectOrganoidCharacter*
 		}
 	}
 
+	TryAwardWeaponRosterCredit(Interactor);
 	BP_OnDataPadRead(Interactor, LogEntry);
 	return true;
+}
+
+void AProjectOrganoidDataPad::TryAwardWeaponRosterCredit(AProjectOrganoidCharacter* Interactor)
+{
+	if (WeaponRosterWeaponId.IsNone() || WeaponRosterCreditCount > 0 || !Interactor)
+	{
+		return;
+	}
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UProjectOrganoidObjectiveSubsystem* Objectives = GI ? GI->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
+	if (!Objectives)
+	{
+		return;
+	}
+	FProjectOrganoidObjective Objective;
+	if (!Objectives->GetObjective(TEXT("Obj_RecoverWeaponRoster"), Objective)
+		|| Objective.State != EProjectOrganoidObjectiveState::Active)
+	{
+		return;
+	}
+	UProjectOrganoidWeaponComponent* Weapons = Interactor->GetWeaponComponent();
+	if (!Weapons || !Weapons->UnlockWeaponRoster(WeaponRosterWeaponId))
+	{
+		return;
+	}
+
+	int32 PriorNotifications = 0;
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AProjectOrganoidDataPad> It(World); It; ++It)
+		{
+			PriorNotifications += It->WeaponRosterNotificationCount;
+		}
+	}
+
+	Objectives->TriggerEvent(TEXT("Event_WeaponRosterRecovered"));
+	++WeaponRosterCreditCount;
+
+	if (PriorNotifications == 0)
+	{
+		APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
+		UWorld* World = GetWorld();
+		AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
+		UProjectOrganoidGameplayHUDController* HUD = GameMode && PC ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+		if (HUD && HUD->ShowTransientNotification(
+			FText::FromString(TEXT("Nathan")),
+			FText::FromString(TEXT("Five more. Each with a different job. Lytic was the emergency — these are the toolkit. No unlimited ammo.")),
+			7.0f))
+		{
+			++WeaponRosterNotificationCount;
+		}
+	}
 }
 
 bool AProjectOrganoidDataPad::IsRequiredObjectiveCompleted(const UProjectOrganoidObjectiveSubsystem* Objectives) const

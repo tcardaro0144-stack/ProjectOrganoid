@@ -88,7 +88,10 @@ namespace
 			TEXT("ResearchStationRespec_Functional"),
 			TEXT("SyringeKit_Functional"),
 			TEXT("LocomotorDisrupt_Functional"),
-			TEXT("OpticalDisrupt_Functional")
+			TEXT("OpticalDisrupt_Functional"),
+			TEXT("WeaponRoster_Functional"),
+			TEXT("BioStabilizerPistol_Functional"),
+			TEXT("PulseCarbine_Functional")
 		};
 		Catalog.StableSort([](const FOrganoidPlaytestCatalogEntry& A, const FOrganoidPlaytestCatalogEntry& B)
 		{

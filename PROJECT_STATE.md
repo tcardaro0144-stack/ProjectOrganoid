@@ -4193,3 +4193,59 @@ Beat 19 stays unauthorized until a separate authorization. When Beat 19 is autho
 
 - Beat 20 is implemented, persisted, and validated, with `COMPLETE_PASS` **57/57**.
 - Do not begin Beat 21 until separately authorized. The locked roadmap order continues with the weapon roster.
+
+## 2026-09-25 — Beat 21: Weapon Roster
+
+**Status:** implemented persisted validated COMPLETE_PASS 60/60 5302 Beep 12/12 Host 33/33 Bio 59/59 WeaponRoster 49 BioStabilizer 17 PulseCarbine 17 changes were left unstaged before commit now amended no Beat 22.
+
+**Baseline:** published Beat 20 commit `53295fcd2922b1af4e2a51487e880060b6318ede` (`feat: implement Syringe Kit`) on `origin/main`.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → ComputeHandover → TheConclusion → ResearchStation -> SyringeKit -> WeaponRoster -> null.
+- New mission `/Game/Data/Missions/DA_Mission_WeaponRoster` ID `Mission_WeaponRoster` Title `Weapon Roster` Description `The armory reveals the remaining weapons. Recover the full roster to expand tactical options.` one Main `Obj_RecoverWeaponRoster` autoactivate target5 no prereq Complete `Event_WeaponRosterRecovered` Next null.
+- Objective title: `Recover Weapon Roster`. Objective description: `Recover the Bio-Stabilizer Pistol, Pulse Carbine, Cryo Injector, Denaturing Shotgun, and Incinerator Lance.`
+- Handoff: `DA_Mission_SyringeKit.Next` -> `DA_Mission_WeaponRoster`.
+
+### Encounter reuse
+
+- No new door/transit/pursuer/enemy/weapon actors, reused 5 existing datapads unmoved `DataPad_SpecimenManifest` (-2330,-2150,-2310) Cryo BioStabilizerPistol, `DataPad_ConsentForms` (-400,-1150,-2310) Cryo PulseCarbine, `DataPad_SterlingCryoNote` (-2425,1025,-2310) Cryo CryoInjector, `DataPad_AutonomousDecisionLog` (0,-1650,-3510) Compute DenaturingShotgun, `DataPad_SterlingConfession` (-2425,-2275,-3510) Compute IncineratorLance, Cryo evidence fields and Sterling confession fields stayed as they were, power not changed, no armory actor.
+
+### New weapons
+
+- `DA_Weapon_BioStabilizerPistol`, `DA_Weapon_PulseCarbine`, `DA_Weapon_CryoInjector`, `DA_Weapon_DenaturingShotgun`, `DA_Weapon_IncineratorLance` under `/Game/Data/Weapons/` sharing data-asset class opening pistol class scarce ammo after holster restore distinct roles no Arc Gun duplicating Lytic no unlimited ammo.
+- `DA_Weapon_BioStabilizerPistol` — ID `Weapon_BioStabilizerPistol`, title Bio-Stabilizer Pistol, role sidearm precise, damage 8, range 4500, magazine 4, ammo Pistol, effect Stun.
+- `DA_Weapon_PulseCarbine` — ID `Weapon_PulseCarbine`, title Pulse Carbine, role mid-range reliable, damage 16, range 8000, magazine 8, ammo Rifle, effect WeakPoint.
+- `DA_Weapon_CryoInjector` — ID `Weapon_CryoInjector`, title Cryo Injector, role crowd control slow, damage 4, range 3000, magazine 3, ammo Special, effect CryoSlow.
+- `DA_Weapon_DenaturingShotgun` — ID `Weapon_DenaturingShotgun`, title Denaturing Shotgun, role close-range stagger, damage 26, range 900, magazine 4, ammo Shotgun, effect Stagger.
+- `DA_Weapon_IncineratorLance` — ID `Weapon_IncineratorLance`, title Incinerator Lance, role area denial burn, damage 14, range 2200, magazine 3, ammo Special, effect Burn.
+
+### Gameplay behavior
+
+- Gameplay behavior as validated. While `Obj_RecoverWeaponRoster` is Active, each of the five pads prompts `Recover Weapon Roster` and credits once. Five fires of `Event_WeaponRosterRecovered` count 1 through 5, then the objective completes. Weapon Roster Next stays null, so the active mission does not advance further.
+- Nathan line, 7 seconds, once, replay guard: `Five more. Each with a different job. Lytic was the emergency — these are the toolkit. No unlimited ammo.`
+- Unlock persists through SaveSubsystem. Power is not changed. The opening pistol path is unchanged when no roster data is equipped. Scarce magazine capacity is applied after the holster restore.
+
+### Persisted asset hashes
+
+Persisted asset hashes 25: unchanged 16 NeuralSlowUse `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774`, ResearchStationIntro `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a`, Neuro map `3109ff84565b90e6f1bf42ec934f0c498ef1ec7863ec50538d99e99ac4ddd351`, NeuralSlow `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009`, AdaptationConnection `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f`, Revelation `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd`, CryoAccess `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064`, CryoEntry `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a`, CryoEvidence `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583`, ComputeEntry `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782`, ComputeHandover `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af`, TheConclusion `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a`, Reactor map `853b4c01ec6110d612810837edcf306a88ff17f622a09c86fcda8c6dd661aa50`, ResearchStation `16c1c32d257108e4e5ec64451bb1be6f96e7c7a2b7cbeed400491294ed1185b2`, Locomotor `ed8ef82dd5ac1c261858c886eeb227e16c6204fe51a19d75b579328d48e4c325`, Optical `d2807c9a3ba6416b40e327d28334e9a9b3a377c39964ffcf047cb2070d1f0cc0` unchanged; updated 3 Cryo map `962b9145fd985b6504b5532a498cd334d89ab9ccd80bede8deff4d0127d47bd7`, Compute map `28c96470099f06240d1f637f4b878a3a0300df60c78490a69efa1fec68d247ef`, SyringeKit `d762bd22d6e0ff6e9f5547b5cf3812172bdc7c697a9f838da9055174d07c6a96`; new 6 BioStabilizerPistol `3ece0e35beaed0c6096e8fe465602c38d7cc29b121a79524b83c37ebe913f456`, PulseCarbine `6b0c5607ff5dee24b8faa26f1381ec1fbc0f1aa062d5a6c376984db1bf9cc79d`, CryoInjector `23ef8ce0f51a8f649c97ca534a134db3531f3a126c822e1b3a5029b06ec8e366`, DenaturingShotgun `132afc52484f8e0fd9d4428f27b4f8b195b6af70c0d410bc60a312a648598e51`, IncineratorLance `17942d3fe91afe03663122428fc7f95b646e1493b24ae81a373b84a135847048`, WeaponRoster `301a5c72195707250ded807580593316d3b79d16eb5670d1bf813a0e00f518b3`.
+
+### Validation
+
+- Validation: targeted 8/8 PID18628 49+17+17+46+78+78+70+12 Beep 12/12 log `%TEMP%\b21_targeted_editor.log`, complete 60/60 COMPLETE_PASS 5302 PID9784 Beep12/12 Host33/33 Bio59/59 CryoEvidence100 ComputeEntry78 Handover101 Conclusion78 Respec78 Syringe46 Locomotor17 Optical16 WeaponRoster49 BioStabilizer17 PulseCarbine17 live order 10,15,27,49-60 evidence `%TEMP%\b21_complete60_6dc6a2cf63bf4728843d6258e19ac923` log `%TEMP%\b21_complete_editor.log`, build success, hashes unchanged after run diff-check clean, saves ignored, contaminated unreachable.
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded.
+- Targeted suite: `WeaponRoster_Functional` 49, `BioStabilizerPistol_Functional` 17, `PulseCarbine_Functional` 17, `SyringeKit_Functional` 46, `ResearchStationRespec_Functional` 78, `TheConclusion_Functional` 78, `CheckpointHealth_Functional` 70, `BeepClickInjection_Functional` 12/12. Editor PID 18628. `CloseMainWindow` true, process count 0, log signatures 0.
+- Complete catalog 60/60, aggregate 5302 assertions, editor PID 9784, close true, process count 0, log signatures 0. Live order pins: CryoAccess 10, NeuroAdaptationConnection 15, NeuroRevelation 27, CryoEntry 49 through PulseCarbine 60.
+
+### Deferred issues (not fixed)
+
+- Deferred issues: Beep fixed 12/12, NavMesh warning unresolved, camera fixed `870199f`, Nathan Grant visual first pass `4fb6a20`.
+
+### Current operational state
+
+- Current operational state: Unreal closed, `86acdb3` local not pushed, PROJECT_STATE now edited, no Beat 22.
+
+### Next boundary
+
+- Next boundary: Beat 21 validated, amend then push, do not begin Beat 22 until separately authorized.

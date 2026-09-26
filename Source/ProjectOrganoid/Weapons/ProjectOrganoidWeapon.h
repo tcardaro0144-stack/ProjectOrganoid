@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ProjectOrganoidWeaponTypes.h"
+#include "ProjectOrganoidWeaponData.h"
 #include "ProjectOrganoidWeapon.generated.h"
 
 class USkeletalMeshComponent;
@@ -12,6 +13,7 @@ class AProjectOrganoidProjectile;
 class AProjectOrganoidCharacter;
 class UProjectOrganoidWeaponModComponent;
 class UProjectOrganoidInventoryComponent;
+class UProjectOrganoidWeaponData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeaponFired, const FProjectOrganoidBallisticHit&, PrimaryHit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectOrganoidWeakPointReaction, const FProjectOrganoidBallisticHit&, HitInfo);
@@ -197,6 +199,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ballistics")
 	FProjectOrganoidBallisticHit ProcessBallisticHit(const FHitResult& Hit, float InDamage, bool bIsTacticalMode);
 
+	/** Copy scarce-ammo stats from a roster data asset onto this live firearm. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Roster")
+	void ApplyRosterData(const UProjectOrganoidWeaponData* Data);
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Roster")
+	EProjectOrganoidWeaponRosterEffect GetRosterEffect() const { return RosterEffect; }
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void SetWeaponOwnerCharacter(AProjectOrganoidCharacter* InOwnerCharacter);
 
@@ -229,6 +238,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<AProjectOrganoidCharacter> OwnerCharacter;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Roster")
+	EProjectOrganoidWeaponRosterEffect RosterEffect = EProjectOrganoidWeaponRosterEffect::None;
 
 	float LastFireTimeSeconds = -BIG_NUMBER;
 	float LastPulseFireTimeSeconds = -BIG_NUMBER;

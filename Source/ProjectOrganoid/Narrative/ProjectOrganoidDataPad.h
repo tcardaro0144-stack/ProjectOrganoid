@@ -63,6 +63,18 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Log")
 	bool bHasBeenRead = false;
 
+	/** Additive roster credit. Empty on pads that are not part of the five-weapon recovery. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Log|WeaponRoster")
+	FName WeaponRosterWeaponId = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Log|WeaponRoster", Transient)
+	int32 WeaponRosterCreditCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Log|WeaponRoster", Transient)
+	int32 WeaponRosterNotificationCount = 0;
+
+	virtual FText GetInteractionPrompt() const override;
+
 	virtual bool CanInteract_Implementation(AProjectOrganoidCharacter* Interactor) const override;
 
 	virtual bool Interact_Implementation(AProjectOrganoidCharacter* Interactor) override;
@@ -74,4 +86,5 @@ protected:
 private:
 	bool IsRequiredObjectiveCompleted(const UProjectOrganoidObjectiveSubsystem* Objectives) const;
 	void PresentCompletionNotification(AProjectOrganoidCharacter* Interactor);
+	void TryAwardWeaponRosterCredit(AProjectOrganoidCharacter* Interactor);
 };

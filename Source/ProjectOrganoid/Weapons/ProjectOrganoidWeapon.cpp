@@ -526,6 +526,25 @@ bool AProjectOrganoidWeapon::FireProjectile()
 	return true;
 }
 
+void AProjectOrganoidWeapon::ApplyRosterData(const UProjectOrganoidWeaponData* Data)
+{
+	if (!Data)
+	{
+		return;
+	}
+	Damage = Data->Damage;
+	HitscanRange = Data->HitscanRange;
+	MagazineCapacity = FMath::Max(1, Data->MagazineCapacity);
+	CurrentMagazine = MagazineCapacity;
+	FireRate = Data->FireRate;
+	AmmoType = Data->AmmoType;
+	RosterEffect = Data->Effect;
+	if (RosterEffect == EProjectOrganoidWeaponRosterEffect::WeakPoint)
+	{
+		TacticalWeakPointDamageMultiplier = 3.5f;
+	}
+}
+
 FProjectOrganoidBallisticHit AProjectOrganoidWeapon::ProcessBallisticHit(const FHitResult& Hit, float InDamage, bool bIsTacticalMode)
 {
 	FProjectOrganoidBallisticHit Result;
@@ -568,8 +587,17 @@ FProjectOrganoidBallisticHit AProjectOrganoidWeapon::ProcessBallisticHit(const F
 
 			OnWeakPointReaction.Broadcast(Result);
 		}
+		else if (RosterEffect == EProjectOrganoidWeaponRosterEffect::WeakPoint
+			&& Result.WeakPoint != EProjectOrganoidWeakPointType::None)
+		{
+			Result.FinalDamage *= TacticalWeakPointDamageMultiplier;
+		}
 
 		IProjectOrganoidDamageable::Execute_ApplyOrganoidHit(HitActor, Result, this);
+		if (AProjectOrganoidHostBase* Host = Cast<AProjectOrganoidHostBase>(HitActor))
+		{
+			Host->ApplyWeaponRosterImpact(RosterEffect);
+		}
 	}
 	else if (HitActor)
 	{
