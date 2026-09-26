@@ -97,9 +97,15 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> NathanMesh(
+		TEXT("/Game/Characters/Nathan/SKM_NathanGrant.SKM_NathanGrant"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> BodyMesh(
 		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
-	if (BodyMesh.Succeeded())
+	if (NathanMesh.Succeeded())
+	{
+		GetMesh()->SetSkeletalMeshAsset(NathanMesh.Object);
+	}
+	else if (BodyMesh.Succeeded())
 	{
 		GetMesh()->SetSkeletalMeshAsset(BodyMesh.Object);
 	}

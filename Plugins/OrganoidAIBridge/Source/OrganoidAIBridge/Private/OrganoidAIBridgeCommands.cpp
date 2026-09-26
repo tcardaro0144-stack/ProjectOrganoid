@@ -550,6 +550,7 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_the_conclusion_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_compute_handover_next_the_conclusion")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_reactor_control_spine")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -654,6 +655,7 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_the_conclusion_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_compute_handover_next_the_conclusion")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_reactor_control_spine")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1906,6 +1908,7 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_the_conclusion_mission")
 		|| Normalized == TEXT("set_compute_handover_next_the_conclusion")
 		|| Normalized == TEXT("configure_reactor_control_spine")
+		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")

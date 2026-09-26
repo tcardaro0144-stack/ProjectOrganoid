@@ -21,6 +21,7 @@ public class OrganoidAIBridge : ModuleRules
 			"Json",
 			"JsonUtilities",
 			"AssetRegistry",
+			"AssetTools",
 			"Kismet",
 			"BlueprintGraph",
 			"Slate",

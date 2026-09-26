@@ -3,6 +3,9 @@
 #include "OrganoidAIBridgeLogSink.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetToolsModule.h"
+#include "Engine/SkeletalMesh.h"
+#include "Materials/MaterialInstanceConstant.h"
 
 #include "Components/ActorComponent.h"
 #include "Components/BoxComponent.h"
@@ -180,6 +183,7 @@ namespace
 		TEXT("create_the_conclusion_mission"),
 		TEXT("set_compute_handover_next_the_conclusion"),
 		TEXT("configure_reactor_control_spine"),
+		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -263,6 +267,7 @@ namespace
 		TEXT("create_the_conclusion_mission"),
 		TEXT("set_compute_handover_next_the_conclusion"),
 		TEXT("configure_reactor_control_spine"),
+		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3397,6 +3402,7 @@ namespace
 #include "OrganoidAIBridgeTheConclusionMission.inl"
 #include "OrganoidAIBridgeComputeHandoverNextTheConclusion.inl"
 #include "OrganoidAIBridgeTheConclusionTerminal.inl"
+#include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4175,6 +4181,10 @@ namespace
 		{
 			PreflightError = PreflightConfigureReactorControlSpine(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_nathan_grant_look"))
+		{
+			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4305,6 +4315,10 @@ namespace
 		else if (Action == TEXT("configure_reactor_control_spine"))
 		{
 			Package = ReactorPackage;
+		}
+		else if (Action == TEXT("create_nathan_grant_look"))
+		{
+			Package = EpitopePackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -5613,6 +5627,7 @@ namespace
 				|| Change->Action == TEXT("create_the_conclusion_mission")
 				|| Change->Action == TEXT("set_compute_handover_next_the_conclusion")
 				|| Change->Action == TEXT("configure_reactor_control_spine")
+				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -5953,6 +5968,10 @@ namespace
 		if (Change->Action == TEXT("configure_reactor_control_spine"))
 		{
 			return ExecuteConfigureReactorControlSpine(*Change);
+		}
+		if (Change->Action == TEXT("create_nathan_grant_look"))
+		{
+			return ExecuteCreateNathanGrantLook(*Change);
 		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
