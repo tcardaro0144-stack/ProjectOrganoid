@@ -570,6 +570,10 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_weapon_roster_next_pursuer_intro")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_pursuer_blueprint")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_pursuer_intro")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_first_combat_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_pursuer_intro_next_first_combat")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_transformed_scientist_blueprint")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_first_combat")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -695,6 +699,10 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_weapon_roster_next_pursuer_intro")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_pursuer_blueprint")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_pursuer_intro")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_first_combat_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_pursuer_intro_next_first_combat")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_transformed_scientist_blueprint")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_first_combat")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -1968,6 +1976,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("set_weapon_roster_next_pursuer_intro")
 		|| Normalized == TEXT("create_pursuer_blueprint")
 		|| Normalized == TEXT("spawn_reactor_pursuer_intro")
+		|| Normalized == TEXT("create_first_combat_mission")
+		|| Normalized == TEXT("set_pursuer_intro_next_first_combat")
+		|| Normalized == TEXT("create_transformed_scientist_blueprint")
+		|| Normalized == TEXT("spawn_reactor_first_combat")
 		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")

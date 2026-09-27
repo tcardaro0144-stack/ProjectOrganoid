@@ -204,6 +204,10 @@ namespace
 		TEXT("set_weapon_roster_next_pursuer_intro"),
 		TEXT("create_pursuer_blueprint"),
 		TEXT("spawn_reactor_pursuer_intro"),
+		TEXT("create_first_combat_mission"),
+		TEXT("set_pursuer_intro_next_first_combat"),
+		TEXT("create_transformed_scientist_blueprint"),
+		TEXT("spawn_reactor_first_combat"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -308,6 +312,10 @@ namespace
 		TEXT("set_weapon_roster_next_pursuer_intro"),
 		TEXT("create_pursuer_blueprint"),
 		TEXT("spawn_reactor_pursuer_intro"),
+		TEXT("create_first_combat_mission"),
+		TEXT("set_pursuer_intro_next_first_combat"),
+		TEXT("create_transformed_scientist_blueprint"),
+		TEXT("spawn_reactor_first_combat"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3455,6 +3463,7 @@ namespace
 #include "OrganoidAIBridgeSyringeKitNextWeaponRoster.inl"
 #include "OrganoidAIBridgeWeaponRosterDatapads.inl"
 #include "OrganoidAIBridgePursuerIntro.inl"
+#include "OrganoidAIBridgeFirstCombat.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4314,6 +4323,22 @@ namespace
 		{
 			PreflightError = PreflightSpawnReactorPursuerIntro(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_first_combat_mission"))
+		{
+			PreflightError = PreflightCreateFirstCombatMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_pursuer_intro_next_first_combat"))
+		{
+			PreflightError = PreflightSetPursuerIntroNextFirstCombat(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_transformed_scientist_blueprint"))
+		{
+			PreflightError = PreflightCreateTransformedScientistBlueprint(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_reactor_first_combat"))
+		{
+			PreflightError = PreflightSpawnReactorFirstCombat(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4527,6 +4552,22 @@ namespace
 			Package = PursuerBlueprintPackage;
 		}
 		else if (Action == TEXT("spawn_reactor_pursuer_intro"))
+		{
+			Package = ReactorPackage;
+		}
+		else if (Action == TEXT("create_first_combat_mission"))
+		{
+			Package = FirstCombatMissionPackage;
+		}
+		else if (Action == TEXT("set_pursuer_intro_next_first_combat"))
+		{
+			Package = PursuerIntroMissionPackage;
+		}
+		else if (Action == TEXT("create_transformed_scientist_blueprint"))
+		{
+			Package = FirstCombatBlueprintPackage;
+		}
+		else if (Action == TEXT("spawn_reactor_first_combat"))
 		{
 			Package = ReactorPackage;
 		}
@@ -5852,6 +5893,10 @@ namespace
 				|| Change->Action == TEXT("set_weapon_roster_next_pursuer_intro")
 				|| Change->Action == TEXT("create_pursuer_blueprint")
 				|| Change->Action == TEXT("spawn_reactor_pursuer_intro")
+				|| Change->Action == TEXT("create_first_combat_mission")
+				|| Change->Action == TEXT("set_pursuer_intro_next_first_combat")
+				|| Change->Action == TEXT("create_transformed_scientist_blueprint")
+				|| Change->Action == TEXT("spawn_reactor_first_combat")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -6273,6 +6318,22 @@ namespace
 		if (Change->Action == TEXT("spawn_reactor_pursuer_intro"))
 		{
 			return ExecuteSpawnReactorPursuerIntro(*Change);
+		}
+		if (Change->Action == TEXT("create_first_combat_mission"))
+		{
+			return ExecuteCreateFirstCombatMission(*Change);
+		}
+		if (Change->Action == TEXT("set_pursuer_intro_next_first_combat"))
+		{
+			return ExecuteSetPursuerIntroNextFirstCombat(*Change);
+		}
+		if (Change->Action == TEXT("create_transformed_scientist_blueprint"))
+		{
+			return ExecuteCreateTransformedScientistBlueprint(*Change);
+		}
+		if (Change->Action == TEXT("spawn_reactor_first_combat"))
+		{
+			return ExecuteSpawnReactorFirstCombat(*Change);
 		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{
