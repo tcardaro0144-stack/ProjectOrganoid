@@ -180,7 +180,7 @@ namespace WeaponRosterFunctional
 			AssertTrue(Record, TEXT("asset.id"), Mission && Mission->MissionId == FName(MissionId), MissionId, Mission ? Mission->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.title"), Mission && Mission->MissionTitle.ToString() == TEXT("Weapon Roster"), TEXT("Weapon Roster"), Mission ? Mission->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.description"), Mission && Mission->MissionDescription.ToString().Contains(TEXT("armory reveals the remaining weapons")), TEXT("armory"), Mission ? Mission->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
-			AssertTrue(Record, TEXT("asset.next_null"), Mission && Mission->NextMissionAsset.IsNull(), TEXT("null"), Mission && Mission->NextMissionAsset.IsNull() ? TEXT("null") : TEXT("set"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.next_pursuer_intro"), Mission && Mission->NextMissionAsset.ToSoftObjectPath().ToString() == TEXT("/Game/Data/Missions/DA_Mission_PursuerIntro.DA_Mission_PursuerIntro"), TEXT("/Game/Data/Missions/DA_Mission_PursuerIntro.DA_Mission_PursuerIntro"), Mission ? Mission->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_main"), Task && Task->Objective.Type == EProjectOrganoidObjectiveType::Main && Task->Objective.ObjectiveId == FName(ObjectiveId) && Task->Objective.PrerequisiteObjectiveIds.Num() == 0, ObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.auto_target"), Task && Task->bAutoActivate && Task->Objective.TargetProgress == 5, TEXT("5"), Task ? FString::FromInt(Task->Objective.TargetProgress) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.event"), Task && Task->EventTriggers.Num() == 1 && Task->EventTriggers[0].EventId == FName(EventId) && Task->EventTriggers[0].Action == EProjectOrganoidObjectiveEventAction::Advance && Task->EventTriggers[0].ProgressDelta == 1, EventId, Task && Task->EventTriggers.Num() == 1 ? Task->EventTriggers[0].EventId.ToString() : TEXT("missing"), TEXT("DA"));
@@ -357,8 +357,8 @@ namespace WeaponRosterFunctional
 			}
 
 			Objectives->GetObjective(FName(ObjectiveId), Objective);
-			AssertTrue(Record, TEXT("objective.complete"), Objective.State == EProjectOrganoidObjectiveState::Completed && Objective.CurrentProgress == 5 && Objectives->IsMissionComplete(FName(MissionId)), TEXT("5"), FString::FromInt(Objective.CurrentProgress), ObjectiveId);
-			AssertTrue(Record, TEXT("mission.stays"), Objectives->GetActiveMissionId() == FName(MissionId), MissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
+			AssertTrue(Record, TEXT("objective.complete"), Objective.State == EProjectOrganoidObjectiveState::Completed && Objective.CurrentProgress == 5, TEXT("5"), FString::FromInt(Objective.CurrentProgress), ObjectiveId);
+			AssertTrue(Record, TEXT("mission.advances"), Objectives->GetActiveMissionId() == FName(TEXT("Mission_PursuerIntro")), TEXT("Mission_PursuerIntro"), Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			int32 Notes = 0;
 			for (AProjectOrganoidDataPad* Pad : Pads)
 			{

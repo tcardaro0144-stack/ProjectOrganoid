@@ -566,6 +566,10 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_roster_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_syringe_kit_next_weapon_roster")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("configure_weapon_roster_armory")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_pursuer_intro_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_weapon_roster_next_pursuer_intro")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_pursuer_blueprint")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_pursuer_intro")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -687,6 +691,10 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_weapon_roster_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_syringe_kit_next_weapon_roster")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("configure_weapon_roster_armory")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_pursuer_intro_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_weapon_roster_next_pursuer_intro")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_pursuer_blueprint")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_pursuer_intro")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -1956,6 +1964,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("create_weapon_roster_mission")
 		|| Normalized == TEXT("set_syringe_kit_next_weapon_roster")
 		|| Normalized == TEXT("configure_weapon_roster_armory")
+		|| Normalized == TEXT("create_pursuer_intro_mission")
+		|| Normalized == TEXT("set_weapon_roster_next_pursuer_intro")
+		|| Normalized == TEXT("create_pursuer_blueprint")
+		|| Normalized == TEXT("spawn_reactor_pursuer_intro")
 		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")

@@ -200,6 +200,10 @@ namespace
 		TEXT("create_weapon_roster_mission"),
 		TEXT("set_syringe_kit_next_weapon_roster"),
 		TEXT("configure_weapon_roster_armory"),
+		TEXT("create_pursuer_intro_mission"),
+		TEXT("set_weapon_roster_next_pursuer_intro"),
+		TEXT("create_pursuer_blueprint"),
+		TEXT("spawn_reactor_pursuer_intro"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -300,6 +304,10 @@ namespace
 		TEXT("create_weapon_roster_mission"),
 		TEXT("set_syringe_kit_next_weapon_roster"),
 		TEXT("configure_weapon_roster_armory"),
+		TEXT("create_pursuer_intro_mission"),
+		TEXT("set_weapon_roster_next_pursuer_intro"),
+		TEXT("create_pursuer_blueprint"),
+		TEXT("spawn_reactor_pursuer_intro"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3446,6 +3454,7 @@ namespace
 #include "OrganoidAIBridgeWeaponRosterMission.inl"
 #include "OrganoidAIBridgeSyringeKitNextWeaponRoster.inl"
 #include "OrganoidAIBridgeWeaponRosterDatapads.inl"
+#include "OrganoidAIBridgePursuerIntro.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4289,6 +4298,22 @@ namespace
 		{
 			PreflightError = PreflightConfigureWeaponRosterArmory(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_pursuer_intro_mission"))
+		{
+			PreflightError = PreflightCreatePursuerIntroMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_weapon_roster_next_pursuer_intro"))
+		{
+			PreflightError = PreflightSetWeaponRosterNextPursuerIntro(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_pursuer_blueprint"))
+		{
+			PreflightError = PreflightCreatePursuerBlueprint(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_reactor_pursuer_intro"))
+		{
+			PreflightError = PreflightSpawnReactorPursuerIntro(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4488,6 +4513,22 @@ namespace
 		else if (Action == TEXT("configure_weapon_roster_armory"))
 		{
 			Package = CryoPackage;
+		}
+		else if (Action == TEXT("create_pursuer_intro_mission"))
+		{
+			Package = PursuerIntroMissionPackage;
+		}
+		else if (Action == TEXT("set_weapon_roster_next_pursuer_intro"))
+		{
+			Package = WeaponRosterMissionPackage;
+		}
+		else if (Action == TEXT("create_pursuer_blueprint"))
+		{
+			Package = PursuerBlueprintPackage;
+		}
+		else if (Action == TEXT("spawn_reactor_pursuer_intro"))
+		{
+			Package = ReactorPackage;
 		}
 		else if (Action == TEXT("trim_spine_landing_admin"))
 		{
@@ -5807,6 +5848,10 @@ namespace
 				|| Change->Action == TEXT("create_weapon_roster_mission")
 				|| Change->Action == TEXT("set_syringe_kit_next_weapon_roster")
 				|| Change->Action == TEXT("configure_weapon_roster_armory")
+				|| Change->Action == TEXT("create_pursuer_intro_mission")
+				|| Change->Action == TEXT("set_weapon_roster_next_pursuer_intro")
+				|| Change->Action == TEXT("create_pursuer_blueprint")
+				|| Change->Action == TEXT("spawn_reactor_pursuer_intro")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -6212,6 +6257,22 @@ namespace
 		if (Change->Action == TEXT("configure_weapon_roster_armory"))
 		{
 			return ExecuteConfigureWeaponRosterArmory(*Change);
+		}
+		if (Change->Action == TEXT("create_pursuer_intro_mission"))
+		{
+			return ExecuteCreatePursuerIntroMission(*Change);
+		}
+		if (Change->Action == TEXT("set_weapon_roster_next_pursuer_intro"))
+		{
+			return ExecuteSetWeaponRosterNextPursuerIntro(*Change);
+		}
+		if (Change->Action == TEXT("create_pursuer_blueprint"))
+		{
+			return ExecuteCreatePursuerBlueprint(*Change);
+		}
+		if (Change->Action == TEXT("spawn_reactor_pursuer_intro"))
+		{
+			return ExecuteSpawnReactorPursuerIntro(*Change);
 		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{
