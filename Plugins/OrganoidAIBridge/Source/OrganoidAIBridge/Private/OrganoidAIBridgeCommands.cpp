@@ -581,6 +581,8 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_final")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_nathan_grant_final")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -716,6 +718,8 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_final")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_nathan_grant_final")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1885,6 +1889,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 	{
 		return OrganoidAIBridgeWrites::InspectEpitopeNavMesh(Args);
 	}
+	if (Normalized == TEXT("inspect_nathan_grant_mesh"))
+	{
+		return OrganoidAIBridgeWrites::InspectNathanGrantMesh(Args);
+	}
 
 	if (OrganoidAIBridgePlaytest::IsPlaytestCommand(Normalized))
 	{
@@ -2007,6 +2015,8 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("set_alarm_pulse_oneshot")
 		|| Normalized == TEXT("rebuild_epitope_navmesh")
 		|| Normalized == TEXT("create_nathan_grant_look")
+		|| Normalized == TEXT("create_nathan_grant_final")
+		|| Normalized == TEXT("save_nathan_grant_final")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")

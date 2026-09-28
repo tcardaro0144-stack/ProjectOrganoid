@@ -4696,3 +4696,137 @@ Thirty unchanged from Final Node Zero, Neuro updated, plus Admin, `Lvl_Epitope`,
 
 - Deferred polish is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**. Beats 11–24 and this deferred pass are done. The roadmap order is complete: Research Station free respec, Syringe Kit, weapon roster, Pursuer first intro, First Combat, Node Zero (mechanism, vaccine, Sterling, escape, Conclusion choice, and NG+), and the deferred beep and NavMesh pass.
 - Do not begin further beats until separately authorized.
+
+## 2026-09-28 — Beat 25: Nathan Grant Final Mesh
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **63/63**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **36/36**. FirstCombat **32/32**. PursuerIntro **28/28**. Changes left **unstaged**. No commit and no push.
+
+**Baseline:** published deferred polish commit `1118965c2d004f49af2d18ad615a937ed2c06d0d` (`fix: alarm beep one-shot and rebuild NavMesh`) on `origin/main`. Beat 25 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mesh
+
+- Old mesh: `Content/Characters/Nathan/SKM_NathanGrant.uasset`, 15,824,250 bytes, SHA-256 `4ef4aeb24f8bc7e38388fe5042739aec6ba7498bf93637bb38217fd8689dc8d4`. It is a tinted duplicate of `SKM_Manny_Simple` with two slots, `M_Torso` and `M_HeadLegs`, and it read as a shiny black cyborg. The duplicate action left this mesh in place. Legacy `MI_NathanGrant_Torso.uasset` SHA-256 `2e9c5138c5bf97ceb41c23e7baae2107060120546081dd1266ba56125adcba68` (16,293 bytes) and `MI_NathanGrant_HeadLegs.uasset` SHA-256 `a0a2dabfccdf4dbd6a7a74dc7c3e69c10fdcc31dd1ed2b5de3eff86d0ee0c4be` (14,699 bytes) remain. Those three files are outside the Deferred Polish 34 and outside the 15 new packages.
+- New mesh: `/Game/Characters/Nathan/SKM_NathanGrant_Final`, beside the old mesh under `/Game/Characters/Nathan/`. The create action duplicates `SKM_NathanGrant`. The skeleton is `/Game/Characters/Mannequins/Meshes/SK_Mannequin`. Partition is by dominant bone, with position fallbacks so every slot is non-empty. Thirteen slots: Head 4362, Hair 2178, Stubble 2469, Eyes 205, Jacket 10043, Henley 8233, Arms 16225, Hands 23123, Cargo 10345, Boots 7557, Holster 24, Pack 7201, Badge 213. Holster, pack, and badge are recolored existing triangles. Parent material `M_NathanGrant_Solid` plus 13 material instances: `MI_NathanGrant_Head`, `MI_Hair_Brown`, `MI_Stubble`, `MI_Eyes_Blue`, `MI_Jacket_Dark`, `MI_Henley_Charcoal`, `MI_Arms_Dark`, `MI_Hands_Skin`, `MI_Cargo_Olive`, `MI_Boots`, `MI_Holster`, `MI_Pack`, `MI_Badge`.
+- `AProjectOrganoidCharacter` resolves `SKM_NathanGrant_Final`, then `SKM_NathanGrant`, then `SKM_Manny_Simple`. Camera arm stays **180**, socket stays `(0,28,18)`, `bUseControllerRotationYaw` stays true, and `yawFollowsLook` stays true. The four Nathan lines and the 7-second once replay guard were left as they were: "Five more. Each with a different job. Lytic was the emergency — these are the toolkit. No unlimited ammo.", "That was in a person. It's still walking.", "It's still wearing the lab coat. Christ.", and "I built it to heal. It learned to keep."
+- The asset thumbnail `%TEMP%\b25_nathan_final.png` is a gray mannequin. The 13 slot materials are assigned. Brown hair, blue eyes, charcoal henley, and olive cargo are the assigned slot colors, and they are not visible in that thumbnail. Every PIE shoulder-camera spawn in the catalog log recorded `arm=180 socket=(0,28,18) mesh=SKM_NathanGrant_Final yawFollowsLook=true` (76 lines). No PIE color screenshot was saved.
+
+### Persisted asset hashes
+
+The Deferred Polish **34** are unchanged on disk. Admin, `Lvl_Epitope`, Neuro, and `SW_AlarmPulse` stay at the deferred-polish values, with the other 30. Reactor remains `ab836e8821877fff52c03f3816eb8e9b0cb88cac016825c5d11703ebaef5a0bc`. FirstCombat remains `3e45c5333facff2f0b08cd079e776abdfcca4687d9a57aa6566be27530baec7e`. NodeZero remains `d4bf595454cb293ee1ea37f003d3d3a19adf80638890237e84da1d5f74441e18`. `BP_NodeZeroCore` remains `5b7f2b7c5c4bfaf7667d451ce1a8769d9af9b524050407c1cb981a1ad2eb6cb7`. Neuro remains `20594b9613e39b57223394e0eba77aa0f0e4242e1678ca2858c6d02c179a3e0e`.
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged from Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `20594b9613e39b57223394e0eba77aa0f0e4242e1678ca2858c6d02c179a3e0e` (unchanged from Deferred Polish)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged from Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `962b9145fd985b6504b5532a498cd334d89ab9ccd80bede8deff4d0127d47bd7` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged from Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `28c96470099f06240d1f637f4b878a3a0300df60c78490a69efa1fec68d247ef` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` (unchanged from Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `ab836e8821877fff52c03f3816eb8e9b0cb88cac016825c5d11703ebaef5a0bc` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_ResearchStation.uasset` SHA-256: `16c1c32d257108e4e5ec64451bb1be6f96e7c7a2b7cbeed400491294ed1185b2` (unchanged from Deferred Polish)
+- `Content/Data/Adaptations/DA_Adaptation_LocomotorDisrupt.uasset` SHA-256: `ed8ef82dd5ac1c261858c886eeb227e16c6204fe51a19d75b579328d48e4c325` (unchanged from Deferred Polish)
+- `Content/Data/Adaptations/DA_Adaptation_OpticalDisrupt.uasset` SHA-256: `d2807c9a3ba6416b40e327d28334e9a9b3a377c39964ffcf047cb2070d1f0cc0` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_SyringeKit.uasset` SHA-256: `d762bd22d6e0ff6e9f5547b5cf3812172bdc7c697a9f838da9055174d07c6a96` (unchanged from Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_BioStabilizerPistol.uasset` SHA-256: `3ece0e35beaed0c6096e8fe465602c38d7cc29b121a79524b83c37ebe913f456` (unchanged from Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_PulseCarbine.uasset` SHA-256: `6b0c5607ff5dee24b8faa26f1381ec1fbc0f1aa062d5a6c376984db1bf9cc79d` (unchanged from Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_CryoInjector.uasset` SHA-256: `23ef8ce0f51a8f649c97ca534a134db3531f3a126c822e1b3a5029b06ec8e366` (unchanged from Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_DenaturingShotgun.uasset` SHA-256: `132afc52484f8e0fd9d4428f27b4f8b195b6af70c0d410bc60a312a648598e51` (unchanged from Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_IncineratorLance.uasset` SHA-256: `17942d3fe91afe03663122428fc7f95b646e1493b24ae81a373b84a135847048` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_WeaponRoster.uasset` SHA-256: `8d17407208161cbdb5dd7c0b413082098537537b7ad910c4093c676f415f2806` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_PursuerIntro.uasset` SHA-256: `d6d769326b901e7e07e134d22695ca0066897c0579919aa8f05cb0f0be4579b9` (unchanged from Deferred Polish)
+- `Content/AI/BP_Pursuer.uasset` SHA-256: `e7bdc70df85d39850f1b8a024c705767aa1ff3ca18d638313e8772f28e4ea354` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_FirstCombat.uasset` SHA-256: `3e45c5333facff2f0b08cd079e776abdfcca4687d9a57aa6566be27530baec7e` (unchanged from Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NodeZero.uasset` SHA-256: `d4bf595454cb293ee1ea37f003d3d3a19adf80638890237e84da1d5f74441e18` (unchanged from Deferred Polish)
+- `Content/AI/BP_NodeZeroCore.uasset` SHA-256: `5b7f2b7c5c4bfaf7667d451ce1a8769d9af9b524050407c1cb981a1ad2eb6cb7` (unchanged from Deferred Polish)
+- `Content/AI/BP_TransformedScientist.uasset` SHA-256: `4d8aebe423b007657662f187f537e9bd1fd477a3dd92fc4b214f00bdf0baaba8` (unchanged from Deferred Polish)
+- `Content/Maps/Lvl_Epitope.umap` SHA-256: `1f575c26568840d7e8a78d4ec87e8cb91b6e87d072ab3555af82e777820118d8` (unchanged from Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Admin.umap` SHA-256: `55668d2d6ab8fdb6b9a2aaf336a8897362dea473929cd5e8c6e75fd58dba719b` (unchanged from Deferred Polish)
+- `Content/Audio/Ambient/SW_AlarmPulse.uasset` SHA-256: `f16ace0e6b7fe0831e661c7f9b9dbb6e2c959c50c10d73966bdd7256bdee02e2` (unchanged from Deferred Polish)
+
+Fifteen new character packages sit outside that list:
+
+- `Content/Characters/Nathan/SKM_NathanGrant_Final.uasset` SHA-256: `53902c6bf85770fbdb54f577c622c6904f6198475ee64de17bad298ba9efdbd1` (new; 17,223,708 bytes; outside the 34)
+- `Content/Characters/Nathan/M_NathanGrant_Solid.uasset` SHA-256: `c0276d75a7c3085ad721c3767a3a20045f48431e3ea95180a01f6a26537d9379` (new; 7,263 bytes)
+- `Content/Characters/Nathan/MI_NathanGrant_Head.uasset` SHA-256: `bdc8093c36c5c0b06ffcf00d22939fbc5350c327c438df7d3c24ca2fc4f3e72b` (new; 9,516 bytes)
+- `Content/Characters/Nathan/MI_Hair_Brown.uasset` SHA-256: `27c7240430e821a0ddf76b254c91262b22cd117863b7e8ea7e0f35913237cdfe` (new; 9,480 bytes)
+- `Content/Characters/Nathan/MI_Stubble.uasset` SHA-256: `901b9626a310db389cd582fcee0d5b07185fc0395bf9526c49057f24554bab09` (new; 9,462 bytes)
+- `Content/Characters/Nathan/MI_Eyes_Blue.uasset` SHA-256: `b6afea214dcad1f4008eceb3f2a16c656ff6c9b0766be6829821f67ae5366adf` (new; 9,474 bytes)
+- `Content/Characters/Nathan/MI_Jacket_Dark.uasset` SHA-256: `931aa6c185379ce2c982043afc3addee9ae1d11e8e1df85b029c93ffa7a8091a` (new; 9,486 bytes)
+- `Content/Characters/Nathan/MI_Henley_Charcoal.uasset` SHA-256: `5228ad2ed36d3d379e74dfa35b8478b31e936b07ecfc0a994d8f6321d894887d` (new; 9,510 bytes)
+- `Content/Characters/Nathan/MI_Arms_Dark.uasset` SHA-256: `dfd47fcf56e5c2bb4f15f5eeb156911b2419e780314e1bda1f7d9871877311bd` (new; 9,474 bytes)
+- `Content/Characters/Nathan/MI_Hands_Skin.uasset` SHA-256: `5ab0d25801d4969e344930ac46213b96a6f5330e445257396ac3f760ee09b115` (new; 9,480 bytes)
+- `Content/Characters/Nathan/MI_Cargo_Olive.uasset` SHA-256: `779b30530987711a4c8d7365c70ff66ebd5f587aa7fe931042cee8fdba6d8aad` (new; 9,486 bytes)
+- `Content/Characters/Nathan/MI_Boots.uasset` SHA-256: `9ca23ef8c155644423af218aafc46ebbaf5d6356ee1da4b338186579ceacc3b9` (new; 9,450 bytes)
+- `Content/Characters/Nathan/MI_Holster.uasset` SHA-256: `c8951d07762093be886f85e8f5ddb0fe247fb10be5d6a53d185a7c86f256c1de` (new; 9,462 bytes)
+- `Content/Characters/Nathan/MI_Pack.uasset` SHA-256: `715cc2d9c9f35008d0a718922c33347b3c622256dcc913340af955778326fc00` (new; 9,444 bytes)
+- `Content/Characters/Nathan/MI_Badge.uasset` SHA-256: `55b54db343f6fd05a7294394caba0625e32deb228380a8605f451f9ade018600` (new; 9,450 bytes)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. The first script run crashed in the mesh partition because `GetPolygonVertexInstances` returns a `TArray` by value and a view of that temporary was dangling. The fix copies the vertex instances into a `TArray`. That fix was relinked with the editor closed. The second script run completed. Create `chg_2599ae7f-4f26-603f-3d35-aeb48e0b0ae5` reported classification bones, 13 slots, legacy kept, and saves false. Save `chg_52ddda23-42af-59e7-009c-ed85b0fcd3d6` persisted the 15 character packages. Dirty worlds were 0. `dirty_count` was 0. Maps, missions, weapons, and adaptations stayed clean.
+- Targeted suite **8/8**, script exit 0.
+  - `BeepClickInjection_Functional` **12/12** `ptr_cc7cdf9c-4033-7a21-40e9-4e9628f046bb`
+  - `NodeZero_Functional` **36/36** `ptr_4459ccc1-4e44-2c29-0bc4-c089a29a68a9`
+  - `FirstCombat_Functional` **32/32** `ptr_bda6ae4b-4e16-df60-9ebb-e89522c76cfa`
+  - `PursuerIntro_Functional` **28/28** `ptr_6a371aab-4a6a-fa8a-250b-ee835c29675a`
+  - `WeaponRoster_Functional` **49/49** `ptr_7c629a5c-48a6-3cae-aa74-0f87682049ca`
+  - `SyringeKit_Functional` **46/46** `ptr_28055c9b-4c47-af37-11f2-9e91049b8cfc`
+  - `ResearchStationRespec_Functional` **78/78** `ptr_f2938159-46fe-dccc-40a3-7c93783db407`
+  - `TheConclusion_Functional` **78/78** `ptr_45c64233-48eb-4a46-c724-d48e1f9b1fa0`
+  - Those run ids were reported by the second Nathan script. `%TEMP%\b25_targeted_editor.log` on disk afterward is a later editor log and does not still contain them.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, `catalog_exit` 0, aggregate **5398** assertions. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. The catalog log has no `NAVMESH NEEDS TO BE REBUILT`. Two early `curl (7)` connect failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63** `CryoEntry_Functional`, `CryoEvidence_Functional`, `ComputeEntry_Functional`, `ComputeHandover_Functional`, `TheConclusion_Functional`, `ResearchStationRespec_Functional`, `SyringeKit_Functional`, `LocomotorDisrupt_Functional`, `OpticalDisrupt_Functional`, `WeaponRoster_Functional`, `BioStabilizerPistol_Functional`, `PulseCarbine_Functional`, `PursuerIntro_Functional`, `FirstCombat_Functional`, `NodeZero_Functional`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_c510e8ea-4bc1-4185-97f4-15a62fde439d`
+  - `HostCombatLoop_Functional` **33/33** `ptr_e89c8326-4b69-7cb7-1731-0f8f3ea216ba`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_62dfa7a7-4962-dc41-ecb3-b9aa7067746c`
+  - `CryoEntry_Functional` **78** `ptr_cf4a4aae-4f51-4c65-1e70-fab03a488d3d`
+  - `CryoEvidence_Functional` **100** `ptr_52f2ac06-4fb2-c3a2-15f7-a6b52c202a7c`
+  - `ComputeEntry_Functional` **78** `ptr_447fd358-4a94-a688-0ecc-d88cd1c6af35`
+  - `ComputeHandover_Functional` **101** `ptr_ed435482-4e87-8d0c-9f0f-4b91c8000688`
+  - `TheConclusion_Functional` **78** `ptr_6e9f0486-4a51-0604-34e4-aeb9a3698410`
+  - `ResearchStationRespec_Functional` **78** `ptr_119f6e8f-4427-d00e-5746-3ea583c090f9`
+  - `SyringeKit_Functional` **46** `ptr_2b923b55-46bc-a8a9-c421-0abfb4dfa6bf`
+  - `LocomotorDisrupt_Functional` **17** `ptr_b7a8190e-49c7-858d-6462-dda40f2e8bde`
+  - `OpticalDisrupt_Functional` **16** `ptr_902868be-4e45-be9a-916d-beb39f9ebc2e`
+  - `WeaponRoster_Functional` **49** `ptr_3b6b6462-4ec8-c11a-7669-c091fa37096f`
+  - `BioStabilizerPistol_Functional` **17** `ptr_cb25993c-4083-265a-d3d8-f1b35da941e3`
+  - `PulseCarbine_Functional` **17** `ptr_2adfbd97-4e82-1760-b699-25a957779f65`
+  - `PursuerIntro_Functional` **28** `ptr_11dcbb12-4416-ba3b-f9f5-cf8d36e2cda1`
+  - `FirstCombat_Functional` **32** `ptr_6b5acbdd-417c-5130-0707-3c86f184996a`
+  - `NodeZero_Functional` **36** `ptr_62af0263-4266-3695-3a08-6cab1af8375e`
+  - Every catalog PIE spawn logged `arm=180 socket=(0,28,18) mesh=SKM_NathanGrant_Final yawFollowsLook=true`.
+  - The 34 persisted hashes were unchanged after the run. The 15 new character files are outside that list. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b25_complete63_c8d127afe8a44e5bb797189aaa0eba40`
+  - Log: `%TEMP%\b25_complete_editor.log`. This catalog replaced the earlier deferred-polish text at that same path. The deferred-polish evidence folder remains `C:\Users\tomca\AppData\Local\Temp\b25_complete63_c17acaeaf23e4094be033f6b3cd8b473`.
+- The unstaged diff is `AProjectOrganoidCharacter` mesh resolution, the bridge allowlist for `create_nathan_grant_final` and `save_nathan_grant_final`, `OrganoidAIBridgeNathanGrantFinal.inl`, and the 15 new character packages.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `SW_AlarmPulse` is a one-shot, and `BeepClickInjection_Functional` is **12/12**.
+2. The NavMesh rebuild warning is resolved. The catalog log has no `NAVMESH NEEDS TO BE REBUILT`.
+3. `HostCombatLoop_Functional` passed **33/33**. Still deferred as a preexisting isolation defect, not a Beat 25 regression.
+4. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a Beat 25 regression.
+5. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a Beat 25 regression.
+6. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+7. The Nathan Grant visual first pass is the published look commit `4fb6a20c80efa0c787ad73416a1fa80324fc684c`. Beat 25 replaces that shiny two-slot read with the 13-slot `SKM_NathanGrant_Final` mesh. The thumbnail remains a gray mannequin.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 26 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**. `PROJECT_STATE.md` now includes this Beat 25 section and is unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 25 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
+- Do not begin the world color pass until separately authorized. The roadmap is complete. Extra polish: the Nathan Grant final mesh is done. The next recommended pass is world color.

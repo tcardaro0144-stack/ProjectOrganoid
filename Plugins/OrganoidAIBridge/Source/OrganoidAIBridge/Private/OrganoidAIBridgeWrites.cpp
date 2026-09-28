@@ -5,7 +5,20 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
 #include "Engine/SkeletalMesh.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Materials/MaterialExpressionMultiply.h"
+#include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
+#include "Factories/MaterialFactoryNew.h"
+#include "Factories/MaterialInstanceConstantFactoryNew.h"
+#include "MeshDescription.h"
+#include "StaticMeshAttributes.h"
+#include "SkeletalMeshAttributes.h"
+#include "ObjectTools.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "Misc/FileHelper.h"
 
 #include "Components/ActorComponent.h"
 #include "Components/BoxComponent.h"
@@ -218,6 +231,8 @@ namespace
 		TEXT("set_alarm_pulse_oneshot"),
 		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
+		TEXT("create_nathan_grant_final"),
+		TEXT("save_nathan_grant_final"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -332,6 +347,8 @@ namespace
 		TEXT("set_alarm_pulse_oneshot"),
 		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
+		TEXT("create_nathan_grant_final"),
+		TEXT("save_nathan_grant_final"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3482,6 +3499,7 @@ namespace
 #include "OrganoidAIBridgeNodeZero.inl"
 #include "OrganoidAIBridgeDeferredPolish.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
+#include "OrganoidAIBridgeNathanGrantFinal.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4384,6 +4402,14 @@ namespace
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_nathan_grant_final"))
+		{
+			PreflightError = PreflightCreateNathanGrantFinal(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("save_nathan_grant_final"))
+		{
+			PreflightError = PreflightSaveNathanGrantFinal(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4524,6 +4550,10 @@ namespace
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			Package = EpitopePackage;
+		}
+		else if (Action == TEXT("create_nathan_grant_final") || Action == TEXT("save_nathan_grant_final"))
+		{
+			Package = NathanFinalMeshPackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -5969,6 +5999,8 @@ namespace
 				|| Change->Action == TEXT("set_alarm_pulse_oneshot")
 				|| Change->Action == TEXT("rebuild_epitope_navmesh")
 				|| Change->Action == TEXT("create_nathan_grant_look")
+				|| Change->Action == TEXT("create_nathan_grant_final")
+				|| Change->Action == TEXT("save_nathan_grant_final")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -6434,6 +6466,14 @@ namespace
 		{
 			return ExecuteCreateNathanGrantLook(*Change);
 		}
+		if (Change->Action == TEXT("create_nathan_grant_final"))
+		{
+			return ExecuteCreateNathanGrantFinal(*Change);
+		}
+		if (Change->Action == TEXT("save_nathan_grant_final"))
+		{
+			return ExecuteSaveNathanGrantFinal(*Change);
+		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			return ExecuteSpawnNeuroAdaptationSubject(*Change);
@@ -6503,6 +6543,11 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectEpitopeNavMesh(const TSharedPtr<FJsonObject>& Args)
 	{
 		return CmdInspectEpitopeNavMesh(Args);
+	}
+
+	TSharedRef<FJsonObject> InspectNathanGrantMesh(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectNathanGrantMesh(Args);
 	}
 
 	TSharedRef<FJsonObject> Dispatch(
