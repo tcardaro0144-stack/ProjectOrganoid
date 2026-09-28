@@ -22,7 +22,12 @@ namespace ProjectOrganoidAmbience
 	/** Combat/Critical must not keep a looping voice alive at inaudible volume. */
 	static constexpr float LayerSilentVolume = KINDA_SMALL_NUMBER;
 
-	static void ApplySilentAwareLayerPlayback(UAudioComponent* Component, float Volume, bool bStopWhenSilent)
+	static void ApplySilentAwareLayerPlayback(
+		UAudioComponent* Component,
+		float Volume,
+		bool bStopWhenSilent,
+		bool bOneShotRisingEdge = false,
+		bool* bOneShotConsumed = nullptr)
 	{
 		if (!Component)
 		{
@@ -36,6 +41,27 @@ namespace ProjectOrganoidAmbience
 			if (Component->IsPlaying())
 			{
 				Component->Stop();
+			}
+			if (bOneShotConsumed)
+			{
+				*bOneShotConsumed = false;
+			}
+			return;
+		}
+
+		if (bOneShotRisingEdge)
+		{
+			if (bOneShotConsumed && *bOneShotConsumed)
+			{
+				return;
+			}
+			if (!Component->IsPlaying())
+			{
+				Component->Play();
+				if (bOneShotConsumed)
+				{
+					*bOneShotConsumed = true;
+				}
 			}
 			return;
 		}
@@ -532,8 +558,8 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateLayerVolumes(float DeltaTime)
 	{
 		TensionLayerAudio->SetVolumeMultiplier(TensionLayerVolume);
 	}
-	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CombatLayerAudio, CombatLayerVolume, true);
-	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CriticalLayerAudio, CriticalLayerVolume, true);
+	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CombatLayerAudio, CombatLayerVolume, true, true, &bCombatAlarmOneShotConsumed);
+	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CriticalLayerAudio, CriticalLayerVolume, true, true, &bCriticalAlarmOneShotConsumed);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::UpdateMixParameters(float DeltaTime)
@@ -574,8 +600,8 @@ void UProjectOrganoidAudioAmbienceSubsystem::EnsureMusicLayers(AProjectOrganoidC
 
 	SyncLayerComponent(AmbientLayerAudio, Character, AmbientLayerSound, TEXT("OrganoidAmbientLayer"), AmbientLayerVolume, false);
 	SyncLayerComponent(TensionLayerAudio, Character, TensionLayerSound, TEXT("OrganoidTensionLayer"), TensionLayerVolume, false);
-	SyncLayerComponent(CombatLayerAudio, Character, CombatLayerSound, TEXT("OrganoidCombatLayer"), CombatLayerVolume, true);
-	SyncLayerComponent(CriticalLayerAudio, Character, CriticalLayerSound, TEXT("OrganoidCriticalLayer"), CriticalLayerVolume, true);
+	SyncLayerComponent(CombatLayerAudio, Character, CombatLayerSound, TEXT("OrganoidCombatLayer"), CombatLayerVolume, true, true, &bCombatAlarmOneShotConsumed);
+	SyncLayerComponent(CriticalLayerAudio, Character, CriticalLayerSound, TEXT("OrganoidCriticalLayer"), CriticalLayerVolume, true, true, &bCriticalAlarmOneShotConsumed);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
@@ -584,7 +610,9 @@ void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
 	const TSoftObjectPtr<USoundBase>& SoftSound,
 	const TCHAR* ComponentName,
 	float Volume,
-	bool bStopWhenSilent)
+	bool bStopWhenSilent,
+	bool bOneShotRisingEdge,
+	bool* bOneShotConsumed)
 {
 	USoundBase* Sound = SoftSound.LoadSynchronous();
 	if (!Sound)
@@ -611,7 +639,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
 		Component->SetSound(Sound);
 	}
 
-	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(Component, Volume, bStopWhenSilent);
+	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(Component, Volume, bStopWhenSilent, bOneShotRisingEdge, bOneShotConsumed);
 }
 
 void UProjectOrganoidAudioAmbienceSubsystem::PushStateSoundMix(EProjectOrganoidAmbienceState State)

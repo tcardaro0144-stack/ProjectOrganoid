@@ -16,4 +16,6 @@ namespace OrganoidAIBridgeWrites
 		FOrganoidAIBridgeLogSink* LogSink);
 
 	TSharedRef<FJsonObject> InspectAdminBlock4NavMesh(const TSharedPtr<FJsonObject>& Args);
+	TSharedRef<FJsonObject> InspectAlarmPulse(const TSharedPtr<FJsonObject>& Args);
+	TSharedRef<FJsonObject> InspectEpitopeNavMesh(const TSharedPtr<FJsonObject>& Args);
 }

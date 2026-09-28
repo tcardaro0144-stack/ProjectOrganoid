@@ -53,9 +53,12 @@
 #include "Engine/UserDefinedEnum.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "EditorBuildUtils.h"
 #include "NavMesh/NavMeshBoundsVolume.h"
+#include "NavMesh/RecastNavMesh.h"
 #include "NavigationData.h"
 #include "NavigationSystem.h"
+#include "Sound/SoundWave.h"
 #include "Builders/CubeBuilder.h"
 #include "ActorFactories/ActorFactory.h"
 #include "Misc/DateTime.h"
@@ -212,6 +215,8 @@ namespace
 		TEXT("set_first_combat_next_node_zero"),
 		TEXT("create_node_zero_blueprint"),
 		TEXT("spawn_reactor_node_zero"),
+		TEXT("set_alarm_pulse_oneshot"),
+		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -324,6 +329,8 @@ namespace
 		TEXT("set_first_combat_next_node_zero"),
 		TEXT("create_node_zero_blueprint"),
 		TEXT("spawn_reactor_node_zero"),
+		TEXT("set_alarm_pulse_oneshot"),
+		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3473,6 +3480,7 @@ namespace
 #include "OrganoidAIBridgePursuerIntro.inl"
 #include "OrganoidAIBridgeFirstCombat.inl"
 #include "OrganoidAIBridgeNodeZero.inl"
+#include "OrganoidAIBridgeDeferredPolish.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4364,6 +4372,14 @@ namespace
 		{
 			PreflightError = PreflightSpawnReactorNodeZero(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("set_alarm_pulse_oneshot"))
+		{
+			PreflightError = PreflightSetAlarmPulseOneshot(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("rebuild_epitope_navmesh"))
+		{
+			PreflightError = PreflightRebuildEpitopeNavMesh(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4611,6 +4627,14 @@ namespace
 		else if (Action == TEXT("spawn_reactor_node_zero"))
 		{
 			Package = ReactorPackage;
+		}
+		else if (Action == TEXT("set_alarm_pulse_oneshot"))
+		{
+			Package = AlarmPulsePackage;
+		}
+		else if (Action == TEXT("rebuild_epitope_navmesh"))
+		{
+			Package = EpitopePackage;
 		}
 		else if (Action == TEXT("trim_spine_landing_admin"))
 		{
@@ -5942,6 +5966,8 @@ namespace
 				|| Change->Action == TEXT("set_first_combat_next_node_zero")
 				|| Change->Action == TEXT("create_node_zero_blueprint")
 				|| Change->Action == TEXT("spawn_reactor_node_zero")
+				|| Change->Action == TEXT("set_alarm_pulse_oneshot")
+				|| Change->Action == TEXT("rebuild_epitope_navmesh")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -6396,6 +6422,14 @@ namespace
 		{
 			return ExecuteSpawnReactorNodeZero(*Change);
 		}
+		if (Change->Action == TEXT("set_alarm_pulse_oneshot"))
+		{
+			return ExecuteSetAlarmPulseOneshot(*Change);
+		}
+		if (Change->Action == TEXT("rebuild_epitope_navmesh"))
+		{
+			return ExecuteRebuildEpitopeNavMesh(*Change);
+		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{
 			return ExecuteCreateNathanGrantLook(*Change);
@@ -6459,6 +6493,16 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectAdminBlock4NavMesh(const TSharedPtr<FJsonObject>& Args)
 	{
 		return CmdInspectAdminBlock4NavMesh(Args);
+	}
+
+	TSharedRef<FJsonObject> InspectAlarmPulse(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectAlarmPulse(Args);
+	}
+
+	TSharedRef<FJsonObject> InspectEpitopeNavMesh(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectEpitopeNavMesh(Args);
 	}
 
 	TSharedRef<FJsonObject> Dispatch(

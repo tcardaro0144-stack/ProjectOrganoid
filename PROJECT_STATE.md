@@ -4582,3 +4582,117 @@ Persisted asset hashes 25: unchanged 16 NeuralSlowUse `f4ea930017a599ec585381d38
 
 - Final Node Zero is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
 - Do not begin deferred beep or NavMesh polish until separately authorized. The locked roadmap order continues with the deferred `SW_AlarmPulse` looping UI beep, NavMesh, and audio.
+
+## 2026-09-28 — Deferred Polish: Alarm One-Shot + NavMesh Rebuild
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **63/63**. Beep **12/12** fixed. Host **33/33**. Bio **59/59**. NodeZero **36/36**. FirstCombat **32/32**. PursuerIntro **28/28**. Changes left **unstaged**. No commit, no push, and no further beats.
+
+**Baseline:** published Final Node Zero commit `3f362a9dfaa6586a5ce3fbebafa265af3e191b61` (`feat: implement Node Zero`) on `origin/main`. Deferred polish remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Fixed assets
+
+- `/Game/Audio/Ambient/SW_AlarmPulse` has `bLooping` false. PCM length is **1.200 s** at **878.57 Hz**, and `hz_is_880` is true. `GetDuration()` still reports the looping sentinel `10000` while `bLooping` is true, so the bridge measures duration from PCM frame count divided by sample rate. The combat and critical layers play that pulse once on the rising edge. `CombatLingerSeconds` stays **8** and does not restart the pulse. The authored **200-unit** proximity is unchanged. The testing-bot left-click workaround is unchanged. `BeepClickInjection_Functional` is **12/12**.
+- NavMesh: `Lvl_Epitope`, `SL_Epitope_Admin`, `SL_Epitope_NeuroGenetics`, `SL_Epitope_Cryo`, `SL_Epitope_Compute`, and `SL_Epitope_Reactor` were loaded. Build Paths ran with save false. `save_maps` then persisted only the packages Build Paths newly dirtied: Admin, Neuro, and `Lvl_Epitope`. Cryo, Compute, and Reactor were not saved. `RecastNavMesh-Default` lives on `Lvl_Epitope` and `needs_rebuild` is false. The editor log has no `NAVMESH NEEDS TO BE REBUILT`.
+- Mission, weapon, and adaptation packages were not dirtied. Thirty of the Final Node Zero 31 hashes are unchanged. Neuro is the exception, because Build Paths dirtied it and the save persisted that package.
+
+### Persisted asset hashes
+
+Thirty unchanged from Final Node Zero, Neuro updated, plus Admin, `Lvl_Epitope`, and `SW_AlarmPulse`. That is **34**.
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `20594b9613e39b57223394e0eba77aa0f0e4242e1678ca2858c6d02c179a3e0e` (was `3109ff84565b90e6f1bf42ec934f0c498ef1ec7863ec50538d99e99ac4ddd351` — NavMesh rebuild saved Neuro)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `962b9145fd985b6504b5532a498cd334d89ab9ccd80bede8deff4d0127d47bd7` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `28c96470099f06240d1f637f4b878a3a0300df60c78490a69efa1fec68d247ef` (unchanged)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (unchanged)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` (unchanged; Next stays ResearchStation)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `ab836e8821877fff52c03f3816eb8e9b0cb88cac016825c5d11703ebaef5a0bc` (unchanged)
+- `Content/Data/Missions/DA_Mission_ResearchStation.uasset` SHA-256: `16c1c32d257108e4e5ec64451bb1be6f96e7c7a2b7cbeed400491294ed1185b2` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_LocomotorDisrupt.uasset` SHA-256: `ed8ef82dd5ac1c261858c886eeb227e16c6204fe51a19d75b579328d48e4c325` (unchanged)
+- `Content/Data/Adaptations/DA_Adaptation_OpticalDisrupt.uasset` SHA-256: `d2807c9a3ba6416b40e327d28334e9a9b3a377c39964ffcf047cb2070d1f0cc0` (unchanged)
+- `Content/Data/Missions/DA_Mission_SyringeKit.uasset` SHA-256: `d762bd22d6e0ff6e9f5547b5cf3812172bdc7c697a9f838da9055174d07c6a96` (unchanged)
+- `Content/Data/Weapons/DA_Weapon_BioStabilizerPistol.uasset` SHA-256: `3ece0e35beaed0c6096e8fe465602c38d7cc29b121a79524b83c37ebe913f456` (unchanged)
+- `Content/Data/Weapons/DA_Weapon_PulseCarbine.uasset` SHA-256: `6b0c5607ff5dee24b8faa26f1381ec1fbc0f1aa062d5a6c376984db1bf9cc79d` (unchanged)
+- `Content/Data/Weapons/DA_Weapon_CryoInjector.uasset` SHA-256: `23ef8ce0f51a8f649c97ca534a134db3531f3a126c822e1b3a5029b06ec8e366` (unchanged)
+- `Content/Data/Weapons/DA_Weapon_DenaturingShotgun.uasset` SHA-256: `132afc52484f8e0fd9d4428f27b4f8b195b6af70c0d410bc60a312a648598e51` (unchanged)
+- `Content/Data/Weapons/DA_Weapon_IncineratorLance.uasset` SHA-256: `17942d3fe91afe03663122428fc7f95b646e1493b24ae81a373b84a135847048` (unchanged)
+- `Content/Data/Missions/DA_Mission_WeaponRoster.uasset` SHA-256: `8d17407208161cbdb5dd7c0b413082098537537b7ad910c4093c676f415f2806` (unchanged; Next stays PursuerIntro)
+- `Content/Data/Missions/DA_Mission_PursuerIntro.uasset` SHA-256: `d6d769326b901e7e07e134d22695ca0066897c0579919aa8f05cb0f0be4579b9` (unchanged; Next stays FirstCombat)
+- `Content/AI/BP_Pursuer.uasset` SHA-256: `e7bdc70df85d39850f1b8a024c705767aa1ff3ca18d638313e8772f28e4ea354` (unchanged)
+- `Content/Data/Missions/DA_Mission_FirstCombat.uasset` SHA-256: `3e45c5333facff2f0b08cd079e776abdfcca4687d9a57aa6566be27530baec7e` (unchanged)
+- `Content/Data/Missions/DA_Mission_NodeZero.uasset` SHA-256: `d4bf595454cb293ee1ea37f003d3d3a19adf80638890237e84da1d5f74441e18` (unchanged)
+- `Content/AI/BP_NodeZeroCore.uasset` SHA-256: `5b7f2b7c5c4bfaf7667d451ce1a8769d9af9b524050407c1cb981a1ad2eb6cb7` (unchanged)
+- `Content/AI/BP_TransformedScientist.uasset` SHA-256: `4d8aebe423b007657662f187f537e9bd1fd477a3dd92fc4b214f00bdf0baaba8` (unchanged from Beat 23)
+- `Content/Maps/Lvl_Epitope.umap` SHA-256: `1f575c26568840d7e8a78d4ec87e8cb91b6e87d072ab3555af82e777820118d8` (was `2219b01c3d5646303ce48db9ff42de16d3c1f9acfd6f6ed742de565d8b20bc05` — NavMesh rebuild; `RecastNavMesh-Default` lives here)
+- `Content/Maps/Epitope/SL_Epitope_Admin.umap` SHA-256: `55668d2d6ab8fdb6b9a2aaf336a8897362dea473929cd5e8c6e75fd58dba719b` (was `1f7390548d46a0ffdfbfd5fef3493f64ff2e2695e35adc78614819344b7cc7c2` — NavMesh rebuild)
+- `Content/Audio/Ambient/SW_AlarmPulse.uasset` SHA-256: `f16ace0e6b7fe0831e661c7f9b9dbb6e2c959c50c10d73966bdd7256bdee02e2` (was `5ddb8636264f344c9a756a2d1423508b854cef89e2ea7cd66a5a387c85871f9c` — looping false, 1.200 s one-shot)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. `build_exit` 0. The duration preflight then changed while the editor was already open, and Live Coding compiled that change successfully. Re-inspect reported duration **1.200**, looping true, **878.57 Hz**, before the one-shot write.
+- Targeted suite **8/8**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0. Log: `%TEMP%\b25_targeted_editor.log`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_25b55b6f-49f5-8c11-9770-ca8b350a7778`
+  - `NodeZero_Functional` **36/36** `ptr_ec883193-4fd4-5f59-5fa1-d9ae28c5c784`
+  - `FirstCombat_Functional` **32/32** `ptr_82a14622-4ab6-55be-23ab-539d705f8253`
+  - `PursuerIntro_Functional` **28/28** `ptr_1015646c-4185-7994-2a2b-e4b82fccdbc9`
+  - `WeaponRoster_Functional` **49/49** `ptr_c5a8349e-49a9-4ebf-00f9-8daa7ac79bfc`
+  - `SyringeKit_Functional` **46/46** `ptr_ae325836-4b1b-cac8-6936-78b059e84a4c`
+  - `ResearchStationRespec_Functional` **78/78** `ptr_cd74daf5-461c-d503-c8dc-83b497b81df6`
+  - `TheConclusion_Functional` **78/78** `ptr_0a6879dd-4eb1-8648-921d-0a8612b50e8c`
+- `HostCombatLoop_Functional` retry before the second catalog: **33/33** `ptr_3d696a57-4b30-875a-81ca-fb8cba7fc541`. `CloseMainWindow` true, process count 0, dirty 0.
+- First complete catalog: outcome `FAIL`, **63** tests, **1** failed, **5387** assertions. `HostCombatLoop_Functional` **21/22** `ptr_d81f0ea3-4f57-08d3-d315-3abee4793021`. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Early `curl (7)` connect failures happened while the editor was starting. Evidence: `C:\Users\tomca\AppData\Local\Temp\b25_complete63_0bf2f852a026452cb5ed0e01acc3cfda`.
+- Second complete catalog: outcome `COMPLETE_PASS`, script exit 0, **63/63**, **5398** assertions. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. No `NAVMESH NEEDS TO BE REBUILT`. Early `curl (7)` connect failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63** `CryoEntry_Functional`, `CryoEvidence_Functional`, `ComputeEntry_Functional`, `ComputeHandover_Functional`, `TheConclusion_Functional`, `ResearchStationRespec_Functional`, `SyringeKit_Functional`, `LocomotorDisrupt_Functional`, `OpticalDisrupt_Functional`, `WeaponRoster_Functional`, `BioStabilizerPistol_Functional`, `PulseCarbine_Functional`, `PursuerIntro_Functional`, `FirstCombat_Functional`, `NodeZero_Functional`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_62a75536-40e6-1af6-b7b8-3baf05af2093`
+  - `HostCombatLoop_Functional` **33/33** `ptr_6f07bc63-4a1c-5a88-5537-93924c253684`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_6e176b11-435a-daa9-d202-1fab36cb5456`
+  - `CryoEvidence_Functional` **100** `ptr_75a6f4f2-487e-9c59-b131-4dabba951dac`
+  - `ComputeEntry_Functional` **78** `ptr_39da234b-4b8b-064d-d72d-2d80ad91bcdb`
+  - `ComputeHandover_Functional` **101** `ptr_82678b74-4140-5d69-5976-52ba17b90d51`
+  - `TheConclusion_Functional` **78** `ptr_b1a340b5-419f-1fce-d13e-00ac9b301a03`
+  - `ResearchStationRespec_Functional` **78** `ptr_a109e72f-404a-0d11-585b-aba3262c91ff`
+  - `SyringeKit_Functional` **46** `ptr_87cdb98e-4756-3c3d-d03f-54967d98bc93`
+  - `LocomotorDisrupt_Functional` **17** `ptr_e9fc7569-48e0-70b5-3340-1b85cb6f31a8`
+  - `OpticalDisrupt_Functional` **16** `ptr_de6ad59e-4307-b327-fdd5-56bee9e32fa2`
+  - `WeaponRoster_Functional` **49** `ptr_bcbe2132-4be0-a0fb-b821-ba9d1a399180`
+  - `BioStabilizerPistol_Functional` **17** `ptr_5d8f6f1d-4a4b-d111-4941-98bb17454521`
+  - `PulseCarbine_Functional` **17** `ptr_84bc2cf6-4a73-238e-b1b2-49b7177f4ae8`
+  - `PursuerIntro_Functional` **28** `ptr_ed9dada4-4f22-65ed-3714-bc97344dab90`
+  - `FirstCombat_Functional` **32** `ptr_4b811075-43b7-b3eb-59d6-5d953b644c45`
+  - `NodeZero_Functional` **36** `ptr_781f85d4-475f-9e0c-dc53-23be11611449`
+  - The 34 persisted hashes were unchanged after the run. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b25_complete63_c17acaeaf23e4094be033f6b3cd8b473`
+  - Log: `%TEMP%\b25_complete_editor.log`
+- The diff is `SW_AlarmPulse`, `Lvl_Epitope`, `SL_Epitope_Admin`, `SL_Epitope_NeuroGenetics`, the ambience one-shot rising-edge guard, and the bridge duration fix plus the allowlist for `set_alarm_pulse_oneshot` and `rebuild_epitope_navmesh`.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `SW_AlarmPulse` is a one-shot with looping false, and `BeepClickInjection_Functional` is **12/12**.
+2. The NavMesh rebuild warning is resolved. `RecastNavMesh-Default` does not need a rebuild, and the log has no `NAVMESH NEEDS TO BE REBUILT`.
+3. `HostCombatLoop_Functional` was flaky at **21/22** on the first catalog and passed **33/33** on the retry and on the second catalog. Still deferred as a preexisting isolation defect, not a polish regression.
+4. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a polish regression.
+5. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a polish regression.
+6. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+7. The Nathan Grant visual first pass is done in the published look commit `4fb6a20c80efa0c787ad73416a1fa80324fc684c`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Deferred polish is done.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Deferred polish is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**. Beats 11–24 and this deferred pass are done. The roadmap order is complete: Research Station free respec, Syringe Kit, weapon roster, Pursuer first intro, First Combat, Node Zero (mechanism, vaccine, Sterling, escape, Conclusion choice, and NG+), and the deferred beep and NavMesh pass.
+- Do not begin further beats until separately authorized.

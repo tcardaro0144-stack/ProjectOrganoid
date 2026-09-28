@@ -293,6 +293,9 @@ protected:
 	bool bCombatActive = false;
 	bool bSectorPowerStress = false;
 	bool bWorldDelegatesBound = false;
+	/** SW_AlarmPulse plays once when its layer rises. CombatLingerSeconds does not restart it. */
+	bool bCombatAlarmOneShotConsumed = false;
+	bool bCriticalAlarmOneShotConsumed = false;
 	float CombatTimerRemaining = 0.0f;
 	float CombatIntensity = 0.0f;
 	int32 ActiveHazardCount = 0;
@@ -351,7 +354,7 @@ protected:
 	void UpdateLayerVolumes(float DeltaTime);
 	void UpdateMixParameters(float DeltaTime);
 	void EnsureMusicLayers(AProjectOrganoidCharacter* Character);
-	void SyncLayerComponent(TObjectPtr<UAudioComponent>& Component, AProjectOrganoidCharacter* Character, const TSoftObjectPtr<USoundBase>& SoftSound, const TCHAR* ComponentName, float Volume, bool bStopWhenSilent = false);
+	void SyncLayerComponent(TObjectPtr<UAudioComponent>& Component, AProjectOrganoidCharacter* Character, const TSoftObjectPtr<USoundBase>& SoftSound, const TCHAR* ComponentName, float Volume, bool bStopWhenSilent = false, bool bOneShotRisingEdge = false, bool* bOneShotConsumed = nullptr);
 	void PushStateSoundMix(EProjectOrganoidAmbienceState State);
 	void PopActiveSoundMix();
 	void ApplyStateReverb(EProjectOrganoidAmbienceState State);

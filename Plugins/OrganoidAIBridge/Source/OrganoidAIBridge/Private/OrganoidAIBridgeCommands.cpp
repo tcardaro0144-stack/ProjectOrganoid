@@ -578,6 +578,8 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_first_combat_next_node_zero")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_blueprint")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -711,6 +713,8 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_first_combat_next_node_zero")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_blueprint")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -1873,6 +1877,14 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 	{
 		return OrganoidAIBridgeWrites::InspectAdminBlock4NavMesh(Args);
 	}
+	if (Normalized == TEXT("inspect_alarm_pulse"))
+	{
+		return OrganoidAIBridgeWrites::InspectAlarmPulse(Args);
+	}
+	if (Normalized == TEXT("inspect_epitope_navmesh"))
+	{
+		return OrganoidAIBridgeWrites::InspectEpitopeNavMesh(Args);
+	}
 
 	if (OrganoidAIBridgePlaytest::IsPlaytestCommand(Normalized))
 	{
@@ -1992,6 +2004,8 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("set_first_combat_next_node_zero")
 		|| Normalized == TEXT("create_node_zero_blueprint")
 		|| Normalized == TEXT("spawn_reactor_node_zero")
+		|| Normalized == TEXT("set_alarm_pulse_oneshot")
+		|| Normalized == TEXT("rebuild_epitope_navmesh")
 		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
