@@ -208,6 +208,10 @@ namespace
 		TEXT("set_pursuer_intro_next_first_combat"),
 		TEXT("create_transformed_scientist_blueprint"),
 		TEXT("spawn_reactor_first_combat"),
+		TEXT("create_node_zero_mission"),
+		TEXT("set_first_combat_next_node_zero"),
+		TEXT("create_node_zero_blueprint"),
+		TEXT("spawn_reactor_node_zero"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -316,6 +320,10 @@ namespace
 		TEXT("set_pursuer_intro_next_first_combat"),
 		TEXT("create_transformed_scientist_blueprint"),
 		TEXT("spawn_reactor_first_combat"),
+		TEXT("create_node_zero_mission"),
+		TEXT("set_first_combat_next_node_zero"),
+		TEXT("create_node_zero_blueprint"),
+		TEXT("spawn_reactor_node_zero"),
 		TEXT("create_nathan_grant_look"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
@@ -3464,6 +3472,7 @@ namespace
 #include "OrganoidAIBridgeWeaponRosterDatapads.inl"
 #include "OrganoidAIBridgePursuerIntro.inl"
 #include "OrganoidAIBridgeFirstCombat.inl"
+#include "OrganoidAIBridgeNodeZero.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
@@ -4339,6 +4348,22 @@ namespace
 		{
 			PreflightError = PreflightSpawnReactorFirstCombat(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_node_zero_mission"))
+		{
+			PreflightError = PreflightCreateNodeZeroMission(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("set_first_combat_next_node_zero"))
+		{
+			PreflightError = PreflightSetFirstCombatNextNodeZero(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_node_zero_blueprint"))
+		{
+			PreflightError = PreflightCreateNodeZeroBlueprint(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_reactor_node_zero"))
+		{
+			PreflightError = PreflightSpawnReactorNodeZero(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("create_nathan_grant_look"))
 		{
 			PreflightError = PreflightCreateNathanGrantLook(Args, Before, Proposed);
@@ -4568,6 +4593,22 @@ namespace
 			Package = FirstCombatBlueprintPackage;
 		}
 		else if (Action == TEXT("spawn_reactor_first_combat"))
+		{
+			Package = ReactorPackage;
+		}
+		else if (Action == TEXT("create_node_zero_mission"))
+		{
+			Package = NodeZeroMissionPackage;
+		}
+		else if (Action == TEXT("set_first_combat_next_node_zero"))
+		{
+			Package = FirstCombatMissionPackage;
+		}
+		else if (Action == TEXT("create_node_zero_blueprint"))
+		{
+			Package = NodeZeroBlueprintPackage;
+		}
+		else if (Action == TEXT("spawn_reactor_node_zero"))
 		{
 			Package = ReactorPackage;
 		}
@@ -5897,6 +5938,10 @@ namespace
 				|| Change->Action == TEXT("set_pursuer_intro_next_first_combat")
 				|| Change->Action == TEXT("create_transformed_scientist_blueprint")
 				|| Change->Action == TEXT("spawn_reactor_first_combat")
+				|| Change->Action == TEXT("create_node_zero_mission")
+				|| Change->Action == TEXT("set_first_combat_next_node_zero")
+				|| Change->Action == TEXT("create_node_zero_blueprint")
+				|| Change->Action == TEXT("spawn_reactor_node_zero")
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
@@ -6334,6 +6379,22 @@ namespace
 		if (Change->Action == TEXT("spawn_reactor_first_combat"))
 		{
 			return ExecuteSpawnReactorFirstCombat(*Change);
+		}
+		if (Change->Action == TEXT("create_node_zero_mission"))
+		{
+			return ExecuteCreateNodeZeroMission(*Change);
+		}
+		if (Change->Action == TEXT("set_first_combat_next_node_zero"))
+		{
+			return ExecuteSetFirstCombatNextNodeZero(*Change);
+		}
+		if (Change->Action == TEXT("create_node_zero_blueprint"))
+		{
+			return ExecuteCreateNodeZeroBlueprint(*Change);
+		}
+		if (Change->Action == TEXT("spawn_reactor_node_zero"))
+		{
+			return ExecuteSpawnReactorNodeZero(*Change);
 		}
 		if (Change->Action == TEXT("create_nathan_grant_look"))
 		{

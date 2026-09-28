@@ -574,6 +574,10 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_pursuer_intro_next_first_combat")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_transformed_scientist_blueprint")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_first_combat")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_mission")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_first_combat_next_node_zero")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_blueprint")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -703,6 +707,10 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_pursuer_intro_next_first_combat")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_transformed_scientist_blueprint")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_first_combat")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_mission")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_first_combat_next_node_zero")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_blueprint")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
@@ -1980,6 +1988,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("set_pursuer_intro_next_first_combat")
 		|| Normalized == TEXT("create_transformed_scientist_blueprint")
 		|| Normalized == TEXT("spawn_reactor_first_combat")
+		|| Normalized == TEXT("create_node_zero_mission")
+		|| Normalized == TEXT("set_first_combat_next_node_zero")
+		|| Normalized == TEXT("create_node_zero_blueprint")
+		|| Normalized == TEXT("spawn_reactor_node_zero")
 		|| Normalized == TEXT("create_nathan_grant_look")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")

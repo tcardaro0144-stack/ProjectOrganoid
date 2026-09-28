@@ -431,8 +431,14 @@ UProjectOrganoidSaveGame* UProjectOrganoidSaveSubsystem::CaptureSaveFromCharacte
 		}
 	}
 
+	SaveGame->bNewGamePlus = bNewGamePlus;
 	FillSaveMeta(SaveGame, Character, EProjectOrganoidSaveReason::Manual, nullptr);
 	return SaveGame;
+}
+
+void UProjectOrganoidSaveSubsystem::GrantNewGamePlus()
+{
+	bNewGamePlus = true;
 }
 
 bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGame* SaveGame, AProjectOrganoidCharacter* Character) const
@@ -441,6 +447,8 @@ bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGam
 	{
 		return false;
 	}
+
+	bNewGamePlus = SaveGame->bNewGamePlus;
 
 	Character->ApplySavedVitals(
 		SaveGame->Health,

@@ -4468,3 +4468,117 @@ Persisted asset hashes 25: unchanged 16 NeuralSlowUse `f4ea930017a599ec585381d38
 
 - Beat 23 is implemented, persisted, and validated, with `COMPLETE_PASS` **62/62**.
 - Do not begin Beat 24 until separately authorized. The locked roadmap order continues with the Node Zero mechanism, the vaccine, Sterling, escape, the Conclusion choice, and NG+.
+
+## 2026-09-27 — Final: Node Zero
+
+**Status:** implemented persisted validated COMPLETE_PASS 63/63 Beep 12/12 fixed Host 33/33 Bio 59/59 NodeZero 36/36 FirstCombat 32/32 PursuerIntro 28/28 changes left unstaged no commit/no push/no deferred yet.
+
+**Baseline:** published Beat 23 commit `a8ef624ba7afc0fc84805f00795dbf2c0394426f` (`feat: implement First Combat`) on `origin/main`. Final Node Zero remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Mission chain
+
+- Current chain: NeuroGenetics → PowerRestore → TargetingWhy → ResearchStationIntro → NeuralSlowUse → AdaptationConnection → Revelation → CryoAccess → CryoEntry → CryoEvidence → ComputeEntry → ComputeHandover → TheConclusion → ResearchStation -> SyringeKit -> WeaponRoster -> PursuerIntro -> FirstCombat -> NodeZero -> TheConclusion.
+- NG+ loop: WeaponRoster -> PursuerIntro -> FirstCombat -> NodeZero -> TheConclusion -> ResearchStation -> SyringeKit -> WeaponRoster.
+- New mission `/Game/Data/Missions/DA_Mission_NodeZero` ID `Mission_NodeZero` Title `Node Zero` Description `Sterling's confession points to the core. The Organoid's heart is still beating. Shut it down or take it with you.` one Main `Obj_ReachNodeZero` autoactivate target1 Complete `Event_NodeZeroReached` plus Side `Obj_ChooseFate` autoactivate target1 Complete `Event_FateChosen` Next -> TheConclusion.
+- Handoff: `DA_Mission_FirstCombat.Next` -> `DA_Mission_NodeZero`. `DA_Mission_NodeZero.Next` -> `DA_Mission_TheConclusion`. `DA_Mission_TheConclusion.Next` stays `DA_Mission_ResearchStation`.
+
+### Encounter
+
+- Reactor map `SL_Epitope_Reactor`. `BP_Pursuer` stays at (-1800, 0, -4710). `Reactor_PursuerTrigger` stays at (-1100, 0, -4710). `BP_TransformedScientist` stays at (-800, 800, -4710). `Reactor_FirstCombatTrigger` stays at (-500, 0, -4710). `BP_NodeZeroCore` is at (-200, 0, -4710). `Terminal_SterlingFinal` is at (-200, 400, -4710). `Terminal_ControlSpine` and `Checkpoint_BasinRim` were not moved. Cryo, Compute, Neuro, and Admin were not saved.
+- `BP_NodeZeroCore` under `/Game/AI/` is interactable. Three interacts complete the shutdown. The vaccine crafts only when both `LocomotorDisrupt` and `OpticalDisrupt` are unlocked. Sterling says `I built it to heal. It learned to keep.` for 7 seconds, once. Destroy or Extract completes `Obj_ReachNodeZero` and `Obj_ChooseFate`. The choice grants the NG+ flag through SaveSubsystem. `Obj_ChooseFate` uses the Side objective type. There is no door. Power is unchanged and persists through SaveSubsystem. `Terminal_SterlingFinal` is an actor in the Reactor map, so its placement is inside the Reactor hash.
+
+### Persisted asset hashes
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged from Beat 23)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `3109ff84565b90e6f1bf42ec934f0c498ef1ec7863ec50538d99e99ac4ddd351` (unchanged from Beat 23)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged from Beat 23)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `962b9145fd985b6504b5532a498cd334d89ab9ccd80bede8deff4d0127d47bd7` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged from Beat 23)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `28c96470099f06240d1f637f4b878a3a0300df60c78490a69efa1fec68d247ef` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` (unchanged from Beat 23; Next stays ResearchStation)
+- `Content/Data/Missions/DA_Mission_ResearchStation.uasset` SHA-256: `16c1c32d257108e4e5ec64451bb1be6f96e7c7a2b7cbeed400491294ed1185b2` (unchanged from Beat 23)
+- `Content/Data/Adaptations/DA_Adaptation_LocomotorDisrupt.uasset` SHA-256: `ed8ef82dd5ac1c261858c886eeb227e16c6204fe51a19d75b579328d48e4c325` (unchanged from Beat 23)
+- `Content/Data/Adaptations/DA_Adaptation_OpticalDisrupt.uasset` SHA-256: `d2807c9a3ba6416b40e327d28334e9a9b3a377c39964ffcf047cb2070d1f0cc0` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_SyringeKit.uasset` SHA-256: `d762bd22d6e0ff6e9f5547b5cf3812172bdc7c697a9f838da9055174d07c6a96` (unchanged from Beat 23)
+- `Content/Data/Weapons/DA_Weapon_BioStabilizerPistol.uasset` SHA-256: `3ece0e35beaed0c6096e8fe465602c38d7cc29b121a79524b83c37ebe913f456` (unchanged from Beat 23)
+- `Content/Data/Weapons/DA_Weapon_PulseCarbine.uasset` SHA-256: `6b0c5607ff5dee24b8faa26f1381ec1fbc0f1aa062d5a6c376984db1bf9cc79d` (unchanged from Beat 23)
+- `Content/Data/Weapons/DA_Weapon_CryoInjector.uasset` SHA-256: `23ef8ce0f51a8f649c97ca534a134db3531f3a126c822e1b3a5029b06ec8e366` (unchanged from Beat 23)
+- `Content/Data/Weapons/DA_Weapon_DenaturingShotgun.uasset` SHA-256: `132afc52484f8e0fd9d4428f27b4f8b195b6af70c0d410bc60a312a648598e51` (unchanged from Beat 23)
+- `Content/Data/Weapons/DA_Weapon_IncineratorLance.uasset` SHA-256: `17942d3fe91afe03663122428fc7f95b646e1493b24ae81a373b84a135847048` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_WeaponRoster.uasset` SHA-256: `8d17407208161cbdb5dd7c0b413082098537537b7ad910c4093c676f415f2806` (unchanged from Beat 23; Next stays PursuerIntro)
+- `Content/AI/BP_Pursuer.uasset` SHA-256: `e7bdc70df85d39850f1b8a024c705767aa1ff3ca18d638313e8772f28e4ea354` (unchanged from Beat 23)
+- `Content/AI/BP_TransformedScientist.uasset` SHA-256: `4d8aebe423b007657662f187f537e9bd1fd477a3dd92fc4b214f00bdf0baaba8` (unchanged from Beat 23)
+- `Content/Data/Missions/DA_Mission_PursuerIntro.uasset` SHA-256: `d6d769326b901e7e07e134d22695ca0066897c0579919aa8f05cb0f0be4579b9` (unchanged from Beat 23; Next stays FirstCombat)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `ab836e8821877fff52c03f3816eb8e9b0cb88cac016825c5d11703ebaef5a0bc` (was `4ed24599acf81e738a337b3291e63b85c0af8da1ba5ae4658534bbb8cbf92a46` — Node Zero core and Terminal_SterlingFinal)
+- `Content/Data/Missions/DA_Mission_FirstCombat.uasset` SHA-256: `3e45c5333facff2f0b08cd079e776abdfcca4687d9a57aa6566be27530baec7e` (was `be1c5105c12803728c662d4d0234aa7997e2f4aac07143994d2458c288684478` — Next -> NodeZero)
+- `Content/Data/Missions/DA_Mission_NodeZero.uasset` SHA-256: `d4bf595454cb293ee1ea37f003d3d3a19adf80638890237e84da1d5f74441e18` (new)
+- `Content/AI/BP_NodeZeroCore.uasset` SHA-256: `5b7f2b7c5c4bfaf7667d451ce1a8769d9af9b524050407c1cb981a1ad2eb6cb7` (new)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. `build_exit` 0.
+- Targeted suite **8/8**, script exit 0. Dirty 0, PIE stopped. `CloseMainWindow` true, process count 0, log signatures 0.
+  - `NodeZero_Functional` **36** `ptr_339ed331-4e35-ae50-d9a4-fb9337fd067e`
+  - `FirstCombat_Functional` **32** `ptr_debd71ba-4973-18d7-9db1-d199b3473ef4`
+  - `PursuerIntro_Functional` **28** `ptr_d1248bd2-4a1c-41a6-b493-e3b00d510160`
+  - `WeaponRoster_Functional` **49** `ptr_8a3ca32b-4c4b-a674-5d1b-12ae27aba3e3`
+  - `SyringeKit_Functional` **46** `ptr_c4f88e13-42eb-aafd-f930-64aa37e61030`
+  - `ResearchStationRespec_Functional` **78** `ptr_304d76bb-41a3-56c2-aedb-6da86d095a3d`
+  - `TheConclusion_Functional` **78** `ptr_4e74560f-46df-9287-2f9b-c4bbeb54d4a7`
+  - `BeepClickInjection_Functional` **12/12** `ptr_753c2ba0-46dd-591e-11a4-4182a8aa93a8`
+  - Log: `%TEMP%\b24_targeted_editor.log`
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, script exit 0, aggregate **5398** assertions. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Nine early connection failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63** `CryoEntry_Functional`, `CryoEvidence_Functional`, `ComputeEntry_Functional`, `ComputeHandover_Functional`, `TheConclusion_Functional`, `ResearchStationRespec_Functional`, `SyringeKit_Functional`, `LocomotorDisrupt_Functional`, `OpticalDisrupt_Functional`, `WeaponRoster_Functional`, `BioStabilizerPistol_Functional`, `PulseCarbine_Functional`, `PursuerIntro_Functional`, `FirstCombat_Functional`, `NodeZero_Functional`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_20b5f3eb-4812-3649-e9be-1fa6d4e91085`
+  - `HostCombatLoop_Functional` **33/33** `ptr_056aa102-4294-f0dc-fc92-6abee6e234f3`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_2daeb7be-4123-3076-61db-179aa77dce61`
+  - `CryoEvidence_Functional` **100** `ptr_c10ad90b-4dfa-ce8f-e9ed-76b4009bc25f`
+  - `ComputeEntry_Functional` **78** `ptr_41f4fa83-4d8d-7562-4770-729f31a3fc38`
+  - `ComputeHandover_Functional` **101** `ptr_1e9247e8-4f6c-7076-2cc9-4f8bf109ad1c`
+  - `TheConclusion_Functional` **78** `ptr_4e3580e7-463a-42f0-f4c3-549ccb2b56ca`
+  - `ResearchStationRespec_Functional` **78** `ptr_df28c19e-4f65-b0c1-cc83-1cbe5cf8f33c`
+  - `SyringeKit_Functional` **46** `ptr_8fbfd41d-4f12-5121-abe6-7e9d2c0bea0b`
+  - `LocomotorDisrupt_Functional` **17** `ptr_a4202c64-479b-2828-d59a-be999a8d22f2`
+  - `OpticalDisrupt_Functional` **16** `ptr_6d4d2a47-4e28-532d-0f6a-f792ecb39f2f`
+  - `WeaponRoster_Functional` **49** `ptr_e981835e-409b-047d-14b7-48a231e50921`
+  - `BioStabilizerPistol_Functional` **17** `ptr_1e8a34db-4e82-3945-3315-11a9bb2cc892`
+  - `PulseCarbine_Functional` **17** `ptr_a60efdc4-4110-8878-fc44-d584055047e8`
+  - `PursuerIntro_Functional` **28** `ptr_f7812296-412d-bb6e-3207-1f90a59ee4f0`
+  - `FirstCombat_Functional` **32** `ptr_4dfa1e65-498a-148c-9f98-dba09765b83b`
+  - `NodeZero_Functional` **36** `ptr_5b22dae4-45f1-bda1-e494-fb9f77c6c4cd`
+  - The 31 persisted hashes were unchanged after the run. `git diff --check` passed. Staged 0. `PROJECT_STATE.md` was unchanged at that moment. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b24_complete63_ffb1873f539547d79f25d2bea9d4a41b`
+  - Log: `%TEMP%\b24_complete_editor.log`
+- The diff is the Reactor map Node Zero placement, the First Combat successor link, the new Node Zero mission, `BP_NodeZeroCore`, and the bridge allowlist for create / next / spawn, plus `NodeZero_Functional`.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `BeepClickInjection_Functional` is **12/12**. Deferred beep polish has not been started.
+2. `HostCombatLoop_Functional` passed **33/33**. Still deferred as a preexisting isolation defect, not a Node Zero regression.
+3. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a Node Zero regression.
+4. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a Node Zero regression.
+5. Startup “NavMesh needs to be rebuilt” warning remains unresolved. NavMesh polish has not been started.
+6. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+7. The Nathan Grant visual first pass is done in the published look commit `4fb6a20c80efa0c787ad73416a1fa80324fc684c`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Deferred beep and NavMesh polish has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**. `PROJECT_STATE.md` now includes this Final Node Zero section and is unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Final Node Zero is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
+- Do not begin deferred beep or NavMesh polish until separately authorized. The locked roadmap order continues with the deferred `SW_AlarmPulse` looping UI beep, NavMesh, and audio.

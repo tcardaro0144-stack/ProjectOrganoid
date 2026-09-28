@@ -217,4 +217,8 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Save|Power")
 	TMap<EProjectOrganoidPowerSector, EProjectOrganoidPowerState> SectorPowerStates;
+
+	/** Set when Node Zero's Destroy or Extract choice is made. Old saves stay false. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save|NewGamePlus")
+	bool bNewGamePlus = false;
 };

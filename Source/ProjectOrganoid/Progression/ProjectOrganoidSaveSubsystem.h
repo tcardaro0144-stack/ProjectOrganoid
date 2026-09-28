@@ -109,6 +109,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save|Travel")
 	void ClearPendingLoad();
 
+	/** Live flag granted by the Node Zero choice. Capture writes it into the save object. */
+	UFUNCTION(BlueprintCallable, Category = "Save|NewGamePlus")
+	void GrantNewGamePlus();
+
+	UFUNCTION(BlueprintPure, Category = "Save|NewGamePlus")
+	bool HasNewGamePlus() const { return bNewGamePlus; }
+
 	UFUNCTION(BlueprintPure, Category = "Save|Travel")
 	bool HasPendingLoad() const { return bHasPendingLoad; }
 
@@ -126,6 +133,9 @@ protected:
 
 	UPROPERTY()
 	bool bHasPendingLoad = false;
+
+	/** Mutable so const ApplySaveToCharacter can restore a loaded NG+ flag. */
+	mutable bool bNewGamePlus = false;
 
 	bool bBoundToObjectives = false;
 
