@@ -235,6 +235,8 @@ namespace
 		TEXT("save_nathan_grant_final"),
 		TEXT("create_admin_world_color"),
 		TEXT("save_admin_world_color"),
+		TEXT("create_neuro_world_color"),
+		TEXT("save_neuro_world_color"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -353,6 +355,8 @@ namespace
 		TEXT("save_nathan_grant_final"),
 		TEXT("create_admin_world_color"),
 		TEXT("save_admin_world_color"),
+		TEXT("create_neuro_world_color"),
+		TEXT("save_neuro_world_color"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3505,6 +3509,7 @@ namespace
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNathanGrantFinal.inl"
 #include "OrganoidAIBridgeAdminWorldColor.inl"
+#include "OrganoidAIBridgeNeuroWorldColor.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4423,6 +4428,14 @@ namespace
 		{
 			PreflightError = PreflightSaveAdminWorldColor(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_neuro_world_color"))
+		{
+			PreflightError = PreflightCreateNeuroWorldColor(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("save_neuro_world_color"))
+		{
+			PreflightError = PreflightSaveNeuroWorldColor(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4571,6 +4584,10 @@ namespace
 		else if (Action == TEXT("create_admin_world_color") || Action == TEXT("save_admin_world_color"))
 		{
 			Package = AdminPackage;
+		}
+		else if (Action == TEXT("create_neuro_world_color") || Action == TEXT("save_neuro_world_color"))
+		{
+			Package = NeuroPackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -6020,6 +6037,8 @@ namespace
 				|| Change->Action == TEXT("save_nathan_grant_final")
 				|| Change->Action == TEXT("create_admin_world_color")
 				|| Change->Action == TEXT("save_admin_world_color")
+				|| Change->Action == TEXT("create_neuro_world_color")
+				|| Change->Action == TEXT("save_neuro_world_color")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -6501,6 +6520,14 @@ namespace
 		{
 			return ExecuteSaveAdminWorldColor(*Change);
 		}
+		if (Change->Action == TEXT("create_neuro_world_color"))
+		{
+			return ExecuteCreateNeuroWorldColor(*Change);
+		}
+		if (Change->Action == TEXT("save_neuro_world_color"))
+		{
+			return ExecuteSaveNeuroWorldColor(*Change);
+		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			return ExecuteSpawnNeuroAdaptationSubject(*Change);
@@ -6580,6 +6607,11 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectAdminWorldColor(const TSharedPtr<FJsonObject>& Args)
 	{
 		return CmdInspectAdminWorldColor(Args);
+	}
+
+	TSharedRef<FJsonObject> InspectNeuroWorldColor(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectNeuroWorldColor(Args);
 	}
 
 	TSharedRef<FJsonObject> Dispatch(

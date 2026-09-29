@@ -585,6 +585,8 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_nathan_grant_final")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_admin_world_color")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_admin_world_color")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_world_color")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_neuro_world_color")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -724,6 +726,8 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_nathan_grant_final")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_admin_world_color")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_admin_world_color")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_neuro_world_color")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_neuro_world_color")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1901,6 +1905,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 	{
 		return OrganoidAIBridgeWrites::InspectAdminWorldColor(Args);
 	}
+	if (Normalized == TEXT("inspect_neuro_world_color"))
+	{
+		return OrganoidAIBridgeWrites::InspectNeuroWorldColor(Args);
+	}
 
 	if (OrganoidAIBridgePlaytest::IsPlaytestCommand(Normalized))
 	{
@@ -2027,6 +2035,8 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("save_nathan_grant_final")
 		|| Normalized == TEXT("create_admin_world_color")
 		|| Normalized == TEXT("save_admin_world_color")
+		|| Normalized == TEXT("create_neuro_world_color")
+		|| Normalized == TEXT("save_neuro_world_color")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")
