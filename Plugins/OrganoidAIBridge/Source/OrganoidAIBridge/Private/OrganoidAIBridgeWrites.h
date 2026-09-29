@@ -23,4 +23,6 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectNeuroWorldColor(const TSharedPtr<FJsonObject>& Args);
 	TSharedRef<FJsonObject> InspectCryoWorldColor(const TSharedPtr<FJsonObject>& Args);
 	TSharedRef<FJsonObject> InspectComputeWorldColor(const TSharedPtr<FJsonObject>& Args);
+
+	TSharedRef<FJsonObject> InspectReactorWorldColor(const TSharedPtr<FJsonObject>& Args);
 }

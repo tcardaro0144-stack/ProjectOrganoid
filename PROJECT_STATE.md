@@ -5318,3 +5318,125 @@ Seven new Compute color packages outside that list:
 
 - Beat 29 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
 - Do not begin the next pass until separately authorized. Compute world color is done. The next recommended pass is Reactor color, or third-person camera over-the-shoulder.
+
+## 2026-09-29 — Beat 30: Reactor World Color Pass
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **63/63**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **36**. FirstCombat **32**. PursuerIntro **28**. Changes left **unstaged**. No commit and no push.
+
+**Baseline:** published Beat 29 commit `72f8dcbea427e06aa199c4e09a549c739a66d21b` (`feat: add Compute world color pass`) on `origin/main`. Beat 30 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Inspect
+
+- `inspect_reactor_world_color` before the write: Reactor loaded. Paintable Reactor meshes were on `WorldGridMaterial` gray (**16** paintable). Existing encounter actors remained at authored locations and were not moved: `BP_Pursuer` `(-1800,0,-4710)`, `Reactor_PursuerTrigger` `(-1100,0,-4710)`, `BP_TransformedScientist` `(-800,800,-4710)`, `Reactor_FirstCombatTrigger` `(-500,0,-4710)`, `BP_NodeZeroCore` `(-200,0,-4710)`, `Terminal_SterlingFinal` `(-200,400,-4710)`, `Terminal_ControlSpine`, `Checkpoint_BasinRim`. Power state via SaveSubsystem stayed as it was. Materials and `/Game/Blueprints/Reactor/` packages did not exist yet. `SW_AlarmPulse` was already `bLooping` false.
+
+### Create and save
+
+- Create `chg_5b9ec9d9-4b47-d7e2-efb6-0cb5fa134796` then save `chg_9f455fd2-4671-7dc3-fa41-08bbf6ec942d`, dual-approved Tom + ArenaReviewer on session `required_world_package=/Game/Maps/Epitope/SL_Epitope_Reactor`.
+- Five materials under `/Game/Materials/Reactor/`: `M_Reactor_Public_CoreGlow`, `M_Reactor_Restricted_Hazard`, `M_Reactor_Executive_Observation`, `M_Reactor_Operations_ReactorControl`, `M_Reactor_Service_Industrial`. Exact and not gray; not `WorldGridMaterial`. `materials_exact` **5**.
+- Blueprints under `/Game/Blueprints/Reactor/`: `BP_ReactorLightController` (public core glow orange, restricted hazard flashing yellow, executive warm, operations bright control, service dim) and `BP_ReactorAudioZone` (AmbienceZone parent, core hum / reactor vent). `SW_AlarmPulse` stays one-shot (`bLooping` false / `alarm_looping` false).
+- Thirteen `Reactor_WC_*` props (reactor core, basin, hazard decals, warning signs, pipes, observation glass, control panel, brand). World-color light controller `Reactor_WorldColor_LightController` at `(-200,0,-4710)` near NodeZeroCore. Encounter actors and power state via SaveSubsystem were preserved.
+- **16** meshes painted, `gray_remaining` **0**. Saved **8** packages only: Reactor + 5 materials + 2 Blueprints. `dirty_count` **0**. Lvl_Epitope, Admin (`2a9e21bb…`), Neuro (`73e5da44…`), Cryo (`46e05eb9…`), Compute (`69043b7a…`), missions, weapons, adaptations, and Nathan character packages were not dirtied.
+
+### Persisted asset hashes
+
+Thirty-three of the Beat 29 **34** are unchanged. Reactor is updated. That is still **34** (not 35 — Admin, Neuro, Cryo, and Compute were already inside the prior 34). The thirteen props live inside the Reactor map hash. Seven new content packages sit outside the 34.
+
+- `Content/Data/Missions/DA_Mission_NeuroNeuralSlowUse.uasset` SHA-256: `f4ea930017a599ec585381d38d7b5e6a52a6d1ffe40cdbbd450ef2996f62e774` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NeuroResearchStationIntro.uasset` SHA-256: `c2118035659be2155e9b9852f6f3d6fc89314d633c961c435b459c1df9c3839a` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `73e5da449748639b5270d5652386d2e68dc814ce0fb639242d119cc6da72bb0b` (unchanged from Beat 27 Neuro world color `73e5da44…`)
+- `Content/Data/Adaptations/DA_Adaptation_NeuralSlow.uasset` SHA-256: `2297491c6d43f352f78ed9682c9d7f75ea27756e38b6f27dab8fe399e6808009` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NeuroAdaptationConnection.uasset` SHA-256: `2aa0580d4bf9e6713dc8997c0f687778718b50cc45a284e05c490009ceceac6f` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NeuroRevelation.uasset` SHA-256: `57d137d4192c0689fd34a96fa7ed3ecbc89298da29838804752d6a38aab729bd` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_CryoAccess.uasset` SHA-256: `3c159de8811836d0f4896ad3e736521cee21707f7e8e428047f37cbe8e200064` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `46e05eb96d205f64a11e23f8adfa4de517d1c29728446fbf65fed243ed76ed80` (unchanged from Beat 28 Cryo world color `46e05eb9…`)
+- `Content/Data/Missions/DA_Mission_CryoEntry.uasset` SHA-256: `d9ae3ed4d6b0e346504fb5231696c39ddef897cd7a99cea5904fac82d5ede81a` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_CryoEvidence.uasset` SHA-256: `0b8710de00fb1c7a8bbfaf4a410af100354421a045a6d4f020383498084cc583` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_ComputeEntry.uasset` SHA-256: `c1f4743838ff1afb4c6330173eb34a57fa0bb6a6ed7f2a4122332adb56315782` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `69043b7a4569cc4dbd776bddf32487f3d1f25bd08e244039d414519ca7399a7e` (unchanged from Beat 29 Compute world color `69043b7a…`)
+- `Content/Data/Missions/DA_Mission_ComputeHandover.uasset` SHA-256: `3c06deaba10d481f2cb704ca6a21a15ebd4913a9f33c7cf498f16dd172bfe7af` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `37aabc721ba9ffef2c216d951f7130269a8f99b49cdd7e14b30113ba96fd991e` (was `ab836e8821877fff52c03f3816eb8e9b0cb88cac016825c5d11703ebaef5a0bc` — Reactor world color: 16 meshes painted, 13 Reactor_WC_* props, world-color light controller at `(-200,0,-4710)`)
+- `Content/Data/Missions/DA_Mission_ResearchStation.uasset` SHA-256: `16c1c32d257108e4e5ec64451bb1be6f96e7c7a2b7cbeed400491294ed1185b2` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Adaptations/DA_Adaptation_LocomotorDisrupt.uasset` SHA-256: `ed8ef82dd5ac1c261858c886eeb227e16c6204fe51a19d75b579328d48e4c325` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Adaptations/DA_Adaptation_OpticalDisrupt.uasset` SHA-256: `d2807c9a3ba6416b40e327d28334e9a9b3a377c39964ffcf047cb2070d1f0cc0` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_SyringeKit.uasset` SHA-256: `d762bd22d6e0ff6e9f5547b5cf3812172bdc7c697a9f838da9055174d07c6a96` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_BioStabilizerPistol.uasset` SHA-256: `3ece0e35beaed0c6096e8fe465602c38d7cc29b121a79524b83c37ebe913f456` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_PulseCarbine.uasset` SHA-256: `6b0c5607ff5dee24b8faa26f1381ec1fbc0f1aa062d5a6c376984db1bf9cc79d` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_CryoInjector.uasset` SHA-256: `23ef8ce0f51a8f649c97ca534a134db3531f3a126c822e1b3a5029b06ec8e366` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_DenaturingShotgun.uasset` SHA-256: `132afc52484f8e0fd9d4428f27b4f8b195b6af70c0d410bc60a312a648598e51` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Weapons/DA_Weapon_IncineratorLance.uasset` SHA-256: `17942d3fe91afe03663122428fc7f95b646e1493b24ae81a373b84a135847048` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_WeaponRoster.uasset` SHA-256: `8d17407208161cbdb5dd7c0b413082098537537b7ad910c4093c676f415f2806` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_PursuerIntro.uasset` SHA-256: `d6d769326b901e7e07e134d22695ca0066897c0579919aa8f05cb0f0be4579b9` (unchanged from Beat 29 / Deferred Polish)
+- `Content/AI/BP_Pursuer.uasset` SHA-256: `e7bdc70df85d39850f1b8a024c705767aa1ff3ca18d638313e8772f28e4ea354` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_FirstCombat.uasset` SHA-256: `3e45c5333facff2f0b08cd079e776abdfcca4687d9a57aa6566be27530baec7e` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Data/Missions/DA_Mission_NodeZero.uasset` SHA-256: `d4bf595454cb293ee1ea37f003d3d3a19adf80638890237e84da1d5f74441e18` (unchanged from Beat 29 / Deferred Polish)
+- `Content/AI/BP_NodeZeroCore.uasset` SHA-256: `5b7f2b7c5c4bfaf7667d451ce1a8769d9af9b524050407c1cb981a1ad2eb6cb7` (unchanged from Beat 29 / Deferred Polish)
+- `Content/AI/BP_TransformedScientist.uasset` SHA-256: `4d8aebe423b007657662f187f537e9bd1fd477a3dd92fc4b214f00bdf0baaba8` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Maps/Lvl_Epitope.umap` SHA-256: `1f575c26568840d7e8a78d4ec87e8cb91b6e87d072ab3555af82e777820118d8` (unchanged from Beat 29 / Deferred Polish)
+- `Content/Maps/Epitope/SL_Epitope_Admin.umap` SHA-256: `2a9e21bbd70a27dcdc16bbc776cd89ccd31aff7e4c7ce75ab4a1604aa05ce6dd` (unchanged from Beat 26 Admin world color `2a9e21bb…`)
+- `Content/Audio/Ambient/SW_AlarmPulse.uasset` SHA-256: `f16ace0e6b7fe0831e661c7f9b9dbb6e2c959c50c10d73966bdd7256bdee02e2` (unchanged from Beat 29 / Deferred Polish)
+
+Seven new Reactor color packages outside that list:
+
+- `Content/Materials/Reactor/M_Reactor_Public_CoreGlow.uasset` SHA-256: `89b121ef27dfc5504a4b8783a8ce010e29f4fa5dbc4f0709d452ccd1d8cd0835` (new; outside the 34; 11,432 bytes)
+- `Content/Materials/Reactor/M_Reactor_Restricted_Hazard.uasset` SHA-256: `1e546b236262e8a783aafcadc142129110d10d72208e7deb175467d8daf2e970` (new; 11,449 bytes)
+- `Content/Materials/Reactor/M_Reactor_Executive_Observation.uasset` SHA-256: `e895ead8e6441e0f88e962db79621398394de7518ae3c15a5482a9200828892a` (new; 11,058 bytes)
+- `Content/Materials/Reactor/M_Reactor_Operations_ReactorControl.uasset` SHA-256: `b41b842bb8498c1a57b5df1f5359a8703b6bcd1f8045d7a97ad331a588cd73d4` (new; 11,291 bytes)
+- `Content/Materials/Reactor/M_Reactor_Service_Industrial.uasset` SHA-256: `ec6f1a092e97fa92774b950be85c64a760910d72fe189ec4d604dd2ef790a13a` (new; 11,031 bytes)
+- `Content/Blueprints/Reactor/BP_ReactorLightController.uasset` SHA-256: `b36de87da45955ea77a5c8a7ec6aad6d2aeb7f94e84178d37ce10815ad558ecb` (new; 29,157 bytes)
+- `Content/Blueprints/Reactor/BP_ReactorAudioZone.uasset` SHA-256: `93c926f9e93a549ab46610913b329abd227dfe0766c1ed4c6d9a3694ead38e12` (new; 24,056 bytes)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. `build_exit` 0. Preflight else-if chains for Admin/Neuro/Cryo/Compute/Reactor world-color stay under MSVC nested-block limit C1061.
+- Targeted suite **8/8**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0. Catalog-style `NAVMESH NEEDS TO BE REBUILT` count **0** in the targeted log. Log: `%TEMP%\b30_targeted_editor.log`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_73505318-4a55-7f93-08e1-e0850f9acc05`
+  - `NodeZero_Functional` **36/36** `ptr_1b377a92-4d87-2b6e-3418-39ad7dcc20f2`
+  - `FirstCombat_Functional` **32/32** `ptr_2a3d861f-4f0a-1199-9e9a-d58c9451f304`
+  - `PursuerIntro_Functional` **28/28** `ptr_741a1f83-48ae-2484-ee14-3289acda5f46`
+  - `WeaponRoster_Functional` **49/49** `ptr_28bae0b5-4ede-844b-ddd3-2bab98893fcf`
+  - `SyringeKit_Functional` **46/46** `ptr_0213c932-4295-0fc1-5e0a-38bcee7091fa`
+  - `ResearchStationRespec_Functional` **78/78** `ptr_8cfbe317-4723-74b1-5397-e69d9a2f3277`
+  - `TheConclusion_Functional` **78/78** `ptr_02e16d01-4485-5408-9299-b6a9031b63d2`
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, `catalog_exit` 0, aggregate **5398** assertions. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Early `curl (7)` connect failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63**.
+  - `BeepClickInjection_Functional` **12/12** `ptr_1876ccc3-4b12-6de8-a75f-269b209bf2db`
+  - `HostCombatLoop_Functional` **33/33** `ptr_aa9dbcd8-4883-7a72-259c-3794816f3105`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_192919ba-4774-aad4-3288-0e8a285b7db0`
+  - `NodeZero_Functional` **36** `ptr_1e3a1d9c-460c-8766-cced-df9df7186f53`
+  - `FirstCombat_Functional` **32** `ptr_88014667-4c4e-b86d-db57-4fa1ba13ff04`
+  - `PursuerIntro_Functional` **28** `ptr_53867005-4901-d884-964e-2eab37899218`
+  - `WeaponRoster_Functional` **49** `ptr_3c4aa42c-407b-ec8b-3e01-62966b745e92`
+  - `SyringeKit_Functional` **46** `ptr_1560e84e-4cb2-a5ac-7fed-aaa121185382`
+  - `ResearchStationRespec_Functional` **78** `ptr_0ecd8bf2-4a6f-8139-dc94-80af59a079c4`
+  - `TheConclusion_Functional` **78** `ptr_ab29cbe3-47ec-2639-680e-838e6b8effbc`
+  - The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Post-write inspect still reported Recast `needs_rebuild` true; that stays deferred after painting 16 meshes and did not block `COMPLETE_PASS`.
+  - The 34 worktree hashes were exact after the run (29 polish + Admin `2a9e21bb…` + Neuro `73e5da44…` + Cryo `46e05eb9…` + Compute `69043b7a…` + Reactor `37aabc72…`). `git diff --check` passed. Staged 0. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b30_complete63_96c00d67ec7e4ff09b718aaa28e9ee54`
+  - Log: `%TEMP%\b30_complete_editor.log`
+- The unstaged diff is Reactor map world color, five materials, two Blueprints under `/Game/Blueprints/Reactor/`, and the bridge allowlist for `create_reactor_world_color` / `save_reactor_world_color` / `inspect_reactor_world_color`.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `SW_AlarmPulse` is a one-shot, and `BeepClickInjection_Functional` is **12/12**.
+2. Recast `needs_rebuild` is true again after painting 16 Reactor meshes. The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Deferred; does not block `COMPLETE_PASS`.
+3. `HostCombatLoop_Functional` passed **33/33**. Still deferred as a preexisting isolation defect, not a Beat 30 regression.
+4. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a Beat 30 regression.
+5. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a Beat 30 regression.
+6. The third-person camera is fixed in the published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`.
+7. Nathan Grant final 13-slot mesh is published in `0cd4ebeab448d517ee8617a94276dea341733935`. Camera arm **180**, socket `(0,28,18)`, `yawFollowsLook` true. Admin world color is published in `c5209675e423e4ef61c6ed4b0486382a066dff98`. Neuro world color is published in `3a1c4c2ec659d8003514c2ab488bbd1398eea83f`. Cryo world color is published in `286ad3e7ed2170ce7bc80ef853a60df8cb9e91f1`. Compute world color is published in `72f8dcbea427e06aa199c4e09a549c739a66d21b`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 31 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**. `PROJECT_STATE.md` now includes this Beat 30 section and is unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 30 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
+- Do not begin the next pass until separately authorized. Reactor world color is done — last facility color pass. The next recommended pass is third-person camera over-the-shoulder.

@@ -591,6 +591,8 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_cryo_world_color")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_compute_world_color")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_compute_world_color")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_reactor_world_color")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("save_reactor_world_color")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -736,6 +738,8 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_cryo_world_color")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_compute_world_color")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_compute_world_color")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_reactor_world_color")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("save_reactor_world_color")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_adaptation_subject")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_neural_mapping_array")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_neuro_research_load_cutoff")));
@@ -1925,6 +1929,10 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 	{
 		return OrganoidAIBridgeWrites::InspectComputeWorldColor(Args);
 	}
+	if (Normalized == TEXT("inspect_reactor_world_color"))
+	{
+		return OrganoidAIBridgeWrites::InspectReactorWorldColor(Args);
+	}
 
 	if (OrganoidAIBridgePlaytest::IsPlaytestCommand(Normalized))
 	{
@@ -2057,6 +2065,8 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("save_cryo_world_color")
 		|| Normalized == TEXT("create_compute_world_color")
 		|| Normalized == TEXT("save_compute_world_color")
+		|| Normalized == TEXT("create_reactor_world_color")
+		|| Normalized == TEXT("save_reactor_world_color")
 		|| Normalized == TEXT("spawn_neuro_adaptation_subject")
 		|| Normalized == TEXT("spawn_neuro_neural_mapping_array")
 		|| Normalized == TEXT("spawn_neuro_research_load_cutoff")

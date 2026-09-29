@@ -241,6 +241,8 @@ namespace
 		TEXT("save_cryo_world_color"),
 		TEXT("create_compute_world_color"),
 		TEXT("save_compute_world_color"),
+		TEXT("create_reactor_world_color"),
+		TEXT("save_reactor_world_color"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -365,6 +367,8 @@ namespace
 		TEXT("save_cryo_world_color"),
 		TEXT("create_compute_world_color"),
 		TEXT("save_compute_world_color"),
+		TEXT("create_reactor_world_color"),
+		TEXT("save_reactor_world_color"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3520,6 +3524,7 @@ namespace
 #include "OrganoidAIBridgeNeuroWorldColor.inl"
 #include "OrganoidAIBridgeCryoWorldColor.inl"
 #include "OrganoidAIBridgeComputeWorldColor.inl"
+#include "OrganoidAIBridgeReactorWorldColor.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4437,7 +4442,9 @@ namespace
 			|| Action == TEXT("create_cryo_world_color")
 			|| Action == TEXT("save_cryo_world_color")
 			|| Action == TEXT("create_compute_world_color")
-			|| Action == TEXT("save_compute_world_color"))
+			|| Action == TEXT("save_compute_world_color")
+			|| Action == TEXT("create_reactor_world_color")
+			|| Action == TEXT("save_reactor_world_color"))
 		{
 			if (Action == TEXT("create_admin_world_color"))
 			{
@@ -4467,9 +4474,17 @@ namespace
 			{
 				PreflightError = PreflightCreateComputeWorldColor(Args, Before, Proposed);
 			}
-			else
+			else if (Action == TEXT("save_compute_world_color"))
 			{
 				PreflightError = PreflightSaveComputeWorldColor(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("create_reactor_world_color"))
+			{
+				PreflightError = PreflightCreateReactorWorldColor(Args, Before, Proposed);
+			}
+			else
+			{
+				PreflightError = PreflightSaveReactorWorldColor(Args, Before, Proposed);
 			}
 		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
@@ -4632,6 +4647,10 @@ namespace
 		else if (Action == TEXT("create_compute_world_color") || Action == TEXT("save_compute_world_color"))
 		{
 			Package = ComputePackage;
+		}
+		else if (Action == TEXT("create_reactor_world_color") || Action == TEXT("save_reactor_world_color"))
+		{
+			Package = ReactorPackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -6087,6 +6106,8 @@ namespace
 				|| Change->Action == TEXT("save_cryo_world_color")
 				|| Change->Action == TEXT("create_compute_world_color")
 				|| Change->Action == TEXT("save_compute_world_color")
+				|| Change->Action == TEXT("create_reactor_world_color")
+				|| Change->Action == TEXT("save_reactor_world_color")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -6102,7 +6123,9 @@ namespace
 				|| PackagesEqual(SessionPackage, CryoPackage)
 				|| PackagesEqual(Change->Package, CryoPackage)
 				|| PackagesEqual(SessionPackage, ComputePackage)
-				|| PackagesEqual(Change->Package, ComputePackage);
+				|| PackagesEqual(Change->Package, ComputePackage)
+				|| PackagesEqual(SessionPackage, ReactorPackage)
+				|| PackagesEqual(Change->Package, ReactorPackage);
 			if (!((bBlueprintTemplate || bBlueprintVariable || bBlueprintGraph) && bAdminSession)
 				&& !(bMoveOrSaveMaps && (bEpitopeOrAdminSession || bNeuroSession)))
 			{
@@ -6592,6 +6615,14 @@ namespace
 		{
 			return ExecuteSaveComputeWorldColor(*Change);
 		}
+		if (Change->Action == TEXT("create_reactor_world_color"))
+		{
+			return ExecuteCreateReactorWorldColor(*Change);
+		}
+		if (Change->Action == TEXT("save_reactor_world_color"))
+		{
+			return ExecuteSaveReactorWorldColor(*Change);
+		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			return ExecuteSpawnNeuroAdaptationSubject(*Change);
@@ -6686,6 +6717,11 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectComputeWorldColor(const TSharedPtr<FJsonObject>& Args)
 	{
 		return CmdInspectComputeWorldColor(Args);
+	}
+
+	TSharedRef<FJsonObject> InspectReactorWorldColor(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectReactorWorldColor(Args);
 	}
 
 	TSharedRef<FJsonObject> Dispatch(
