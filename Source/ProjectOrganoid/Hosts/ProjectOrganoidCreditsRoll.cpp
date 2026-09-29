@@ -22,7 +22,7 @@ FString AProjectOrganoidCreditsRoll::BuildCreditsBody() const
 		TEXT("Project Organoid\n")
 		TEXT("Engine 5.8.3\n")
 		TEXT("34 hashes\n")
-		TEXT("63/63 COMPLETE_PASS\n")
+		TEXT("63/63 COMPLETE_PASS 5423\n")
 		TEXT("Beats 19-33\n")
 		TEXT("Thank you"));
 }

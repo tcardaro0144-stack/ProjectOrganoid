@@ -5716,3 +5716,50 @@ Three new packages outside that list:
 
 - Beat 33 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
 - Do not begin the next pass until separately authorized. Conclusion choice polish + credits + save cleanup are done.
+
+## 2026-09-29 — Beat 34: Final polish/docs README + credits + hash table
+
+**Status:** published docs + credits text update. Maps/missions unchanged. `COMPLETE_PASS` **63/63** aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**.
+
+**Baseline:** published Beat 33 commit `378da42667bed8311b314d1834cedc43c28f26b1` (`feat: polish Conclusion choice + credits + save cleanup`) on `origin/main`. Beat 34 is docs/credits text only.
+
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Audit
+
+- Beats 11–33 + Fix/Roadmap/Final/Deferred present. LF, no BOM/CR. 34 hashes exact. No Beat 34 heading before this section. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains on no branch. `.gitignore` covers `Binaries` / `Intermediate` / `Saved` / `.vs`.
+
+### Docs
+
+- Root `README.md` + `Docs/Final_Polish.md` — Engine 5.8.3 Win64 Development; 63/63 `COMPLETE_PASS` **5423**; Beep **12/12** one-shot 1.2s 878.57Hz; NavMesh Recast `needs_rebuild` deferred; `gray_remaining` **0**; Nathan final Drake 13 slots `SKM_NathanGrant_Final`; OTS arm **180** socket `(0,45,22)` FOV **92** lag **10** collision true yawFollowsLook true; World color Admin `2a9e21bb…` Neuro `73e5da44…` Cryo `46e05eb9…` Compute `69043b7a…` Reactor `cfb8b9cb…` done; NodeZero Destroy vs Extract (NG+ only on Extract); Sterling lines + escape cinematic; Conclusion Destroy vs Extract credits roll + save cleanup (NG+ flag only on Extract chain); publish line `522776a` → `378da42`.
+
+### Credits
+
+- `BP_CreditsRoll` wrapper `f10b4765…` unchanged. C++ source `ProjectOrganoidCreditsRoll.cpp` finalized text: Tom Cardaro / Project Organoid / Engine 5.8.3 / Beats 19–33 / 63/63 `COMPLETE_PASS` **5423** / 34 hashes / thank you.
+
+### Hash table appendix
+
+- 34 hashes exact. Facility prefixes inside the 34: Reactor `cfb8b9cb…`, Conclusion `7f952f18…`, Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`, plus remaining polish / mission / weapon / adaptation / AI / `Lvl_Epitope` / Nathan / props / mats / cinematic packages that compose the exact **34** (unchanged from Beat 33 except docs/credits source text outside wrappers). CreditsRoll wrapper `f10b4765…` remains outside the 34 and unchanged.
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. Targeted suite **8/8**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Beep **12/12**. TheConclusion **95**. NodeZero **44**. Log: `%TEMP%\b34_targeted_editor.log`.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Conclusion **95**. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Reactor `cfb8b9cb…`. Conclusion `7f952f18…`. CreditsRoll `f10b4765…`. Evidence: `%TEMP%\b34_complete63_579fa14cb6d7491ea1cd9d2679774032`. Log: `%TEMP%\b34_complete_editor.log`.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `BeepClickInjection_Functional` is **12/12**.
+2. Recast `needs_rebuild` remains deferred; catalog NAVMESH rebuild count **0**.
+3. `HostCombatLoop_Functional` / `BiologicalAdaptation_Functional` isolation flakes remain deferred when they appear; this catalog passed **33/33** and **59/59**.
+4. Canon (`Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md`) remains separate and unchanged.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- Beat 34 docs + credits C++ text + this `PROJECT_STATE.md` section are the publish allowlist.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+- Maps stay at Reactor `cfb8b9cb…`, Conclusion `7f952f18…`, Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`. CreditsRoll wrapper `f10b4765…` unchanged.
+
+### Next boundary
+
+- Beat 34 final polish/docs is published. Do not begin the next pass until separately authorized.
