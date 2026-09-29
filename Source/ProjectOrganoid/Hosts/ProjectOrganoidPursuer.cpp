@@ -6,6 +6,7 @@
 #include "ProjectOrganoidGameMode.h"
 #include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
+#include "ProjectOrganoidSaveSubsystem.h"
 
 #include "Animation/AnimSequence.h"
 #include "Components/BoxComponent.h"
@@ -73,9 +74,23 @@ void AProjectOrganoidPursuer::BeginEncounter()
 
 	if (UAnimSequence* Walk = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd.MF_Unarmed_Walk_Fwd")))
 	{
+		float PlayRate = SlowWalkPlayRate;
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GameInstance = World->GetGameInstance())
+			{
+				if (const UProjectOrganoidSaveSubsystem* Saves = GameInstance->GetSubsystem<UProjectOrganoidSaveSubsystem>())
+				{
+					if (Saves->HasNewGamePlus())
+					{
+						PlayRate = FMath::Min(1.f, SlowWalkPlayRate * 1.35f);
+					}
+				}
+			}
+		}
 		Mesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 		Mesh->PlayAnimation(Walk, true);
-		Mesh->SetPlayRate(SlowWalkPlayRate);
+		Mesh->SetPlayRate(PlayRate);
 	}
 
 	PlayBang();

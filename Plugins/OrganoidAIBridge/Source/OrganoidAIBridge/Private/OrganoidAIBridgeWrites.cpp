@@ -228,6 +228,9 @@ namespace
 		TEXT("set_first_combat_next_node_zero"),
 		TEXT("create_node_zero_blueprint"),
 		TEXT("spawn_reactor_node_zero"),
+		TEXT("create_sterling_escape_cinematic"),
+		TEXT("create_sterling_escape_trigger_blueprint"),
+		TEXT("spawn_reactor_sterling_escape"),
 		TEXT("set_alarm_pulse_oneshot"),
 		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
@@ -354,6 +357,9 @@ namespace
 		TEXT("set_first_combat_next_node_zero"),
 		TEXT("create_node_zero_blueprint"),
 		TEXT("spawn_reactor_node_zero"),
+		TEXT("create_sterling_escape_cinematic"),
+		TEXT("create_sterling_escape_trigger_blueprint"),
+		TEXT("spawn_reactor_sterling_escape"),
 		TEXT("set_alarm_pulse_oneshot"),
 		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
@@ -3517,6 +3523,7 @@ namespace
 #include "OrganoidAIBridgePursuerIntro.inl"
 #include "OrganoidAIBridgeFirstCombat.inl"
 #include "OrganoidAIBridgeNodeZero.inl"
+#include "OrganoidAIBridgeSterlingEscape.inl"
 #include "OrganoidAIBridgeDeferredPolish.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNathanGrantFinal.inl"
@@ -4415,6 +4422,18 @@ namespace
 		{
 			PreflightError = PreflightSpawnReactorNodeZero(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_sterling_escape_cinematic"))
+		{
+			PreflightError = PreflightCreateSterlingEscapeCinematic(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("create_sterling_escape_trigger_blueprint"))
+		{
+			PreflightError = PreflightCreateSterlingEscapeTriggerBlueprint(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("spawn_reactor_sterling_escape"))
+		{
+			PreflightError = PreflightSpawnReactorSterlingEscape(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("set_alarm_pulse_oneshot"))
 		{
 			PreflightError = PreflightSetAlarmPulseOneshot(Args, Before, Proposed);
@@ -4752,6 +4771,18 @@ namespace
 			Package = NodeZeroBlueprintPackage;
 		}
 		else if (Action == TEXT("spawn_reactor_node_zero"))
+		{
+			Package = ReactorPackage;
+		}
+		else if (Action == TEXT("create_sterling_escape_cinematic"))
+		{
+			Package = SterlingEscapeCinematicPackage;
+		}
+		else if (Action == TEXT("create_sterling_escape_trigger_blueprint"))
+		{
+			Package = SterlingEscapeTriggerPackage;
+		}
+		else if (Action == TEXT("spawn_reactor_sterling_escape"))
 		{
 			Package = ReactorPackage;
 		}
@@ -6093,6 +6124,9 @@ namespace
 				|| Change->Action == TEXT("set_first_combat_next_node_zero")
 				|| Change->Action == TEXT("create_node_zero_blueprint")
 				|| Change->Action == TEXT("spawn_reactor_node_zero")
+				|| Change->Action == TEXT("create_sterling_escape_cinematic")
+				|| Change->Action == TEXT("create_sterling_escape_trigger_blueprint")
+				|| Change->Action == TEXT("spawn_reactor_sterling_escape")
 				|| Change->Action == TEXT("set_alarm_pulse_oneshot")
 				|| Change->Action == TEXT("rebuild_epitope_navmesh")
 				|| Change->Action == TEXT("create_nathan_grant_look")
@@ -6562,6 +6596,18 @@ namespace
 		if (Change->Action == TEXT("spawn_reactor_node_zero"))
 		{
 			return ExecuteSpawnReactorNodeZero(*Change);
+		}
+		if (Change->Action == TEXT("create_sterling_escape_cinematic"))
+		{
+			return ExecuteCreateSterlingEscapeCinematic(*Change);
+		}
+		if (Change->Action == TEXT("create_sterling_escape_trigger_blueprint"))
+		{
+			return ExecuteCreateSterlingEscapeTriggerBlueprint(*Change);
+		}
+		if (Change->Action == TEXT("spawn_reactor_sterling_escape"))
+		{
+			return ExecuteSpawnReactorSterlingEscape(*Change);
 		}
 		if (Change->Action == TEXT("set_alarm_pulse_oneshot"))
 		{

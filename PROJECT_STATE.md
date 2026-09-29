@@ -5526,3 +5526,98 @@ Facility prefixes inside the 34: Reactor `37aabc72…`, Admin `2a9e21bb…`, Neu
 - Beat 31 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
 - All beats **11–31** plus Fix, Roadmap, Final, Deferred Polish, and Beats **25–30** are done. Third-person camera over-the-shoulder is done.
 - Do not begin any further beat until separately authorized.
+
+## 2026-09-29 — Beat 32: Node Zero Vaccine Choice + Sterling Escape + NG+ Loop
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **63/63**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44/44**. FirstCombat **32**. PursuerIntro **28**. Changes left **unstaged**. No commit and no push.
+
+**Baseline:** published Beat 31 commit `e14b62576b2a75f37a08b092eda91abe6cf1ce8a` (`fix: third-person camera over-the-shoulder`) on `origin/main`. Beat 32 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Inspect
+
+- Old NodeZero (through Beat 31): `NodeZero_Functional` **36/36**. Reactor hash `37aabc72…` (was `ab836e88…` after Beat 30 world color). Destroy and Extract both completed the objective without a distinct NG+ path. No Sterling escape cinematic actors in Reactor. Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…` unchanged from the facility color beats. OTS camera already published: arm **180**, socket `(0,45,22)`, FOV **92**, lag **10**, collision true, mesh `SKM_NathanGrant_Final`.
+
+### Node Zero vaccine choice + Sterling escape + NG+
+
+- Destroy vs Extract both complete the NodeZero objective. **NG+ is granted only on Extract** (`UProjectOrganoidSaveSubsystem::GrantNewGamePlus` / `bNewGamePlus`). Destroy does not set NG+.
+- Sterling line **"I built it to heal. It learned to keep."** shows **7s once** (Destroy and Extract paths via escape cinematic notify). Extract then shows **"You take it, you become the carrier."** **7s once** after the cinematic.
+- New content under `/Game/Cinematics/`: `BP_SterlingEscapeCinematic` and `BP_SterlingEscapeTrigger`. Trigger spawned in Reactor at `(-200,600,-4710)`.
+- NG+ enemy scaling: HostBase MaxHealth **×1.5** / DefaultWalkSpeed **×1.2**; TransformedScientist and Pursuer harder when NG+. ResearchStation grants a free respec credit when NG+ even without an active objective.
+- Reactor map updated for the escape trigger placement: `37aabc72…` → `85cf16d2…`. Admin / Neuro / Cryo / Compute prefixes unchanged (`2a9e21bb…`, `73e5da44…`, `46e05eb9…`, `69043b7a…`).
+- `NodeZero_Functional` expanded **36 → 44** (+8): escape actors present, Destroy on a temp core proves **!NG+**, Extract on the map core proves **+NG+**, Sterling lines once each.
+- C++ / bridge / playtest carry the polish: NodeZeroCore, SterlingEscapeCinematic (+ trigger), HostBase / TransformedScientist / Pursuer, ResearchStation, OrganoidAIBridge SterlingEscape allowlist, `NodeZero_Functional`. `DA_Mission_NodeZero.uasset` hash stays `d4bf5954…` (mission behavior via C++ / save flag; DA package not rewritten).
+
+### Persisted asset hashes
+
+Thirty-three of the Beat 31 **34** are unchanged. Reactor is updated in-list. That is still **34** (not 35 — Admin, Neuro, Cryo, and Compute were already inside the prior 34). Two new cinematic packages sit outside the 34. NodeZero mission DA hash is unchanged inside the 34; NG+ save flag and choice polish live in source / Reactor / cinematics.
+
+Facility prefixes inside the 34: Reactor `85cf16d2…` (was `37aabc72…`), Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`, plus the other **29** polish / mission / weapon / adaptation / AI / `Lvl_Epitope` / `SW_AlarmPulse` hashes from Beat 30/31.
+
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `85cf16d2375927b535745ca839298dd8c7bb8425c1f686e3be397daed7f608a4` (was `37aabc721ba9ffef2c216d951f7130269a8f99b49cdd7e14b30113ba96fd991e` — Sterling escape trigger at `(-200,600,-4710)`; encounter / NodeZero / color actors preserved)
+- `Content/Maps/Epitope/SL_Epitope_Admin.umap` SHA-256: `2a9e21bbd70a27dcdc16bbc776cd89ccd31aff7e4c7ce75ab4a1604aa05ce6dd` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `73e5da449748639b5270d5652386d2e68dc814ce0fb639242d119cc6da72bb0b` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `46e05eb96d205f64a11e23f8adfa4de517d1c29728446fbf65fed243ed76ed80` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `69043b7a4569cc4dbd776bddf32487f3d1f25bd08e244039d414519ca7399a7e` (unchanged)
+- `Content/Data/Missions/DA_Mission_NodeZero.uasset` SHA-256: `d4bf595454cb293ee1ea37f003d3d3a19adf80638890237e84da1d5f74441e18` (unchanged inside the 34; choice / NG+ via C++)
+
+Two new cinematic packages outside that list:
+
+- `Content/Cinematics/BP_SterlingEscapeCinematic.uasset` SHA-256: `2ca6d06a8cc07fad75a4a23f6af8df49935fa837b310d244ccc0412e7f5a0d5f` (new; outside the 34; 24,318 bytes)
+- `Content/Cinematics/BP_SterlingEscapeTrigger.uasset` SHA-256: `5736fd278426315b686a8d37d019a357d727d73dd4b3de6363c4b586707d2500` (new; 24,387 bytes)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. `build_exit` 0.
+- Targeted suite **8/8**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Beep **12/12**. NodeZero **44/44**. Log: `%TEMP%\b32_targeted_editor.log`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_4dabfeac-4b93-b556-61d8-b6a62202f287`
+  - `NodeZero_Functional` **44/44** `ptr_229a031b-4777-7b38-2d56-be8ee4f37ff0`
+  - `FirstCombat_Functional` **32/32** `ptr_8892db44-4a0b-4109-f811-fca45aa2e339`
+  - `PursuerIntro_Functional` **28/28** `ptr_4608bb9b-453f-d3b3-7038-b7961de86e5d`
+  - `WeaponRoster_Functional` **49/49** `ptr_7675393d-4b4e-3481-cca5-a89a2cefde6c`
+  - `SyringeKit_Functional` **46/46** `ptr_cfcfbb2b-49c6-cc74-9b41-318ecc5d5841`
+  - `ResearchStationRespec_Functional` **78/78** `ptr_8679bd1f-46a3-e526-1089-5a89e4219238`
+  - `TheConclusion_Functional` **78/78** `ptr_3ccba151-4f16-59b3-492f-c9a36e2a1fca`
+- First complete catalog **FAIL** **62/63**, aggregate **5395** assertions (Host early truncate). Sole failure: `HostCombatLoop_Functional` **21/22** `ptr_673c9cfb-44fc-b2e8-b0f3-e896b23dc031`. Evidence: `C:\Users\tomca\AppData\Local\Temp\b32_complete63_390b6f212f63465e920a1ea756a4a2b0`. Log: `%TEMP%\b32_complete_editor.log` (first run).
+- Isolated Host retry: `HostCombatLoop_Functional` **33/33 PASS** `ptr_3fb58fad-4a5e-15de-57d6-ff97d45821aa` on attempt 1. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Evidence: `%TEMP%\b32_targeted_host_34bc8153d21741f8a695ceed40f1ecdd`. Log: `%TEMP%\b32_targeted_host_editor.log`.
+- Second complete catalog **63/63**, outcome `COMPLETE_PASS`, `catalog_exit` 0, aggregate **5406** assertions (**5398** + **8** NodeZero **36→44**). `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Early `curl (7)` connect failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10.0 collision=true mesh=SKM_NathanGrant_Final`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_a663dff8-4a6e-2347-e114-e58d689cbc97`
+  - `HostCombatLoop_Functional` **33/33** `ptr_a0e4894a-4405-4d3e-a54d-d89affcd7bae`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_6a5954d2-4b4c-b1ab-8aac-b69e21ad4db2`
+  - `NodeZero_Functional` **44** `ptr_7ae2e057-4f07-7a0d-3329-ffbae855ad12`
+  - `FirstCombat_Functional` **32** `ptr_04b00b5f-446d-9e8f-1380-94a85ddf0a9c`
+  - `PursuerIntro_Functional` **28** `ptr_e831a4f4-40e9-215d-24f1-98b28ccc4f29`
+  - `WeaponRoster_Functional` **49** `ptr_5afd1bee-4be4-211e-0ff4-3f9ca8fb0809`
+  - `SyringeKit_Functional` **46** `ptr_5d0f956a-4311-2a5d-0ab5-53b4bca86e87`
+  - `ResearchStationRespec_Functional` **78** `ptr_01348f4c-4d39-914c-9e4f-8e910de7f15d`
+  - `TheConclusion_Functional` **78** `ptr_041c10c3-482f-2e5a-0089-73aa83c99c25`
+  - The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Sector prefixes: Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`, Reactor `85cf16d2…`.
+  - The 34 worktree hashes were exact after the run (33 unchanged + Reactor `85cf16d2…`). `git diff --check` passed. Staged 0. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b32_complete63_9c627e90a0d84acb92d45f3a64429cfe`
+  - Log: `%TEMP%\b32_complete_editor.log`
+- The unstaged diff is Reactor map (escape trigger), two `/Game/Cinematics/` Blueprints, NodeZero / SterlingEscape / Host / Scientist / Pursuer / ResearchStation C++, bridge SterlingEscape allowlist, `NodeZero_Functional`, plus this `PROJECT_STATE.md` Beat 32 section.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `SW_AlarmPulse` is a one-shot, and `BeepClickInjection_Functional` is **12/12**.
+2. Recast `needs_rebuild` remains true from prior facility paint passes. The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Deferred; does not block `COMPLETE_PASS`.
+3. `HostCombatLoop_Functional` failed **21/22** on the first Beat 32 catalog, then passed **33/33** on isolated retry and on the second catalog. Still deferred as a preexisting isolation defect, not a NodeZero polish regression.
+4. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a Beat 32 regression.
+5. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a Beat 32 regression.
+6. Third-person camera is published in `e14b62576b2a75f37a08b092eda91abe6cf1ce8a`: arm **180**, socket `(0,45,22)`, FOV **92**, lag speed **10**, collision true, `yawFollowsLook` true, mesh `SKM_NathanGrant_Final`.
+7. Nathan Grant final 13-slot mesh is published. Admin + Neuro + Cryo + Compute + Reactor world color passes are done.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 33 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**. `PROJECT_STATE.md` now includes this Beat 32 section and is unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 32 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
+- Do not begin the next pass until separately authorized. Node Zero vaccine choice + Sterling escape + NG+ loop are done. The next recommended pass is final Conclusion choice polish + credits + save cleanup.

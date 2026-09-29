@@ -578,6 +578,9 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_first_combat_next_node_zero")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_blueprint")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_cinematic")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_trigger_blueprint")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_sterling_escape")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
@@ -725,6 +728,9 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_first_combat_next_node_zero")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_node_zero_blueprint")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_cinematic")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_trigger_blueprint")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_sterling_escape")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_nathan_grant_look")));
@@ -2052,6 +2058,9 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("set_first_combat_next_node_zero")
 		|| Normalized == TEXT("create_node_zero_blueprint")
 		|| Normalized == TEXT("spawn_reactor_node_zero")
+		|| Normalized == TEXT("create_sterling_escape_cinematic")
+		|| Normalized == TEXT("create_sterling_escape_trigger_blueprint")
+		|| Normalized == TEXT("spawn_reactor_sterling_escape")
 		|| Normalized == TEXT("set_alarm_pulse_oneshot")
 		|| Normalized == TEXT("rebuild_epitope_navmesh")
 		|| Normalized == TEXT("create_nathan_grant_look")

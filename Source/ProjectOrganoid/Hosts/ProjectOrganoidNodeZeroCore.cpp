@@ -10,9 +10,11 @@
 #include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidSaveSubsystem.h"
+#include "ProjectOrganoidSterlingEscapeCinematic.h"
 
 #include "Components/SphereComponent.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 
 AProjectOrganoidNodeZeroCore::AProjectOrganoidNodeZeroCore()
 {
@@ -77,12 +79,36 @@ bool AProjectOrganoidNodeZeroCore::ChooseFate(AProjectOrganoidCharacter* Interac
 	ChosenFate = Fate;
 	bIsInteractable = false;
 	CompleteObjectives();
-	return bObjectivesCompleted && bGrantedNewGamePlus;
+	NotifyEscapeCinematic();
+	if (Fate == EProjectOrganoidNodeZeroFate::Extract)
+	{
+		ShowExtractLine();
+	}
+	return bObjectivesCompleted;
 }
 
 void AProjectOrganoidNodeZeroCore::ShowSterlingLine()
 {
 	++SterlingPresentationCount;
+	PresentHudLine(
+		TEXT("Sterling"),
+		TEXT("I built it to heal. It learned to keep."));
+}
+
+void AProjectOrganoidNodeZeroCore::ShowExtractLine()
+{
+	if (bExtractLineShown)
+	{
+		return;
+	}
+	bExtractLineShown = true;
+	PresentHudLine(
+		TEXT("Sterling"),
+		TEXT("You take it, you become the carrier."));
+}
+
+void AProjectOrganoidNodeZeroCore::PresentHudLine(const TCHAR* Speaker, const TCHAR* Line) const
+{
 	UWorld* World = GetWorld();
 	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
 	AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
@@ -90,8 +116,8 @@ void AProjectOrganoidNodeZeroCore::ShowSterlingLine()
 	if (HUD)
 	{
 		HUD->ShowTransientNotification(
-			FText::FromString(TEXT("Sterling")),
-			FText::FromString(TEXT("I built it to heal. It learned to keep.")),
+			FText::FromString(Speaker),
+			FText::FromString(Line),
 			LineSeconds);
 	}
 }
@@ -102,7 +128,7 @@ void AProjectOrganoidNodeZeroCore::CompleteObjectives()
 	UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
 	UProjectOrganoidSaveSubsystem* Saves = GameInstance ? GameInstance->GetSubsystem<UProjectOrganoidSaveSubsystem>() : nullptr;
 	UProjectOrganoidObjectiveSubsystem* Objectives = GameInstance ? GameInstance->GetSubsystem<UProjectOrganoidObjectiveSubsystem>() : nullptr;
-	if (Saves)
+	if (Saves && ChosenFate == EProjectOrganoidNodeZeroFate::Extract)
 	{
 		Saves->GrantNewGamePlus();
 		bGrantedNewGamePlus = Saves->HasNewGamePlus();
@@ -112,5 +138,19 @@ void AProjectOrganoidNodeZeroCore::CompleteObjectives()
 		Objectives->TriggerEvent(TEXT("Event_NodeZeroReached"));
 		Objectives->TriggerEvent(TEXT("Event_FateChosen"));
 		bObjectivesCompleted = true;
+	}
+}
+
+void AProjectOrganoidNodeZeroCore::NotifyEscapeCinematic()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	for (TActorIterator<AProjectOrganoidSterlingEscapeCinematic> It(World); It; ++It)
+	{
+		It->PlayEscapeSequence(ChosenFate);
+		break;
 	}
 }

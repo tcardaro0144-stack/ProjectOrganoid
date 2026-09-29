@@ -4,6 +4,7 @@
 #include "ProjectOrganoidHostAIController.h"
 #include "ProjectOrganoidEncounterPresenceSubsystem.h"
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidInteractionTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
@@ -93,6 +94,21 @@ void AProjectOrganoidHostBase::Tick(float DeltaSeconds)
 void AProjectOrganoidHostBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			if (const UProjectOrganoidSaveSubsystem* Saves = GameInstance->GetSubsystem<UProjectOrganoidSaveSubsystem>())
+			{
+				if (Saves->HasNewGamePlus())
+				{
+					MaxHealth *= 1.5f;
+					DefaultWalkSpeed *= 1.2f;
+				}
+			}
+		}
+	}
 
 	Health = MaxHealth;
 	CachedWalkSpeed = DefaultWalkSpeed;

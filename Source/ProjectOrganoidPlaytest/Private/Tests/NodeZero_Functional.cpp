@@ -21,6 +21,7 @@
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "ProjectOrganoidPowerTypes.h"
 #include "ProjectOrganoidSaveSubsystem.h"
+#include "ProjectOrganoidSterlingEscapeCinematic.h"
 
 namespace NodeZeroFunctional
 {
@@ -44,9 +45,14 @@ namespace NodeZeroFunctional
 	constexpr TCHAR FateEvent[] = TEXT("Event_FateChosen");
 	constexpr TCHAR CoreLabel[] = TEXT("BP_NodeZeroCore");
 	constexpr TCHAR TerminalLabel[] = TEXT("Terminal_SterlingFinal");
+	constexpr TCHAR EscapeCinematicLabel[] = TEXT("BP_SterlingEscapeCinematic");
+	constexpr TCHAR EscapeTriggerLabel[] = TEXT("BP_SterlingEscapeTrigger");
 	constexpr TCHAR ExpectedLine[] = TEXT("I built it to heal. It learned to keep.");
+	constexpr TCHAR ExpectedExtractLine[] = TEXT("You take it, you become the carrier.");
 	const FVector CoreLocation(-200.f, 0.f, -4710.f);
 	const FVector TerminalLocation(-200.f, 400.f, -4710.f);
+	const FVector EscapeTriggerLocation(-200.f, 600.f, -4710.f);
+	const FVector EscapeCinematicLocation(-200.f, 500.f, -4710.f);
 	const FVector PursuerLocation(-1800.f, 0.f, -4710.f);
 	const FVector PursuerTriggerLocation(-1100.f, 0.f, -4710.f);
 	const FVector ScientistLocation(-800.f, 800.f, -4710.f);
@@ -176,19 +182,23 @@ namespace NodeZeroFunctional
 			TArray<AActor*> PursuerTriggers = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, TEXT("Reactor_PursuerTrigger")) : TArray<AActor*>();
 			TArray<AActor*> Scientists = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, TEXT("BP_TransformedScientist")) : TArray<AActor*>();
 			TArray<AActor*> CombatTriggers = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, TEXT("Reactor_FirstCombatTrigger")) : TArray<AActor*>();
+			TArray<AActor*> EscapeCinematics = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, EscapeCinematicLabel) : TArray<AActor*>();
+			TArray<AActor*> EscapeTriggers = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, EscapeTriggerLabel) : TArray<AActor*>();
 			AssertTrue(Record, TEXT("actor.count"), Cores.Num() == 1 && Core != nullptr, TEXT("1"), FString::FromInt(Cores.Num()), CoreLabel);
 			AssertTrue(Record, TEXT("actor.location"), Core && Core->GetActorLocation().Equals(CoreLocation, 1.f), TEXT("-200,0,-4710"), Core ? Core->GetActorLocation().ToString() : TEXT("missing"), CoreLabel);
 			AssertTrue(Record, TEXT("actor.package"), Core && Core->GetOutermost() && Core->GetOutermost()->GetName().Contains(TEXT("SL_Epitope_Reactor")), ReactorPackage, Core && Core->GetOutermost() ? Core->GetOutermost()->GetName() : TEXT("missing"), CoreLabel);
 			AssertTrue(Record, TEXT("actor.interactable"), Core && Core->bIsInteractable && Core->GetShutdownStage() == 0 && !Core->UsesPursuerAI() && !Core->IsA(APawn::StaticClass()), TEXT("interactable"), Core ? TEXT("present") : TEXT("missing"), CoreLabel);
 			AssertTrue(Record, TEXT("terminal.count"), Terminals.Num() == 1 && Terminals[0] && Terminals[0]->GetClass() && Terminals[0]->GetClass()->GetName().Equals(TEXT("ProjectOrganoidTerminal")), TEXT("1"), FString::FromInt(Terminals.Num()), TerminalLabel);
 			AssertTrue(Record, TEXT("terminal.location"), Terminals.Num() == 1 && Terminals[0]->GetActorLocation().Equals(TerminalLocation, 1.f) && Terminals[0]->GetOutermost() && Terminals[0]->GetOutermost()->GetName().Contains(TEXT("SL_Epitope_Reactor")), TEXT("-200,400,-4710"), Terminals.Num() == 1 ? Terminals[0]->GetActorLocation().ToString() : TEXT("missing"), TerminalLabel);
+			AssertTrue(Record, TEXT("escape.cinematic"), EscapeCinematics.Num() == 1 && Cast<AProjectOrganoidSterlingEscapeCinematic>(EscapeCinematics[0]) != nullptr && EscapeCinematics[0]->GetActorLocation().Equals(EscapeCinematicLocation, 1.f), TEXT("1"), FString::FromInt(EscapeCinematics.Num()), EscapeCinematicLabel);
+			AssertTrue(Record, TEXT("escape.trigger"), EscapeTriggers.Num() == 1 && Cast<AProjectOrganoidSterlingEscapeTrigger>(EscapeTriggers[0]) != nullptr && EscapeTriggers[0]->GetActorLocation().Equals(EscapeTriggerLocation, 1.f), TEXT("1"), FString::FromInt(EscapeTriggers.Num()), EscapeTriggerLabel);
 			AssertTrue(Record, TEXT("guard.spine"), Spine.Num() == 1 && Spine[0]->GetActorLocation().Equals(SpineLocation, 1.f), TEXT("-1950,-1650,-4700"), Spine.Num() == 1 ? Spine[0]->GetActorLocation().ToString() : TEXT("missing"), TEXT("Terminal_ControlSpine"));
 			AssertTrue(Record, TEXT("guard.checkpoint"), Checkpoints.Num() == 1 && Checkpoints[0]->GetActorLocation().Equals(CheckpointLocation, 1.f), TEXT("25,0,-4740"), Checkpoints.Num() == 1 ? Checkpoints[0]->GetActorLocation().ToString() : TEXT("missing"), TEXT("Checkpoint_BasinRim"));
 			AssertTrue(Record, TEXT("guard.pursuer"), Pursuers.Num() == 1 && Pursuers[0]->GetActorLocation().Equals(PursuerLocation, 1.f), TEXT("-1800,0,-4710"), Pursuers.Num() == 1 ? Pursuers[0]->GetActorLocation().ToString() : TEXT("missing"), TEXT("BP_Pursuer"));
 			AssertTrue(Record, TEXT("guard.pursuer_trigger"), PursuerTriggers.Num() == 1 && PursuerTriggers[0]->GetActorLocation().Equals(PursuerTriggerLocation, 1.f), TEXT("-1100,0,-4710"), PursuerTriggers.Num() == 1 ? PursuerTriggers[0]->GetActorLocation().ToString() : TEXT("missing"), TEXT("Reactor_PursuerTrigger"));
 			AssertTrue(Record, TEXT("guard.scientist"), Scientists.Num() == 1 && Scientists[0]->GetActorLocation().Equals(ScientistLocation, 1.f), TEXT("-800,800,-4710"), Scientists.Num() == 1 ? Scientists[0]->GetActorLocation().ToString() : TEXT("missing"), TEXT("BP_TransformedScientist"));
 			AssertTrue(Record, TEXT("guard.combat_trigger"), CombatTriggers.Num() == 1 && CombatTriggers[0]->GetActorLocation().Equals(CombatTriggerLocation, 1.f), TEXT("-500,0,-4710"), CombatTriggers.Num() == 1 ? CombatTriggers[0]->GetActorLocation().ToString() : TEXT("missing"), TEXT("Reactor_FirstCombatTrigger"));
-			if (bAnyAssertFailed || !Mission || !Core || Terminals.Num() != 1)
+			if (bAnyAssertFailed || !Mission || !Core || Terminals.Num() != 1 || EscapeCinematics.Num() != 1 || EscapeTriggers.Num() != 1)
 			{
 				Owner.CompleteActive(EOrganoidPlaytestState::Blocked, Record.FailureReason.IsEmpty() ? TEXT("Node Zero contract missing.") : Record.FailureReason);
 				return;
@@ -267,7 +277,21 @@ namespace NodeZeroFunctional
 			AssertTrue(Record, TEXT("sterling.line"), Line.Contains(ExpectedLine) && Line.StartsWith(TEXT("Sterling:")), ExpectedLine, Line, TEXT("HUD"));
 			AssertTrue(Record, TEXT("sterling.duration"), Widget->GetTransientNotificationSecondsRemaining() > 6.f && Widget->GetTransientNotificationSecondsRemaining() <= 7.f, TEXT("7"), FString::SanitizeFloat(Widget->GetTransientNotificationSecondsRemaining()), TEXT("HUD"));
 			AssertTrue(Record, TEXT("shutdown.three"), Core->Interact(Character) && Core->Interact(Character) && Core->GetShutdownStage() == 3 && Core->GetSterlingPresentationCount() == 1 && !Core->Interact(Character), TEXT("3"), FString::FromInt(Core->GetShutdownStage()), CoreLabel);
-			AssertTrue(Record, TEXT("choice.destroy"), Core->ChooseFate(Character, EProjectOrganoidNodeZeroFate::Destroy) && Core->GetChosenFate() == EProjectOrganoidNodeZeroFate::Destroy && !Core->ChooseFate(Character, EProjectOrganoidNodeZeroFate::Extract), TEXT("Destroy"), TEXT("checked"), CoreLabel);
+
+			// Destroy on a temporary core: completes both objectives, does not grant NG+.
+			AProjectOrganoidNodeZeroCore* DestroyCore = World->SpawnActor<AProjectOrganoidNodeZeroCore>(CoreLocation + FVector(200.f, 0.f, 0.f), FRotator::ZeroRotator);
+			AssertTrue(Record, TEXT("choice.destroy_setup"), DestroyCore != nullptr, TEXT("spawned"), DestroyCore ? TEXT("spawned") : TEXT("missing"), CoreLabel);
+			if (DestroyCore)
+			{
+				AssertTrue(Record, TEXT("choice.destroy_vaccine"), DestroyCore->CraftVaccine(Character) && DestroyCore->IsVaccineCrafted(), TEXT("crafted"), DestroyCore->IsVaccineCrafted() ? TEXT("crafted") : TEXT("refused"), CoreLabel);
+				AssertTrue(Record, TEXT("choice.destroy_shutdown"), DestroyCore->Interact(Character) && DestroyCore->Interact(Character) && DestroyCore->Interact(Character) && DestroyCore->GetShutdownStage() == 3, TEXT("3"), FString::FromInt(DestroyCore->GetShutdownStage()), CoreLabel);
+				AssertTrue(Record, TEXT("choice.destroy"), DestroyCore->ChooseFate(Character, EProjectOrganoidNodeZeroFate::Destroy) && DestroyCore->GetChosenFate() == EProjectOrganoidNodeZeroFate::Destroy && !DestroyCore->HasGrantedNewGamePlus() && !Saves->HasNewGamePlus(), TEXT("Destroy"), TEXT("checked"), CoreLabel);
+			}
+
+			Widget->ShowTransientNotification(FText::GetEmpty(), FText::FromString(TEXT("clear")), 0.f);
+			AssertTrue(Record, TEXT("choice.extract"), Core->ChooseFate(Character, EProjectOrganoidNodeZeroFate::Extract) && Core->GetChosenFate() == EProjectOrganoidNodeZeroFate::Extract && !Core->ChooseFate(Character, EProjectOrganoidNodeZeroFate::Destroy), TEXT("Extract"), TEXT("checked"), CoreLabel);
+			const FString ExtractLine = Widget->GetLastResourceNotification().ToString();
+			AssertTrue(Record, TEXT("sterling.extract_line"), Core->WasExtractLineShown() && ExtractLine.Contains(ExpectedExtractLine), ExpectedExtractLine, ExtractLine, TEXT("HUD"));
 			FProjectOrganoidObjective Reach;
 			FProjectOrganoidObjective Fate;
 			const bool bReach = Objectives->GetObjective(FName(ReachId), Reach);
@@ -276,6 +300,9 @@ namespace NodeZeroFunctional
 			AssertTrue(Record, TEXT("objective.reach"), bReach && Reach.State == EProjectOrganoidObjectiveState::Completed && Reach.CurrentProgress == 1, TEXT("1"), bReach ? FString::FromInt(Reach.CurrentProgress) : TEXT("missing"), ReachId);
 			AssertTrue(Record, TEXT("objective.fate"), bFate && Fate.State == EProjectOrganoidObjectiveState::Completed && Fate.CurrentProgress == 1, TEXT("1"), bFate ? FString::FromInt(Fate.CurrentProgress) : TEXT("missing"), FateId);
 			AssertTrue(Record, TEXT("ngplus"), Core->HasGrantedNewGamePlus() && Saves->HasNewGamePlus() && Captured && Captured->bNewGamePlus, TEXT("true"), Saves->HasNewGamePlus() ? TEXT("true") : TEXT("false"), TEXT("Save"));
+			TArray<AActor*> EscapeCinematics = OrganoidPlaytestActions::FindActorsByLabel(World, EscapeCinematicLabel);
+			AProjectOrganoidSterlingEscapeCinematic* Escape = EscapeCinematics.Num() == 1 ? Cast<AProjectOrganoidSterlingEscapeCinematic>(EscapeCinematics[0]) : nullptr;
+			AssertTrue(Record, TEXT("escape.played"), Escape && Escape->GetLastPlayedFate() == EProjectOrganoidNodeZeroFate::Extract && Escape->GetPlayCount() >= 1, TEXT("Extract"), Escape ? TEXT("played") : TEXT("missing"), EscapeCinematicLabel);
 			AssertTrue(Record, TEXT("mission.advances"), Objectives->GetActiveMissionId() == FName(ConclusionMissionId), ConclusionMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("mission"));
 			AssertTrue(Record, TEXT("power.unchanged"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor) == ReactorBefore, TEXT("unchanged"), TEXT("checked"), TEXT("Power"));
 			Stage = EStage::EndPie;

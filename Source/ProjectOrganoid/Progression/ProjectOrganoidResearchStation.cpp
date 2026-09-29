@@ -10,6 +10,7 @@
 #include "ProjectOrganoidGameplayHUDController.h"
 #include "ProjectOrganoidObjectiveSubsystem.h"
 #include "ProjectOrganoidResearchStationWidget.h"
+#include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidWeapon.h"
 #include "ProjectOrganoidWeaponComponent.h"
 #include "ProjectOrganoidWeaponModComponent.h"
@@ -405,10 +406,18 @@ bool AProjectOrganoidResearchStation::IsRespecReplayGuardCompleted() const
 
 void AProjectOrganoidResearchStation::TryAwardRespecUseCredit(AProjectOrganoidCharacter* Interactor)
 {
+	bool bNewGamePlus = false;
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (const UProjectOrganoidSaveSubsystem* Saves = GameInstance->GetSubsystem<UProjectOrganoidSaveSubsystem>())
+		{
+			bNewGamePlus = Saves->HasNewGamePlus();
+		}
+	}
 	if (!Interactor
 		|| !IsRespecContractConfigured()
 		|| RespecEventFireCount > 0
-		|| !IsRespecObjectiveActive()
+		|| (!bNewGamePlus && !IsRespecObjectiveActive())
 		|| IsRespecReplayGuardCompleted())
 	{
 		return;
