@@ -5621,3 +5621,98 @@ Two new cinematic packages outside that list:
 
 - Beat 32 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
 - Do not begin the next pass until separately authorized. Node Zero vaccine choice + Sterling escape + NG+ loop are done. The next recommended pass is final Conclusion choice polish + credits + save cleanup.
+
+## 2026-09-29 — Beat 33: Conclusion Choice Polish + Credits + Save Cleanup
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **63/63**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**. Changes left **unstaged**. No commit and no push.
+
+**Baseline:** published Beat 32 commit `23e5309f2908b85d802f0c318ad00e983ceeb74f` (`feat: polish Node Zero vaccine choice + Sterling escape + NG+ loop`) on `origin/main`. Beat 33 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Inspect
+
+- Old Conclusion (through Beat 32): `TheConclusion_Functional` **78/78**. Mission hash `6a4d1dd9…`. Reactor hash `85cf16d2…` (Beat 32 Sterling escape). Destroy vs Extract lived only on Node Zero; Conclusion ended at Control Spine → ResearchStation with no credits roll and no campaign-slot wipe. Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…` unchanged. OTS camera already published: arm **180**, socket `(0,45,22)`, FOV **92**, lag **10**, collision true, mesh `SKM_NathanGrant_Final`.
+
+### Conclusion choice polish + credits + save cleanup
+
+- TheConclusion mission description polished to reflect Destroy vs Extract endings (still contains incubator; now also Destroy / Extract). Hash `6a4d1dd9…` → `7f952f18…`. Functional coverage **78 → 95** (+17).
+- Destroy: facility-collapse ending path; credits roll; wipe `OrganoidAutosave` / `OrganoidOpeningFoundationTest` / `OrganoidOpeningInvestigationTest`; NG+ cleared (`ClearNewGamePlus`).
+- Extract: Nathan becomes carrier; credits roll with Sterling **"You take it, you become the carrier."**; wipe the same three slots; NG+ kept / granted (`GrantNewGamePlus`) for the harder loop / ResearchStation free respec.
+- `BP_CreditsRoll` under `/Game/Cinematics/`: Tom Cardaro, Project Organoid, Engine 5.8.3, 34 hashes, 63/63 COMPLETE_PASS, Beats 19–33, thank you. Placed in Reactor at `(0,900,-4710)`.
+- `BP_SaveCleanup` under `/Game/Save/`: conclusion wipe helper. Placed in Reactor at `(0,1000,-4710)`. SaveSubsystem adds `ClearNewGamePlus`.
+- `BP_ConclusionChoiceTrigger` under `/Game/Cinematics/` at `(0,800,-4710)` near escape. Resolves once from Node Zero fate (or direct `ResolveConclusionChoice` in tests).
+- Encounter actors stay put: `BP_Pursuer` `(-1800,0,-4710)`, `Reactor_PursuerTrigger` `(-1100,0,-4710)`, `BP_TransformedScientist` `(-800,800,-4710)`, `Reactor_FirstCombatTrigger` `(-500,0,-4710)`, `BP_NodeZeroCore` `(-200,0,-4710)`, `Terminal_SterlingFinal` `(-200,400,-4710)`, `BP_SterlingEscapeTrigger` `(-200,600,-4710)`, `Terminal_ControlSpine`, `Checkpoint_BasinRim`.
+- Reactor map updated for the three polish actors: `85cf16d2…` → `cfb8b9cb…`. Admin / Neuro / Cryo / Compute prefixes unchanged.
+
+### Persisted asset hashes
+
+Thirty-three of the Beat 32 **34** are unchanged. Reactor is updated in-list. That is still **34**. TheConclusion mission DA is updated inside the 34. Three new packages sit outside the 34 (CreditsRoll, SaveCleanup, ConclusionChoiceTrigger).
+
+Facility prefixes inside the 34: Reactor `cfb8b9cb…` (was `85cf16d2…`), Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`, plus the other polish / mission / weapon / adaptation / AI / `Lvl_Epitope` / `SW_AlarmPulse` hashes from Beat 30–32.
+
+- `Content/Maps/Epitope/SL_Epitope_Reactor.umap` SHA-256: `cfb8b9cb78851c09d25b6577dfca610ad091f52c81702a5994b88181fadac5b4` (was `85cf16d2375927b535745ca839298dd8c7bb8425c1f686e3be397daed7f608a4` — ConclusionChoiceTrigger `(0,800,-4710)`, CreditsRoll `(0,900,-4710)`, SaveCleanup `(0,1000,-4710)`; encounter / NodeZero / Sterling escape / color actors preserved)
+- `Content/Data/Missions/DA_Mission_TheConclusion.uasset` SHA-256: `7f952f182eb0382e26ded03b58d4813b8aa8bc2263bd10c1e09455f619073dd8` (was `6a4d1dd99908824f00476967d213ee9e85cd165cef344b19f325556748488d1a` — Destroy vs Extract description polish; Next still ResearchStation)
+- `Content/Maps/Epitope/SL_Epitope_Admin.umap` SHA-256: `2a9e21bbd70a27dcdc16bbc776cd89ccd31aff7e4c7ce75ab4a1604aa05ce6dd` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_NeuroGenetics.umap` SHA-256: `73e5da449748639b5270d5652386d2e68dc814ce0fb639242d119cc6da72bb0b` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Cryo.umap` SHA-256: `46e05eb96d205f64a11e23f8adfa4de517d1c29728446fbf65fed243ed76ed80` (unchanged)
+- `Content/Maps/Epitope/SL_Epitope_Compute.umap` SHA-256: `69043b7a4569cc4dbd776bddf32487f3d1f25bd08e244039d414519ca7399a7e` (unchanged)
+
+Three new packages outside that list:
+
+- `Content/Cinematics/BP_CreditsRoll.uasset` SHA-256: `f10b4765ed9ff57e7fec27af6aa1c25f21eaded9ccbc0fb89fc5966d9ca8dc30` (new; outside the 34; 23,934 bytes)
+- `Content/Save/BP_SaveCleanup.uasset` SHA-256: `cfa2859ebc39f46191ab487e5948d4efec11d860b5767f34fed8265ae717da77` (new; 23,894 bytes)
+- `Content/Cinematics/BP_ConclusionChoiceTrigger.uasset` SHA-256: `f104d98524e34cac2373962f1d938e38d5ba5be50e129cd48a2f94bbba6fbffc` (new; 24,451 bytes)
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. `build_exit` 0. MSVC C1061 nesting on bridge preflight was resolved by folding Beat 33 actions into the Sterling escape else-if arm.
+- Targeted suite **8/8**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Beep **12/12**. TheConclusion **95/95**. Log: `%TEMP%\b33_targeted_editor.log`. Evidence: `%TEMP%\b33_targeted8`.
+  - `TheConclusion_Functional` **95/95** `ptr_d8dc6a1c-4c15-92ef-f330-d1881eaaf8c5`
+  - `NodeZero_Functional` **44/44** `ptr_1d804b0f-4f5d-c996-e6cb-88a1e06b1b7a`
+  - `FirstCombat_Functional` **32/32** `ptr_34933993-469b-519b-c3a4-5bbf64a9fed2`
+  - `PursuerIntro_Functional` **28/28** `ptr_9fc07f14-4bb8-9cc6-e1f6-47af2c7e3375`
+  - `WeaponRoster_Functional` **49/49** `ptr_19a39fa6-4bd1-6ecf-aa7f-8ba699bb09dd`
+  - `SyringeKit_Functional` **46/46** `ptr_a728a70f-41cf-cc55-1a09-8c8a924b188d`
+  - `ResearchStationRespec_Functional` **78/78** `ptr_ca28d8d0-497b-46b7-f1b4-d2a34398511d`
+  - `BeepClickInjection_Functional` **12/12** `ptr_7e0509d2-432a-f939-4b1c-548e5cba7c93`
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, `catalog_exit` 0, aggregate **5423** assertions (**5406** + **17** Conclusion **78→95**). `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Early `curl (7)` connect failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10.0 collision=true mesh=SKM_NathanGrant_Final`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_373832e6-40e7-668d-5a78-bda48edabd20`
+  - `HostCombatLoop_Functional` **33/33** `ptr_03325d81-4c7f-e0e5-ac3f-e18935ed4d11`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_ce9b7a48-49ac-238a-6ae8-c586acc588fb`
+  - `NodeZero_Functional` **44** `ptr_ad06f957-45f3-cd3f-cc67-1098ee05a8e0`
+  - `FirstCombat_Functional` **32** `ptr_6e9fc038-4826-ae57-b20d-a09dface5c4a`
+  - `PursuerIntro_Functional` **28** `ptr_8d588f5e-4156-f15f-0cd4-4ca992ac7f11`
+  - `WeaponRoster_Functional` **49** `ptr_63799e0b-412e-b1df-ee01-8683131dec7d`
+  - `SyringeKit_Functional` **46** `ptr_0a6f41ce-4d51-cd1c-5112-5185b768ba9a`
+  - `ResearchStationRespec_Functional` **78** `ptr_08e35ff0-4ac1-e77a-2251-2985cf937e6a`
+  - `TheConclusion_Functional` **95** `ptr_f721d7e5-4d39-2084-fbfe-20a15f36cb85`
+  - The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Sector prefixes: Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`, Reactor `cfb8b9cb…`. Conclusion mission `7f952f18…`.
+  - The 34 worktree hashes were exact after the run (33 unchanged + Reactor `cfb8b9cb…`; TheConclusion updated inside the 34). `git diff --check` passed. Staged 0. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b33_complete63_e3327f70469747f1b61dda0fba37f56d`
+  - Log: `%TEMP%\b33_complete_editor.log`
+- The unstaged diff is TheConclusion mission, Reactor map (choice / credits / cleanup), three new Blueprints, CreditsRoll / SaveCleanup / ConclusionChoiceTrigger C++, SaveSubsystem `ClearNewGamePlus`, bridge ConclusionPolish allowlist, `TheConclusion_Functional`, plus this `PROJECT_STATE.md` Beat 33 section.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `SW_AlarmPulse` is a one-shot, and `BeepClickInjection_Functional` is **12/12**.
+2. Recast `needs_rebuild` remains true from prior facility paint passes. The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Deferred; does not block `COMPLETE_PASS`.
+3. `HostCombatLoop_Functional` passed **33/33**. Still deferred as a preexisting isolation defect, not a Beat 33 regression.
+4. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a Beat 33 regression.
+5. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a Beat 33 regression.
+6. Third-person camera remains published: arm **180**, socket `(0,45,22)`, FOV **92**, lag speed **10**, collision true, mesh `SKM_NathanGrant_Final`.
+7. Nathan Grant final 13-slot mesh is published. Admin + Neuro + Cryo + Compute + Reactor world color passes are done. Node Zero vaccine choice + Sterling escape + NG+ loop are published.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 34 has not been started.
+- Canon (`Tools/unreal_mcp/PROJECT_ORGANOID_CANON.md`) and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**. `PROJECT_STATE.md` now includes this Beat 33 section and is unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 33 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
+- Do not begin the next pass until separately authorized. Conclusion choice polish + credits + save cleanup are done.

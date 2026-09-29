@@ -580,6 +580,11 @@ namespace
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_cinematic")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_trigger_blueprint")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_credits_roll")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_save_cleanup")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("create_conclusion_choice_trigger_blueprint")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_conclusion_polish")));
+		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("polish_the_conclusion_mission")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_sterling_escape")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
 		NativeActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
@@ -730,6 +735,11 @@ namespace
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_node_zero")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_cinematic")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_sterling_escape_trigger_blueprint")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_credits_roll")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_save_cleanup")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("create_conclusion_choice_trigger_blueprint")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_conclusion_polish")));
+		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("polish_the_conclusion_mission")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("spawn_reactor_sterling_escape")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("set_alarm_pulse_oneshot")));
 		SpawnActions.Add(MakeShared<FJsonValueString>(TEXT("rebuild_epitope_navmesh")));
@@ -2060,6 +2070,11 @@ TSharedRef<FJsonObject> FOrganoidAIBridgeCommands::Dispatch(
 		|| Normalized == TEXT("spawn_reactor_node_zero")
 		|| Normalized == TEXT("create_sterling_escape_cinematic")
 		|| Normalized == TEXT("create_sterling_escape_trigger_blueprint")
+		|| Normalized == TEXT("create_credits_roll")
+		|| Normalized == TEXT("create_save_cleanup")
+		|| Normalized == TEXT("create_conclusion_choice_trigger_blueprint")
+		|| Normalized == TEXT("spawn_reactor_conclusion_polish")
+		|| Normalized == TEXT("polish_the_conclusion_mission")
 		|| Normalized == TEXT("spawn_reactor_sterling_escape")
 		|| Normalized == TEXT("set_alarm_pulse_oneshot")
 		|| Normalized == TEXT("rebuild_epitope_navmesh")

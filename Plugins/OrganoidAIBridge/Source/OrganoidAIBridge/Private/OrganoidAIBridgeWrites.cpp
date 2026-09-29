@@ -231,6 +231,11 @@ namespace
 		TEXT("create_sterling_escape_cinematic"),
 		TEXT("create_sterling_escape_trigger_blueprint"),
 		TEXT("spawn_reactor_sterling_escape"),
+		TEXT("create_credits_roll"),
+		TEXT("create_save_cleanup"),
+		TEXT("create_conclusion_choice_trigger_blueprint"),
+		TEXT("spawn_reactor_conclusion_polish"),
+		TEXT("polish_the_conclusion_mission"),
 		TEXT("set_alarm_pulse_oneshot"),
 		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
@@ -360,6 +365,11 @@ namespace
 		TEXT("create_sterling_escape_cinematic"),
 		TEXT("create_sterling_escape_trigger_blueprint"),
 		TEXT("spawn_reactor_sterling_escape"),
+		TEXT("create_credits_roll"),
+		TEXT("create_save_cleanup"),
+		TEXT("create_conclusion_choice_trigger_blueprint"),
+		TEXT("spawn_reactor_conclusion_polish"),
+		TEXT("polish_the_conclusion_mission"),
 		TEXT("set_alarm_pulse_oneshot"),
 		TEXT("rebuild_epitope_navmesh"),
 		TEXT("create_nathan_grant_look"),
@@ -3524,6 +3534,7 @@ namespace
 #include "OrganoidAIBridgeFirstCombat.inl"
 #include "OrganoidAIBridgeNodeZero.inl"
 #include "OrganoidAIBridgeSterlingEscape.inl"
+#include "OrganoidAIBridgeConclusionPolish.inl"
 #include "OrganoidAIBridgeDeferredPolish.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNathanGrantFinal.inl"
@@ -4422,17 +4433,47 @@ namespace
 		{
 			PreflightError = PreflightSpawnReactorNodeZero(Args, Before, Proposed);
 		}
-		else if (Action == TEXT("create_sterling_escape_cinematic"))
+		else if (Action == TEXT("create_sterling_escape_cinematic")
+			|| Action == TEXT("create_sterling_escape_trigger_blueprint")
+			|| Action == TEXT("spawn_reactor_sterling_escape")
+			|| Action == TEXT("create_credits_roll")
+			|| Action == TEXT("create_save_cleanup")
+			|| Action == TEXT("create_conclusion_choice_trigger_blueprint")
+			|| Action == TEXT("spawn_reactor_conclusion_polish")
+			|| Action == TEXT("polish_the_conclusion_mission"))
 		{
-			PreflightError = PreflightCreateSterlingEscapeCinematic(Args, Before, Proposed);
-		}
-		else if (Action == TEXT("create_sterling_escape_trigger_blueprint"))
-		{
-			PreflightError = PreflightCreateSterlingEscapeTriggerBlueprint(Args, Before, Proposed);
-		}
-		else if (Action == TEXT("spawn_reactor_sterling_escape"))
-		{
-			PreflightError = PreflightSpawnReactorSterlingEscape(Args, Before, Proposed);
+			if (Action == TEXT("create_sterling_escape_cinematic"))
+			{
+				PreflightError = PreflightCreateSterlingEscapeCinematic(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("create_sterling_escape_trigger_blueprint"))
+			{
+				PreflightError = PreflightCreateSterlingEscapeTriggerBlueprint(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("spawn_reactor_sterling_escape"))
+			{
+				PreflightError = PreflightSpawnReactorSterlingEscape(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("create_credits_roll"))
+			{
+				PreflightError = PreflightCreateCreditsRoll(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("create_save_cleanup"))
+			{
+				PreflightError = PreflightCreateSaveCleanup(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("create_conclusion_choice_trigger_blueprint"))
+			{
+				PreflightError = PreflightCreateConclusionTriggerBlueprint(Args, Before, Proposed);
+			}
+			else if (Action == TEXT("spawn_reactor_conclusion_polish"))
+			{
+				PreflightError = PreflightSpawnReactorConclusionPolish(Args, Before, Proposed);
+			}
+			else
+			{
+				PreflightError = PreflightPolishTheConclusionMission(Args, Before, Proposed);
+			}
 		}
 		else if (Action == TEXT("set_alarm_pulse_oneshot"))
 		{
@@ -4774,17 +4815,22 @@ namespace
 		{
 			Package = ReactorPackage;
 		}
-		else if (Action == TEXT("create_sterling_escape_cinematic"))
+		else if (Action == TEXT("create_sterling_escape_cinematic")
+			|| Action == TEXT("create_sterling_escape_trigger_blueprint")
+			|| Action == TEXT("spawn_reactor_sterling_escape")
+			|| Action == TEXT("create_credits_roll")
+			|| Action == TEXT("create_save_cleanup")
+			|| Action == TEXT("create_conclusion_choice_trigger_blueprint")
+			|| Action == TEXT("spawn_reactor_conclusion_polish")
+			|| Action == TEXT("polish_the_conclusion_mission"))
 		{
-			Package = SterlingEscapeCinematicPackage;
-		}
-		else if (Action == TEXT("create_sterling_escape_trigger_blueprint"))
-		{
-			Package = SterlingEscapeTriggerPackage;
-		}
-		else if (Action == TEXT("spawn_reactor_sterling_escape"))
-		{
-			Package = ReactorPackage;
+			if (Action == TEXT("create_sterling_escape_cinematic")) { Package = SterlingEscapeCinematicPackage; }
+			else if (Action == TEXT("create_sterling_escape_trigger_blueprint")) { Package = SterlingEscapeTriggerPackage; }
+			else if (Action == TEXT("spawn_reactor_sterling_escape") || Action == TEXT("spawn_reactor_conclusion_polish")) { Package = ReactorPackage; }
+			else if (Action == TEXT("create_credits_roll")) { Package = CreditsRollPackage; }
+			else if (Action == TEXT("create_save_cleanup")) { Package = SaveCleanupPackage; }
+			else if (Action == TEXT("create_conclusion_choice_trigger_blueprint")) { Package = ConclusionTriggerPackage; }
+			else { Package = TheConclusionMissionPackage; }
 		}
 		else if (Action == TEXT("set_alarm_pulse_oneshot"))
 		{
@@ -6127,6 +6173,11 @@ namespace
 				|| Change->Action == TEXT("create_sterling_escape_cinematic")
 				|| Change->Action == TEXT("create_sterling_escape_trigger_blueprint")
 				|| Change->Action == TEXT("spawn_reactor_sterling_escape")
+				|| Change->Action == TEXT("create_credits_roll")
+				|| Change->Action == TEXT("create_save_cleanup")
+				|| Change->Action == TEXT("create_conclusion_choice_trigger_blueprint")
+				|| Change->Action == TEXT("spawn_reactor_conclusion_polish")
+				|| Change->Action == TEXT("polish_the_conclusion_mission")
 				|| Change->Action == TEXT("set_alarm_pulse_oneshot")
 				|| Change->Action == TEXT("rebuild_epitope_navmesh")
 				|| Change->Action == TEXT("create_nathan_grant_look")
@@ -6608,6 +6659,26 @@ namespace
 		if (Change->Action == TEXT("spawn_reactor_sterling_escape"))
 		{
 			return ExecuteSpawnReactorSterlingEscape(*Change);
+		}
+		if (Change->Action == TEXT("create_credits_roll"))
+		{
+			return ExecuteCreateCreditsRoll(*Change);
+		}
+		if (Change->Action == TEXT("create_save_cleanup"))
+		{
+			return ExecuteCreateSaveCleanup(*Change);
+		}
+		if (Change->Action == TEXT("create_conclusion_choice_trigger_blueprint"))
+		{
+			return ExecuteCreateConclusionTriggerBlueprint(*Change);
+		}
+		if (Change->Action == TEXT("spawn_reactor_conclusion_polish"))
+		{
+			return ExecuteSpawnReactorConclusionPolish(*Change);
+		}
+		if (Change->Action == TEXT("polish_the_conclusion_mission"))
+		{
+			return ExecutePolishTheConclusionMission(*Change);
 		}
 		if (Change->Action == TEXT("set_alarm_pulse_oneshot"))
 		{

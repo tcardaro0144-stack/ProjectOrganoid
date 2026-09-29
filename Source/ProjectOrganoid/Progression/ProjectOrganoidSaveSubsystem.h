@@ -109,9 +109,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save|Travel")
 	void ClearPendingLoad();
 
-	/** Live flag granted by the Node Zero choice. Capture writes it into the save object. */
+	/** Live flag granted by the Node Zero / Extract conclusion path. Capture writes it into the save object. */
 	UFUNCTION(BlueprintCallable, Category = "Save|NewGamePlus")
 	void GrantNewGamePlus();
+
+	/** Destroy conclusion path clears NG+ after the run wipe. */
+	UFUNCTION(BlueprintCallable, Category = "Save|NewGamePlus")
+	void ClearNewGamePlus();
 
 	UFUNCTION(BlueprintPure, Category = "Save|NewGamePlus")
 	bool HasNewGamePlus() const { return bNewGamePlus; }

@@ -6,9 +6,14 @@
 #include "Editor.h"
 #include "Engine/World.h"
 #include "FileHelpers.h"
+#include "GameFramework/SaveGame.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "ProjectOrganoidCharacter.h"
+#include "ProjectOrganoidConclusionChoiceTrigger.h"
+#include "ProjectOrganoidCreditsRoll.h"
+#include "ProjectOrganoidNodeZeroCore.h"
+#include "ProjectOrganoidSaveCleanup.h"
 #include "ProjectOrganoidTerminal.h"
 #include "ProjectOrganoidGameMode.h"
 #include "ProjectOrganoidGameplayHUDController.h"
@@ -42,10 +47,20 @@ namespace TheConclusionFunctional
 	constexpr TCHAR ConfessionEvent[] = TEXT("Event_SterlingConfessionRead");
 	constexpr TCHAR EntryEvent[] = TEXT("Event_ComputeEntered");
 	constexpr TCHAR TerminalLabel[] = TEXT("Terminal_ControlSpine");
+	constexpr TCHAR CreditsLabel[] = TEXT("BP_CreditsRoll");
+	constexpr TCHAR SaveCleanupLabel[] = TEXT("BP_SaveCleanup");
+	constexpr TCHAR ConclusionTriggerLabel[] = TEXT("BP_ConclusionChoiceTrigger");
 	constexpr TCHAR SaveSlot[] = TEXT("OrganoidTheConclusionTest");
+	constexpr TCHAR AutosaveSlot[] = TEXT("OrganoidAutosave");
+	constexpr TCHAR OpeningFoundationSlot[] = TEXT("OrganoidOpeningFoundationTest");
+	constexpr TCHAR OpeningInvestigationSlot[] = TEXT("OrganoidOpeningInvestigationTest");
 	constexpr TCHAR ExpectedLine[] = TEXT("The incubator is awake. Every document leads here.");
 	constexpr TCHAR ExpectedPrompt[] = TEXT("Reach Control Spine");
+	constexpr TCHAR ExpectedCarrierLine[] = TEXT("You take it, you become the carrier.");
 	const FVector TerminalLocation(-1950.f, -1650.f, -4700.f);
+	const FVector ConclusionTriggerLocation(0.f, 800.f, -4710.f);
+	const FVector CreditsLocation(0.f, 900.f, -4710.f);
+	const FVector SaveCleanupLocation(0.f, 1000.f, -4710.f);
 
 	FString BoolText(bool bValue) { return bValue ? TEXT("true") : TEXT("false"); }
 	const TCHAR* PowerText(EProjectOrganoidPowerState State)
@@ -205,6 +220,8 @@ namespace TheConclusionFunctional
 			AssertTrue(Record, TEXT("asset.conclusion_id"), Conclusion && Conclusion->MissionId == FName(ConclusionMissionId), ConclusionMissionId, Conclusion ? Conclusion->MissionId.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.conclusion_title"), Conclusion && Conclusion->MissionTitle.ToString() == TEXT("The Conclusion"), TEXT("The Conclusion"), Conclusion ? Conclusion->MissionTitle.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.conclusion_description"), Conclusion && Conclusion->MissionDescription.ToString().Contains(TEXT("incubator")), TEXT("incubator"), Conclusion ? Conclusion->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.conclusion_destroy"), Conclusion && Conclusion->MissionDescription.ToString().Contains(TEXT("Destroy")), TEXT("Destroy"), Conclusion ? Conclusion->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
+			AssertTrue(Record, TEXT("asset.conclusion_extract"), Conclusion && Conclusion->MissionDescription.ToString().Contains(TEXT("Extract")), TEXT("Extract"), Conclusion ? Conclusion->MissionDescription.ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.conclusion_next_research_station"), Conclusion && Conclusion->NextMissionAsset.ToSoftObjectPath().ToString() == ResearchStationSoftPath, ResearchStationSoftPath, Conclusion ? Conclusion->NextMissionAsset.ToSoftObjectPath().ToString() : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.one_task"), Conclusion && Conclusion->Tasks.Num() == 1, TEXT("1"), Conclusion ? FString::FromInt(Conclusion->Tasks.Num()) : TEXT("missing"), TEXT("DA"));
 			AssertTrue(Record, TEXT("asset.task_id"), Task && Task->Objective.ObjectiveId == FName(ConclusionObjectiveId), ConclusionObjectiveId, Task ? Task->Objective.ObjectiveId.ToString() : TEXT("missing"), TEXT("DA"));
@@ -233,12 +250,24 @@ namespace TheConclusionFunctional
 			AssertTrue(Record, TEXT("terminal.line"), Terminal && Terminal->CompletionNotificationText.ToString() == ExpectedLine, ExpectedLine, Terminal ? Terminal->CompletionNotificationText.ToString() : TEXT("missing"), TerminalLabel);
 			AssertTrue(Record, TEXT("terminal.duration"), Terminal && FMath::IsNearlyEqual(Terminal->CompletionNotificationDurationSeconds, 7.f), TEXT("7"), Terminal ? FString::SanitizeFloat(Terminal->CompletionNotificationDurationSeconds) : TEXT("missing"), TerminalLabel);
 			AssertTrue(Record, TEXT("terminal.no_power_change"), Terminal && !Terminal->bApplyPowerChangeOnSuccess && Terminal->PowerSector == EProjectOrganoidPowerSector::Reactor, TEXT("false"), Terminal ? BoolText(Terminal->bApplyPowerChangeOnSuccess) : TEXT("missing"), TerminalLabel);
+			TArray<AActor*> CreditsFound = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, CreditsLabel) : TArray<AActor*>();
+			TArray<AActor*> CleanupFound = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, SaveCleanupLabel) : TArray<AActor*>();
+			TArray<AActor*> ChoiceFound = EditorWorld ? OrganoidPlaytestActions::FindActorsByLabel(EditorWorld, ConclusionTriggerLabel) : TArray<AActor*>();
+			AProjectOrganoidCreditsRoll* Credits = CreditsFound.Num() == 1 ? Cast<AProjectOrganoidCreditsRoll>(CreditsFound[0]) : nullptr;
+			AProjectOrganoidSaveCleanup* Cleanup = CleanupFound.Num() == 1 ? Cast<AProjectOrganoidSaveCleanup>(CleanupFound[0]) : nullptr;
+			AProjectOrganoidConclusionChoiceTrigger* Choice = ChoiceFound.Num() == 1 ? Cast<AProjectOrganoidConclusionChoiceTrigger>(ChoiceFound[0]) : nullptr;
+			AssertTrue(Record, TEXT("credits.count"), CreditsFound.Num() == 1 && Credits != nullptr, TEXT("1"), FString::FromInt(CreditsFound.Num()), CreditsLabel);
+			AssertTrue(Record, TEXT("credits.location"), Credits && Credits->GetActorLocation().Equals(CreditsLocation, 1.f), TEXT("0,900,-4710"), Credits ? Credits->GetActorLocation().ToString() : TEXT("missing"), CreditsLabel);
+			AssertTrue(Record, TEXT("cleanup.count"), CleanupFound.Num() == 1 && Cleanup != nullptr, TEXT("1"), FString::FromInt(CleanupFound.Num()), SaveCleanupLabel);
+			AssertTrue(Record, TEXT("cleanup.location"), Cleanup && Cleanup->GetActorLocation().Equals(SaveCleanupLocation, 1.f), TEXT("0,1000,-4710"), Cleanup ? Cleanup->GetActorLocation().ToString() : TEXT("missing"), SaveCleanupLabel);
+			AssertTrue(Record, TEXT("choice.count"), ChoiceFound.Num() == 1 && Choice != nullptr, TEXT("1"), FString::FromInt(ChoiceFound.Num()), ConclusionTriggerLabel);
+			AssertTrue(Record, TEXT("choice.location"), Choice && Choice->GetActorLocation().Equals(ConclusionTriggerLocation, 1.f), TEXT("0,800,-4710"), Choice ? Choice->GetActorLocation().ToString() : TEXT("missing"), ConclusionTriggerLabel);
 			AssertTrue(Record, TEXT("dirty.root_clean"), !PackageIsDirty(MapPackage), TEXT("clean"), PackageIsDirty(MapPackage) ? TEXT("dirty") : TEXT("clean"), MapPackage);
 			AssertTrue(Record, TEXT("dirty.admin_clean"), !PackageIsDirty(AdminPackage), TEXT("clean"), PackageIsDirty(AdminPackage) ? TEXT("dirty") : TEXT("clean"), AdminPackage);
 			AssertTrue(Record, TEXT("dirty.reactor_clean"), !PackageIsDirty(ReactorPackage), TEXT("clean"), PackageIsDirty(ReactorPackage) ? TEXT("dirty") : TEXT("clean"), ReactorPackage);
-			if (bAnyAssertFailed || !Conclusion || !Handover || !Entry || !Terminal)
+			if (bAnyAssertFailed || !Conclusion || !Handover || !Entry || !Terminal || !Credits || !Cleanup || !Choice)
 			{
-				Owner.CompleteActive(EOrganoidPlaytestState::Blocked, Record.FailureReason.IsEmpty() ? TEXT("Beat 18 mission contract missing.") : Record.FailureReason);
+				Owner.CompleteActive(EOrganoidPlaytestState::Blocked, Record.FailureReason.IsEmpty() ? TEXT("Beat 18/33 mission contract missing.") : Record.FailureReason);
 				return;
 			}
 			Stage = EStage::StartPie;
@@ -385,6 +414,34 @@ namespace TheConclusionFunctional
 			AssertTrue(Record, TEXT("save.wrote"), bSaved, TEXT("true"), BoolText(bSaved), TEXT("save"));
 			AssertTrue(Record, TEXT("save.mission_captured"), bSaved && Objectives->GetActiveMissionId() == FName(ResearchStationMissionId) && CountCompletedId(Objectives, FName(ConclusionObjectiveId)) == 1, ResearchStationMissionId, Objectives->GetActiveMissionId().ToString(), TEXT("save"));
 			AssertTrue(Record, TEXT("save.reactor_captured"), Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor) == EProjectOrganoidPowerState::Emergency, TEXT("Emergency"), PowerText(Power->GetSectorPowerState(EProjectOrganoidPowerSector::Reactor)), TEXT("save"));
+
+			TArray<AActor*> CreditsLive = OrganoidPlaytestActions::FindActorsByLabel(World, CreditsLabel);
+			TArray<AActor*> CleanupLive = OrganoidPlaytestActions::FindActorsByLabel(World, SaveCleanupLabel);
+			TArray<AActor*> ChoiceLive = OrganoidPlaytestActions::FindActorsByLabel(World, ConclusionTriggerLabel);
+			AProjectOrganoidCreditsRoll* Credits = CreditsLive.Num() == 1 ? Cast<AProjectOrganoidCreditsRoll>(CreditsLive[0]) : nullptr;
+			AProjectOrganoidSaveCleanup* Cleanup = CleanupLive.Num() == 1 ? Cast<AProjectOrganoidSaveCleanup>(CleanupLive[0]) : nullptr;
+			AProjectOrganoidConclusionChoiceTrigger* Choice = ChoiceLive.Num() == 1 ? Cast<AProjectOrganoidConclusionChoiceTrigger>(ChoiceLive[0]) : nullptr;
+			AssertTrue(Record, TEXT("choice.actors_live"), Credits && Cleanup && Choice, TEXT("present"), TEXT("checked"), ConclusionTriggerLabel);
+
+			UGameplayStatics::SaveGameToSlot(UGameplayStatics::CreateSaveGameObject(USaveGame::StaticClass()), AutosaveSlot, 0);
+			UGameplayStatics::SaveGameToSlot(UGameplayStatics::CreateSaveGameObject(USaveGame::StaticClass()), OpeningFoundationSlot, 0);
+			UGameplayStatics::SaveGameToSlot(UGameplayStatics::CreateSaveGameObject(USaveGame::StaticClass()), OpeningInvestigationSlot, 0);
+			Saves->GrantNewGamePlus();
+			AssertTrue(Record, TEXT("choice.destroy"), Choice && Choice->ResolveConclusionChoice(EProjectOrganoidNodeZeroFate::Destroy) && Choice->WasConsumed() && Choice->GetResolvedFate() == EProjectOrganoidNodeZeroFate::Destroy, TEXT("Destroy"), TEXT("checked"), ConclusionTriggerLabel);
+			AssertTrue(Record, TEXT("choice.destroy_ngplus"), !Saves->HasNewGamePlus() && Cleanup && !Cleanup->WasNewGamePlusKept() && Cleanup->GetLastCleanupFate() == EProjectOrganoidNodeZeroFate::Destroy, TEXT("false"), Saves->HasNewGamePlus() ? TEXT("true") : TEXT("false"), TEXT("Save"));
+			AssertTrue(Record, TEXT("choice.destroy_slots"), Cleanup && Cleanup->GetDeletedSlotCount() == 3 && !UGameplayStatics::DoesSaveGameExist(AutosaveSlot, 0) && !UGameplayStatics::DoesSaveGameExist(OpeningFoundationSlot, 0) && !UGameplayStatics::DoesSaveGameExist(OpeningInvestigationSlot, 0), TEXT("wiped"), TEXT("checked"), TEXT("Save"));
+			AssertTrue(Record, TEXT("choice.destroy_credits"), Credits && Credits->GetPlayCount() >= 1 && Credits->GetLastPlayedFate() == EProjectOrganoidNodeZeroFate::Destroy && Credits->GetLastCreditsText().Contains(TEXT("Tom Cardaro")) && Credits->GetLastCreditsText().Contains(TEXT("Beats 19-33")), TEXT("credits"), Credits ? Credits->GetLastCreditsText() : TEXT("missing"), CreditsLabel);
+
+			// Extract path on a fresh trigger-equivalent: call Credits + Cleanup directly after Reset via new PIEless resolve on SaveCleanup/Credits.
+			UGameplayStatics::SaveGameToSlot(UGameplayStatics::CreateSaveGameObject(USaveGame::StaticClass()), AutosaveSlot, 0);
+			UGameplayStatics::SaveGameToSlot(UGameplayStatics::CreateSaveGameObject(USaveGame::StaticClass()), OpeningFoundationSlot, 0);
+			UGameplayStatics::SaveGameToSlot(UGameplayStatics::CreateSaveGameObject(USaveGame::StaticClass()), OpeningInvestigationSlot, 0);
+			Saves->ClearNewGamePlus();
+			AssertTrue(Record, TEXT("choice.extract_credits"), Credits && Credits->PlayCredits(EProjectOrganoidNodeZeroFate::Extract) && Credits->DidShowCarrierLine() && Credits->GetLastCreditsText().Contains(TEXT("Project Organoid")), TEXT("Extract"), TEXT("checked"), CreditsLabel);
+			AssertTrue(Record, TEXT("choice.extract_cleanup"), Cleanup && Cleanup->ApplyCleanup(EProjectOrganoidNodeZeroFate::Extract) && Cleanup->WasNewGamePlusKept() && Saves->HasNewGamePlus() && Cleanup->GetDeletedSlotCount() == 3, TEXT("true"), Saves->HasNewGamePlus() ? TEXT("true") : TEXT("false"), TEXT("Save"));
+			AssertTrue(Record, TEXT("choice.extract_slots"), !UGameplayStatics::DoesSaveGameExist(AutosaveSlot, 0) && !UGameplayStatics::DoesSaveGameExist(OpeningFoundationSlot, 0) && !UGameplayStatics::DoesSaveGameExist(OpeningInvestigationSlot, 0), TEXT("wiped"), TEXT("checked"), TEXT("Save"));
+			AssertTrue(Record, TEXT("choice.extract_carrier"), Credits->GetLastPlayedFate() == EProjectOrganoidNodeZeroFate::Extract && Credits->DidShowCarrierLine(), ExpectedCarrierLine, TEXT("shown"), TEXT("HUD"));
+
 			StopIfFailed();
 			if (!bAnyAssertFailed) Stage = EStage::EndSession;
 		}

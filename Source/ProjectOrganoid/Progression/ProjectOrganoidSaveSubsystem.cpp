@@ -441,6 +441,11 @@ void UProjectOrganoidSaveSubsystem::GrantNewGamePlus()
 	bNewGamePlus = true;
 }
 
+void UProjectOrganoidSaveSubsystem::ClearNewGamePlus()
+{
+	bNewGamePlus = false;
+}
+
 bool UProjectOrganoidSaveSubsystem::ApplySaveToCharacter(UProjectOrganoidSaveGame* SaveGame, AProjectOrganoidCharacter* Character) const
 {
 	if (!SaveGame || !Character)
