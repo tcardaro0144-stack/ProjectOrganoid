@@ -77,21 +77,24 @@ AProjectOrganoidCharacter::AProjectOrganoidCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Close over-the-shoulder boom. A 320uu arm collapses to eye height in the facility corridors.
+	// Drake Requiem over-the-shoulder boom. Arm stays 180uu; socket sits farther right/up so Nathan
+	// reads from the right shoulder instead of a low cyborg ceiling angle (deferred since 870199f).
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 64.0f));
 	CameraBoom->TargetArmLength = 180.0f;
-	CameraBoom->SocketOffset = FVector(0.0f, 28.0f, 18.0f);
+	CameraBoom->SocketOffset = FVector(0.0f, 45.0f, 22.0f);
 	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->bDoCollisionTest = true;
 	CameraBoom->ProbeSize = 12.0f;
 	CameraBoom->bEnableCameraLag = true;
+	// CameraLagSpeed 10 ~= 0.1s response — slight lag without floaty chase.
 	CameraBoom->CameraLagSpeed = 10.0f;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->FieldOfView = 92.0f;
 
 	GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 	GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
@@ -205,11 +208,14 @@ void AProjectOrganoidCharacter::BeginPlay()
 	{
 		const USkeletalMesh* Body = GetMesh() ? GetMesh()->GetSkeletalMeshAsset() : nullptr;
 		UE_LOG(LogProjectOrganoid, Log,
-			TEXT("Shoulder camera arm=%.0f socket=(%.0f,%.0f,%.0f) mesh=%s yawFollowsLook=%s"),
+			TEXT("Shoulder camera arm=%.0f socket=(%.0f,%.0f,%.0f) fov=%.0f lag=%.1f collision=%s mesh=%s yawFollowsLook=%s"),
 			CameraBoom->TargetArmLength,
 			CameraBoom->SocketOffset.X,
 			CameraBoom->SocketOffset.Y,
 			CameraBoom->SocketOffset.Z,
+			FollowCamera ? FollowCamera->FieldOfView : 0.0f,
+			CameraBoom->CameraLagSpeed,
+			CameraBoom->bDoCollisionTest ? TEXT("true") : TEXT("false"),
 			Body ? *Body->GetName() : TEXT("none"),
 			bUseControllerRotationYaw ? TEXT("true") : TEXT("false"));
 	}

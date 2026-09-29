@@ -5440,3 +5440,89 @@ Seven new Reactor color packages outside that list:
 
 - Beat 30 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
 - Do not begin the next pass until separately authorized. Reactor world color is done — last facility color pass. The next recommended pass is third-person camera over-the-shoulder.
+
+## 2026-09-29 — Beat 31: Camera Over-The-Shoulder
+
+**Status:** implemented, persisted, validated, `COMPLETE_PASS` **63/63**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **36**. FirstCombat **32**. PursuerIntro **28**. Changes left **unstaged**. No commit and no push.
+
+**Baseline:** published Beat 30 commit `9843eeafadf057ce4a47c42805184aae3abff0bd` (`feat: add Reactor world color pass`) on `origin/main`. Beat 31 remains unstaged and uncommitted.
+**Engine:** UE 5.8.3 (`C:\Users\tomca\Desktop\UE_5.8`); `EngineAssociation` = `5.8` unchanged.
+
+### Inspect
+
+- Live pawn is `AProjectOrganoidCharacter` via `DefaultPawnClass` (C++ `StaticClass()`). Camera lives on `CameraBoom` / `FollowCamera` constructor defaults — no character Blueprint override required for the OTS pass.
+- Old camera (deferred since published camera commit `870199f51dac84fc92d67b271534d297bf185ad8`): arm **180**, socket `(0,28,18)`, FOV **90** (engine default), `yawFollowsLook` true. That framing still read as a low-angle cyborg ceiling shot from the first screenshot rather than a Drake Requiem over-the-shoulder.
+- Nathan Grant final mesh `SKM_NathanGrant_Final` (13 slots; brown hair, blue eyes, charcoal henley, olive cargo) stayed loaded. No mesh change in this beat.
+
+### Camera update (C++ only)
+
+- `Source/ProjectOrganoid/ProjectOrganoidCharacter.cpp` only. No `.uasset` / `.umap` save. Facility maps, missions, weapons, adaptations, and materials were not dirtied.
+- Arm **180** kept.
+- Socket `(0,28,18)` → `(0,45,22)` (slightly right and up for Drake Requiem look).
+- FOV **90** → **92** on `FollowCamera`.
+- Collision probe kept on: `bDoCollisionTest` true, `ProbeSize` 12.
+- Slight lag: `bEnableCameraLag` true, `CameraLagSpeed` **10** (~0.1s response).
+- `bUseControllerRotationYaw` true / yaw follows look kept.
+- Nathan mesh unchanged: `SKM_NathanGrant_Final` 13 slots.
+- BeginPlay evidence line: `Shoulder camera arm=180 socket=(0,45,22) fov=92 lag=10.0 collision=true mesh=SKM_NathanGrant_Final yawFollowsLook=true`. Targeted log OTS hits **10**. Catalog log OTS hits **76**.
+
+### Persisted asset hashes
+
+The Beat 30 **34** worktree hashes remain exact. No map or content package was rewritten for the camera pass. Character C++ change is outside that list (source only; no new character `.uasset` required because `DefaultPawnClass` is the C++ class).
+
+Facility prefixes inside the 34: Reactor `37aabc72…`, Admin `2a9e21bb…`, Neuro `73e5da44…`, Cryo `46e05eb9…`, Compute `69043b7a…`, plus the other **29** polish / mission / weapon / adaptation / AI / `Lvl_Epitope` / `SW_AlarmPulse` hashes from Beat 30. Outside the 34 the prior Admin + Neuro + Cryo + Compute + Reactor color packages (**7** each) and Nathan final 13-slot mesh remain as published.
+
+### Validation
+
+- Closed-editor `ProjectOrganoidEditor` Win64 Development build succeeded. `build_exit` 0. Adaptive compile of `ProjectOrganoidCharacter.cpp` linked `UnrealEditor-ProjectOrganoid.dll`.
+- Targeted suite **8/8**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. OTS log hits **10**. Log: `%TEMP%\b31_targeted_editor.log`. Evidence line: `arm=180 socket=(0,45,22) fov=92 lag=10.0 collision=true mesh=SKM_NathanGrant_Final`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_f59f4187-45da-54d9-647b-fa9e149de66b`
+  - `NodeZero_Functional` **36/36** `ptr_b9174600-4443-2fde-5d77-3090807891c1`
+  - `FirstCombat_Functional` **32/32** `ptr_80679b66-479e-9325-d4c0-e596f15b8842`
+  - `PursuerIntro_Functional` **28/28** `ptr_33f54444-4fc7-599c-9b41-b8a12f24a490`
+  - `WeaponRoster_Functional` **49/49** `ptr_c9b09b88-4c4d-e0ab-d66b-5ca6ea35efb1`
+  - `SyringeKit_Functional` **46/46** `ptr_78f77ec5-47e3-5945-3efe-218393acedb3`
+  - `ResearchStationRespec_Functional` **78/78** `ptr_8d5e64b0-4a74-b6ce-63a3-618235c6ba4d`
+  - `TheConclusion_Functional` **78/78** `ptr_51d11e60-4ab2-4a51-2b39-b3a86b54c19d`
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, `catalog_exit` 0, aggregate **5398** assertions. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Early `curl (7)` connect failures happened while the editor was starting. Live order: `CryoAccess_Functional` **10**, `NeuroAdaptationConnection_Functional` **15**, `NeuroRevelation_Functional` **27**, then **49–63**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10.0 collision=true mesh=SKM_NathanGrant_Final`.
+  - `BeepClickInjection_Functional` **12/12** `ptr_6fbf7e2a-42fc-9f41-b258-d58eb05b76a2`
+  - `HostCombatLoop_Functional` **33/33** `ptr_e56a2efd-4e12-c784-73c8-e895ddcfe03f`
+  - `BiologicalAdaptation_Functional` **59/59** `ptr_9a41ad4d-4cfc-208a-b183-86a16709a760`
+  - `NodeZero_Functional` **36** `ptr_e8bd80e5-4139-39ea-3593-fd925ab7bd3f`
+  - `FirstCombat_Functional` **32** `ptr_0dfe049d-4fb5-6304-08c8-cfa845c2b378`
+  - `PursuerIntro_Functional` **28** `ptr_cfaf111a-4ea6-5859-0052-64b5b96e2197`
+  - `WeaponRoster_Functional` **49** `ptr_02faf763-43e8-3542-bbd2-8cb575176994`
+  - `SyringeKit_Functional` **46** `ptr_309bd6fe-47ee-6648-8e08-048ff35ae4ab`
+  - `ResearchStationRespec_Functional` **78** `ptr_62cb8710-405a-765e-4fdc-25b05ac71d0a`
+  - `TheConclusion_Functional` **78** `ptr_391ca952-4ea3-e75c-61ad-42a63768350a`
+  - The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**.
+  - The 34 worktree hashes were exact after the run (29 polish + Admin `2a9e21bb…` + Neuro `73e5da44…` + Cryo `46e05eb9…` + Compute `69043b7a…` + Reactor `37aabc72…`). `git diff --check` passed. Staged 0. Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remained on no branch. Saves on disk were ignored: `OrganoidAutosave.sav`, `OrganoidOpeningFoundationTest.sav`, and `OrganoidOpeningInvestigationTest.sav`.
+  - Evidence: `C:\Users\tomca\AppData\Local\Temp\b31_complete63_2e595c5e3a6a421ab1fbd492284cb2b5`
+  - Log: `%TEMP%\b31_complete_editor.log`
+- The unstaged diff is `Source/ProjectOrganoid/ProjectOrganoidCharacter.cpp` (OTS camera defaults) plus this `PROJECT_STATE.md` Beat 31 section. No content packages were dirtied.
+
+### Deferred issues (not fixed)
+
+1. Beep is fixed. `SW_AlarmPulse` is a one-shot, and `BeepClickInjection_Functional` is **12/12**.
+2. Recast `needs_rebuild` remains true from prior facility paint passes. The catalog log has `NAVMESH NEEDS TO BE REBUILT` count **0**. Deferred; does not block `COMPLETE_PASS`.
+3. `HostCombatLoop_Functional` passed **33/33**. Still deferred as a preexisting flaky isolation defect, not a Beat 31 regression.
+4. `BiologicalAdaptation_Functional` passed **59/59**. Still deferred as a preexisting isolation defect, not a Beat 31 regression.
+5. `LocomotorDisrupt_Functional` and `OpticalDisrupt_Functional` wait for the view to settle. That earlier miss is not a Beat 31 regression.
+6. The third-person camera baseline was published in `870199f51dac84fc92d67b271534d297bf185ad8`. Beat 31 finalizes the over-the-shoulder framing: arm **180**, socket `(0,45,22)`, FOV **92**, lag speed **10**, collision true, `yawFollowsLook` true.
+7. Nathan Grant final 13-slot mesh is published in `0cd4ebeab448d517ee8617a94276dea341733935`. Admin world color `c5209675e423e4ef61c6ed4b0486382a066dff98`. Neuro `3a1c4c2ec659d8003514c2ab488bbd1398eea83f`. Cryo `286ad3e7ed2170ce7bc80ef853a60df8cb9e91f1`. Compute `72f8dcbea427e06aa199c4e09a549c739a66d21b`. Reactor `9843eeafadf057ce4a47c42805184aae3abff0bd`.
+
+### Current operational state
+
+- Unreal closed. No dirty package at the last clean close.
+- Nothing staged. No commit and no push.
+- Beat 32 has not been started.
+- Canon and `EngineAssociation` unchanged.
+- Evidence only under `%TEMP%`.
+- Changes left **unstaged**. `PROJECT_STATE.md` now includes this Beat 31 section and is unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 31 is implemented, persisted, and validated, with `COMPLETE_PASS` **63/63**.
+- All beats **11–31** plus Fix, Roadmap, Final, Deferred Polish, and Beats **25–30** are done. Third-person camera over-the-shoulder is done.
+- Do not begin any further beat until separately authorized.
