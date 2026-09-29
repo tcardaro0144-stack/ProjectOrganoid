@@ -19,4 +19,5 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectAlarmPulse(const TSharedPtr<FJsonObject>& Args);
 	TSharedRef<FJsonObject> InspectEpitopeNavMesh(const TSharedPtr<FJsonObject>& Args);
 	TSharedRef<FJsonObject> InspectNathanGrantMesh(const TSharedPtr<FJsonObject>& Args);
+	TSharedRef<FJsonObject> InspectAdminWorldColor(const TSharedPtr<FJsonObject>& Args);
 }

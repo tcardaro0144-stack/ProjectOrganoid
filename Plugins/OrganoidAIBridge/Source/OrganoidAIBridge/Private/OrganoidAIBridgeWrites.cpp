@@ -233,6 +233,8 @@ namespace
 		TEXT("create_nathan_grant_look"),
 		TEXT("create_nathan_grant_final"),
 		TEXT("save_nathan_grant_final"),
+		TEXT("create_admin_world_color"),
+		TEXT("save_admin_world_color"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -349,6 +351,8 @@ namespace
 		TEXT("create_nathan_grant_look"),
 		TEXT("create_nathan_grant_final"),
 		TEXT("save_nathan_grant_final"),
+		TEXT("create_admin_world_color"),
+		TEXT("save_admin_world_color"),
 		TEXT("spawn_neuro_adaptation_subject"),
 		TEXT("spawn_neuro_neural_mapping_array"),
 		TEXT("spawn_neuro_research_load_cutoff"),
@@ -3500,6 +3504,7 @@ namespace
 #include "OrganoidAIBridgeDeferredPolish.inl"
 #include "OrganoidAIBridgeNathanGrantLook.inl"
 #include "OrganoidAIBridgeNathanGrantFinal.inl"
+#include "OrganoidAIBridgeAdminWorldColor.inl"
 #include "OrganoidAIBridgeNeuroNeuralChangeEvidenceInstrument.inl"
 #include "OrganoidAIBridgeNeuroLiveAdaptationConnection.inl"
 
@@ -4410,6 +4415,14 @@ namespace
 		{
 			PreflightError = PreflightSaveNathanGrantFinal(Args, Before, Proposed);
 		}
+		else if (Action == TEXT("create_admin_world_color"))
+		{
+			PreflightError = PreflightCreateAdminWorldColor(Args, Before, Proposed);
+		}
+		else if (Action == TEXT("save_admin_world_color"))
+		{
+			PreflightError = PreflightSaveAdminWorldColor(Args, Before, Proposed);
+		}
 		else if (Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			PreflightError = PreflightSpawnNeuroAdaptationSubject(Args, Before, Proposed);
@@ -4554,6 +4567,10 @@ namespace
 		else if (Action == TEXT("create_nathan_grant_final") || Action == TEXT("save_nathan_grant_final"))
 		{
 			Package = NathanFinalMeshPackage;
+		}
+		else if (Action == TEXT("create_admin_world_color") || Action == TEXT("save_admin_world_color"))
+		{
+			Package = AdminPackage;
 		}
 		else if (Action == TEXT("spawn_admin_research_wing_connector")
 			|| Action == TEXT("spawn_admin_research_wing_keycard")
@@ -6001,6 +6018,8 @@ namespace
 				|| Change->Action == TEXT("create_nathan_grant_look")
 				|| Change->Action == TEXT("create_nathan_grant_final")
 				|| Change->Action == TEXT("save_nathan_grant_final")
+				|| Change->Action == TEXT("create_admin_world_color")
+				|| Change->Action == TEXT("save_admin_world_color")
 				|| Change->Action == TEXT("configure_cryo_backup_power_panel")
 				|| Change->Action == TEXT("spawn_neuro_adaptation_subject")
 				|| Change->Action == TEXT("spawn_neuro_neural_mapping_array")
@@ -6474,6 +6493,14 @@ namespace
 		{
 			return ExecuteSaveNathanGrantFinal(*Change);
 		}
+		if (Change->Action == TEXT("create_admin_world_color"))
+		{
+			return ExecuteCreateAdminWorldColor(*Change);
+		}
+		if (Change->Action == TEXT("save_admin_world_color"))
+		{
+			return ExecuteSaveAdminWorldColor(*Change);
+		}
 		if (Change->Action == TEXT("spawn_neuro_adaptation_subject"))
 		{
 			return ExecuteSpawnNeuroAdaptationSubject(*Change);
@@ -6548,6 +6575,11 @@ namespace OrganoidAIBridgeWrites
 	TSharedRef<FJsonObject> InspectNathanGrantMesh(const TSharedPtr<FJsonObject>& Args)
 	{
 		return CmdInspectNathanGrantMesh(Args);
+	}
+
+	TSharedRef<FJsonObject> InspectAdminWorldColor(const TSharedPtr<FJsonObject>& Args)
+	{
+		return CmdInspectAdminWorldColor(Args);
 	}
 
 	TSharedRef<FJsonObject> Dispatch(
