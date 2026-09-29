@@ -5763,3 +5763,40 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 34 final polish/docs is published. Do not begin the next pass until separately authorized.
+## 2026-09-29 — Beat 35: Nathan final Drake colors readable
+
+**Status:** Nathan final mesh/material polish published. Maps/missions unchanged. COMPLETE_PASS **63/63** aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**.
+
+**Baseline:** published Beat 34 commit 570a2ff103e91418aaf2acbaffa00e2259e0068a (docs: final polish README + credits + hash table) on origin/main. Beat 35 is Nathan Drake palette retint + playtest assert alignment.
+
+### Why gray
+
+- Flat muted Color MIs on mannequin geometry read as gray under thumbnail lighting — retinted to Drake sRGB palette + specular via polish_nathan_grant_final.
+
+### Nathan
+
+- SKM_NathanGrant_Final 53902c6b -> 73a839ca — 17MB SK_Mannequin Manny_lod1, **13** slots: Head, Hair, Stubble, Eyes, Jacket, Henley, Arms, Hands, Cargo, Boots, Holster, Pack, Badge; parent M_NathanGrant_Solid + **13** MIs (MI_Hair_Brown #4B2E1A, MI_Eyes_Blue #3A9BDC, MI_Henley_Charcoal #2F2F2F, MI_Cargo_Olive #5A5E3A, skin #E8C4A8). Readable screenshot %TEMP%\b35_nathan_final.png — still mannequin topology, not photoreal, but now distinct from actor gray.
+- Old cyborg SKM_NathanGrant 4ef4aeb2 15.8MB 2 slots M_Torso/M_HeadLegs still on disk, not selected.
+
+### C++
+
+- ProjectOrganoidCharacter.cpp: arm **180**, socket (0,45,22), FOV **92**, lag **10**, collision true, yawFollowsLook true; DefaultPawnClass = AProjectOrganoidCharacter.
+
+### Hash table
+
+- Maps unchanged: Reactor cfb8b9cb, Admin 2a9e21bb, Neuro 73e5da44, Cryo 46e05eb9, Compute 69043b7a, Conclusion 7f952f18, CreditsRoll 10b4765. **34** sector/mission hashes exact; Nathan 73a839ca is new outside the unchanged **34**.
+
+### Validation
+
+- Closed-editor build succeeded. Targeted suite **8/8**, script exit 0. CloseMainWindow true, process count 0, log signatures 0, dirty 0. Beep **12/12**. TheConclusion **95**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Log: %TEMP%\b35_targeted_editor.log.
+- Complete catalog **63/63**, outcome COMPLETE_PASS, aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Conclusion **95**. CloseMainWindow true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with rm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final. Nathan 73a839ca. Evidence: %TEMP%\b35_complete63_296853c362b84d2f80327a24bbf8a90a. Log: %TEMP%\b35_complete_editor.log.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- Beat 35 Nathan polish + this PROJECT_STATE.md section + TheConclusion_Functional **5423** credits assert are the publish allowlist.
+- Contaminated object 2fcff0207946d4e5405085747755fc8897ea420 remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 35 Nathan final Drake colors is published. Do not begin the next pass until separately authorized.
