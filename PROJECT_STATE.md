@@ -6057,3 +6057,46 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 42 epitope color and sign are published. Do not begin the next pass until separately authorized.
+
+
+## 2026-09-30 — Beat 43: Kill WorldGrid checkerboard on streaming sectors — Admin/Neuro/Cryo/Reactor/Compute
+
+**Status:** checkerboard slots on the five streaming sectors are **0**. COMPLETE_PASS **63/63** aggregate **5431**. `Lvl_Epitope` and `Lvl_MainMenu` were not saved.
+
+**Baseline:** published Beat 42 commit `4d201e47c345f409b5269d07bb9a37086d88847f` on `origin/main`. Lvl_Epitope stays `a7de2844`. Lvl_MainMenu stays `12bcf614`.
+
+### Paint
+
+- **136** checkerboard slots were replaced with each sector's existing materials. Lights, emergency lights, screens, projectors, logos, displays, and UVC hazards use that sector's emissive operations material. Other hazards use the restricted material. Glass and seats use the executive material. Desks, lintels, cabinets, terminals, and the remaining props use the public material. Collision profiles were restored. RecastNavMesh was not rebuilt. After the save, checkerboard slots on those five maps are **0**.
+
+### Map hashes
+
+- Admin `2a9e21bb` to `ff5fe26b` (**76**). Neuro `73e5da44` to `1c8a9bd7` (**28**). Cryo `46e05eb9` to `4f517b8e` (**11**). Compute `69043b7a` to `fa8df783` (**10**). Reactor `cfb8b9cb` to `2f6dbb21` (**11**).
+
+### Admin slots
+
+- Admin's **76** were six `Light_*`, three `EmergencyLight_*`, `Hazard_DeconUVC`, the vestibule and reception lintels, the reception desk and logo, the hub opening cut, conference glass, projector, screen, table, and seats 01-10, plus reception and security chairs, mugs, and headset, the director suite backdrop, cabinets, desk, glass, and chairs, service-corridor cabinets, six terminals, five transit displays, seven operations stations, the central display and holo, and **12** slots on `Admin_FacilityHologram`.
+
+### Other sectors
+
+- Neuro's **28** were the same light, emergency, and `Hazard_ScrubberLeak` set, plus `PowerPanel_NeuroBackup`, `ResearchStation_NeuroGenetics`, `DataPad_NeuroPowerDiagnostics`, and three slots each on the research-load cutoff, neural mapping array, mapping terminal, signature node, and change-evidence instrument.
+- Cryo, Compute, and Reactor were the light, emergency, and hazard set. Cryo also includes `PowerPanel_CryoBackup`. Reactor also includes `Hazard_IncubatorUVC` and `Hazard_DecayGardens`. Compute's hazard is `Hazard_CoolantLeak`.
+
+### Hashes held
+
+- Lvl_Epitope `a7de2844`. The sign still reads `EPITOPE | Prepared Immunity` at `(1450, 470, 260)`. MainMenu `12bcf614`. Conclusion `7f952f18`. Nathan `73a839ca`. CreditsRoll `f10b4765`. Spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`. Floor `7c0752af`. Wall `22dae66e`. Sign material `3591bc7a`. `SW_AlarmPulse` `f16ace0e`.
+
+### Validation
+
+- Closed-editor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0, log signatures 0, process count 0. Beep **12/12**. Evidence: `%TEMP%\b43_targeted8_747bd156bc9bfb42`. Log: `%TEMP%\b43_targeted_editor.log`. `%TEMP%\b43_complete63.ps1` was written with that targeted pass, then the catalog below was run from it.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5431**, script exit 0. Early `curl (7)` while the editor started. No `curl (56)`. Beep **12/12** `ptr_4a60779b`. Host **33/33** `ptr_299be4bc`. Bio **59/59** `ptr_66f71b76`. Ambience **36** `ptr_ffa98a10`. Decon **33** `ptr_94889110`. RoomEntry **35** `ptr_8a5cdaa9`. Conclusion **95** `ptr_304e5c68`. Respec **78** `ptr_38418b1b`. SyringeKit **46** `ptr_42e040c2`. WeaponRoster **49** `ptr_0234a754`. Pursuer **28** `ptr_b4597ba7`. FirstCombat **32** `ptr_3b54d75a`. NodeZero **44** `ptr_17f98cdd`. The catalog ends at `NodeZero_Functional`. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Nathan `73a839ca`. Lvl_Epitope `a7de2844`. Lvl_MainMenu `12bcf614`. Admin `ff5fe26b`. Neuro `1c8a9bd7`. Cryo `4f517b8e`. Compute `fa8df783`. Reactor `2f6dbb21`. Evidence: `%TEMP%\b43_complete63_7fdfbe4d388c463ea602176bf0e336f4`. Log: `%TEMP%\b43_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- This publish allowlist is `PROJECT_STATE.md` and the five sector maps: Admin, Neuro, Cryo, Compute, and Reactor. OrganoidAIBridge sources stay unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 43 streaming-sector checkerboard paint is published. Do not begin the next pass until separately authorized.
