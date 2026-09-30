@@ -3,6 +3,8 @@
 #include "ProjectOrganoidSettingsSubsystem.h"
 #include "ProjectOrganoidSettingsTypes.h"
 
+#include "ProjectOrganoidMainMenuWidget.h"
+
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
@@ -14,7 +16,10 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/GameInstance.h"
+#include "GameFramework/PlayerController.h"
+#include "InputCoreTypes.h"
 #include "Styling/CoreStyle.h"
+#include "UObject/UObjectIterator.h"
 
 namespace
 {
@@ -64,10 +69,25 @@ UProjectOrganoidOptionsWidget* UProjectOrganoidOptionsWidget::ShowForPlayer(APla
 		return nullptr;
 	}
 
-	Widget->AddToViewport(80);
+	Widget->SetIsFocusable(true);
+	Widget->AddToViewport(200);
 	Widget->SetVisibility(ESlateVisibility::Visible);
+
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(Widget->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->SetShowMouseCursor(true);
+	PlayerController->bShowMouseCursor = true;
+
 	UE_LOG(LogTemp, Log, TEXT("OPTIONS_SCREEN graphics audio controls"));
 	return Widget;
+}
+
+TSharedRef<SWidget> UProjectOrganoidOptionsWidget::RebuildWidget()
+{
+	BuildLayout();
+	return Super::RebuildWidget();
 }
 
 void UProjectOrganoidOptionsWidget::NativeConstruct()
@@ -109,6 +129,16 @@ void UProjectOrganoidOptionsWidget::BuildLayout()
 		WidgetTree->RootWidget = Root;
 	}
 
+	UBorder* Dimmer = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("OptionsDimmer"));
+	Dimmer->SetBrushColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.72f));
+	Dimmer->SetVisibility(ESlateVisibility::Visible);
+	if (UCanvasPanelSlot* DimmerSlot = Root->AddChildToCanvas(Dimmer))
+	{
+		DimmerSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+		DimmerSlot->SetOffsets(FMargin(0.0f));
+		DimmerSlot->SetZOrder(0);
+	}
+
 	UBorder* Plate = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("OptionsPlate"));
 	Plate->SetBrushColor(FLinearColor(0.015f, 0.03f, 0.035f, 0.92f));
 	Plate->SetPadding(FMargin(28.0f, 22.0f));
@@ -117,7 +147,10 @@ void UProjectOrganoidOptionsWidget::BuildLayout()
 		PlateSlot->SetAnchors(FAnchors(0.5f, 0.5f, 0.5f, 0.5f));
 		PlateSlot->SetAlignment(FVector2D(0.5f, 0.5f));
 		PlateSlot->SetAutoSize(true);
+		PlateSlot->SetZOrder(1);
 	}
+	SetIsFocusable(true);
+	SetVisibility(ESlateVisibility::Visible);
 
 	UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("OptionsBox"));
 	Plate->SetContent(Box);
@@ -219,5 +252,46 @@ void UProjectOrganoidOptionsWidget::HandleQualityChanged(FString SelectedItem, E
 
 void UProjectOrganoidOptionsWidget::HandleCloseClicked()
 {
+	CloseAndRestoreTitle();
+}
+
+FReply UProjectOrganoidOptionsWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		CloseAndRestoreTitle();
+		return FReply::Handled();
+	}
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void UProjectOrganoidOptionsWidget::CloseAndRestoreTitle()
+{
+	APlayerController* PC = GetOwningPlayer();
 	RemoveFromParent();
+	if (!PC)
+	{
+		return;
+	}
+
+	FInputModeUIOnly InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	for (TObjectIterator<UProjectOrganoidMainMenuWidget> It; It; ++It)
+	{
+		if (It->GetOwningPlayer() == PC && It->IsInViewport())
+		{
+			if (UWidget* Focus = It->GetDefaultFocusWidget())
+			{
+				InputMode.SetWidgetToFocus(Focus->TakeWidget());
+			}
+			else
+			{
+				InputMode.SetWidgetToFocus(It->TakeWidget());
+			}
+			break;
+		}
+	}
+	PC->SetInputMode(InputMode);
+	PC->SetShowMouseCursor(true);
+	PC->bShowMouseCursor = true;
 }

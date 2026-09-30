@@ -22,7 +22,9 @@
 #include "ImageUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Misc/CommandLine.h"
 #include "Misc/PackageName.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateTypes.h"
@@ -131,6 +133,10 @@ void UProjectOrganoidMainMenuWidget::NativeConstruct()
 	Super::NativeConstruct();
 	EnsureVisibleMenuLayout();
 	BindWidgetCallbacks();
+	if (FParse::Param(FCommandLine::Get(), TEXT("ClickOptions")) && OptionsButton)
+	{
+		OptionsButton->OnClicked.Broadcast();
+	}
 	SyncSettingsWidgets();
 	RefreshSaveSlots();
 }
@@ -535,8 +541,17 @@ void UProjectOrganoidMainMenuWidget::HandleLoadSlot2Clicked()
 
 void UProjectOrganoidMainMenuWidget::HandleOptionsClicked()
 {
-	if (APlayerController* PC = GetOwningPlayer())
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC)
 	{
+		if (UWorld* World = GetWorld())
+		{
+			PC = World->GetFirstPlayerController();
+		}
+	}
+	if (PC)
+	{
+		UE_LOG(LogTemp, Log, TEXT("OPTIONS_CLICKED"));
 		UProjectOrganoidOptionsWidget::ShowForPlayer(PC);
 	}
 }

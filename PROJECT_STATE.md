@@ -6144,3 +6144,38 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 44 Nathan cooler, controller, options, tutorial, intro, access, and sign fix are published. Do not begin the next pass until separately authorized.
+
+## 2026-09-30 — Beat 45: Fix options screen on title screen — OPTIONS button opens WBP_Options
+
+**Status:** The title OPTIONS button opens the options screen. No map or widget asset was saved. COMPLETE_PASS **63/63** aggregate **5431**.
+
+**Baseline:** published Beat 44 commit `6062a4849cccb1d6241c43b9670cac7a6d7e2740` on `origin/main`.
+
+### What the click was doing
+
+- The OPTIONS button was already bound. `ShowForPlayer` creates `WBP_Options` and adds it to the viewport. That widget blueprint has no designer graph, and the graphics, volume, and controls layout was built after Slate had already been created, so the click produced a blank screen. New Game stayed on its existing path: intro text `EPITOPE | Prepared Immunity` for **2.4s**, then travel to `Lvl_Epitope`.
+
+### Fix
+
+- The layout is built before Slate. Opening OPTIONS switches to UI-only input and shows the mouse cursor. The screen has a graphics quality list, master, effects, and music sliders, and the WASD / mouse / gamepad control list. CLOSE and Escape remove it and put focus back on the title menu, so New Game still works. The concrete anchor is a non-colliding world cube and was not blocking the button.
+
+### Hashes held
+
+- No map or widget asset was saved. `Lvl_MainMenu` stays `4f408e60`. `WBP_Options` stays unchanged. `Lvl_Epitope` `b9ea609f`. Admin `ae9756d0`. Nathan `ad26a13a`. Neuro `1c8a9bd7`. Cryo `4f517b8e`. Compute `fa8df783`. Reactor `2f6dbb21`. Conclusion `7f952f18`. CreditsRoll `f10b4765`. Floor `7c0752af`. Wall `22dae66e`. Sign material `3591bc7a`. Spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`. `SW_AlarmPulse` `f16ace0e`. **34** hashes exact.
+
+### Validation
+
+- A title-screen launch fired the OPTIONS click. The log shows `OPTIONS_CLICKED` and `OPTIONS_SCREEN graphics audio controls` in `%TEMP%\b45_options_click.log`.
+- Closed-editor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0, Beep **12/12**, signatures 0, process count 0, dirty 0. Evidence: `%TEMP%\b45_targeted8_c4b4c69d17565d91`. Log: `%TEMP%\b45_targeted_editor.log`. `%TEMP%\b45_complete63.ps1` was prepared and not run from that step.
+- The first complete-catalog launch died on a mid-suite connection reset, curl exit **56**, after Ammo Reload. The same script was run again after the editor was closed.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5431**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Beep **12/12** `ptr_815093e4`. Host **33/33** `ptr_48990f4a`. Bio **59/59** `ptr_4f672e92`. Ambience **36** `ptr_af8562bf`. Decon **33** `ptr_478d0c31`. RoomEntry **35** `ptr_85d8e5cc`. Conclusion **95** `ptr_c0152aef`. Respec **78** `ptr_732271b4`. SyringeKit **46** `ptr_b1505aa0`. WeaponRoster **49** `ptr_2377f469`. Pursuer **28** `ptr_1011c0ac`. FirstCombat **32** `ptr_2f7a5e9e`. NodeZero **44** `ptr_c3f10074`. Nathan `ad26a13a`. `Lvl_MainMenu` `4f408e60`. `Lvl_Epitope` `b9ea609f`. Admin `ae9756d0`. Evidence: `%TEMP%\b45_complete63_523d29d23ec04320afe02fd1ef22721a`. Log: `%TEMP%\b45_complete_editor.log`. Options click log: `%TEMP%\b45_options_click.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- This publish allowlist is `PROJECT_STATE.md` and the options-screen C++ (`ProjectOrganoidOptionsWidget`, `ProjectOrganoidMainMenuWidget`). OrganoidAIBridge sources stay unstaged. Maps were not saved.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 45 options screen is published. Do not begin the next pass until separately authorized.
