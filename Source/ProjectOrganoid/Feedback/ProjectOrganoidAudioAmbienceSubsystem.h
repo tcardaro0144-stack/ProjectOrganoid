@@ -293,7 +293,7 @@ protected:
 	bool bCombatActive = false;
 	bool bSectorPowerStress = false;
 	bool bWorldDelegatesBound = false;
-	/** SW_AlarmPulse plays once when its layer rises. CombatLingerSeconds does not restart it. */
+	/** SW_AlarmPulse plays once on the rising edge of combat or critical. It is not a UI sound and does not loop. Critical health does not raise the combat layer. CombatLingerSeconds does not restart it. */
 	bool bCombatAlarmOneShotConsumed = false;
 	bool bCriticalAlarmOneShotConsumed = false;
 	float CombatTimerRemaining = 0.0f;

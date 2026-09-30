@@ -13,6 +13,7 @@
 #include "Sound/SoundBase.h"
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
+#include "Sound/SoundWave.h"
 
 namespace ProjectOrganoidAmbience
 {
@@ -535,7 +536,8 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateTargetsForState(EProjectOrgan
 	case EProjectOrganoidAmbienceState::CriticalHealth:
 		TargetAmbientVolume = 0.15f;
 		TargetTensionVolume = 0.55f;
-		TargetCombatVolume = bCombatActive ? 0.7f : 0.2f;
+		// Critical health uses the critical layer only. Combat volume stays at 0 unless combat is actually active.
+		TargetCombatVolume = bCombatActive ? 0.7f : 0.0f;
 		TargetCriticalVolume = 1.0f;
 		TargetMixPitch = 0.90f;
 		TargetMixVolume = 1.2f;
@@ -629,9 +631,27 @@ void UProjectOrganoidAudioAmbienceSubsystem::SyncLayerComponent(
 		Component = NewObject<UAudioComponent>(Character, ComponentName);
 		Component->SetupAttachment(Character->GetRootComponent());
 		Component->bAutoActivate = false;
-		Component->SetUISound(true);
 		Component->bAllowSpatialization = false;
 		Component->RegisterComponent();
+	}
+
+	// Alarm voices (combat and critical) are world one-shots, not UI sounds.
+	// Ambient and tension beds stay UI so they do not attenuate with the camera.
+	Component->SetUISound(!bOneShotRisingEdge);
+	Component->bAllowSpatialization = false;
+	if (USoundWave* Wave = Cast<USoundWave>(Sound))
+	{
+		if (Wave->bLooping && bOneShotRisingEdge)
+		{
+			if (USoundWave* OneShot = DuplicateObject<USoundWave>(Wave, Component))
+			{
+				OneShot->bLooping = false;
+				OneShot->SetFlags(RF_Transient);
+				OneShot->ClearFlags(RF_Public | RF_Standalone);
+				Sound = OneShot;
+				Component->SetSound(Sound);
+			}
+		}
 	}
 
 	if (Component->GetSound() != Sound)

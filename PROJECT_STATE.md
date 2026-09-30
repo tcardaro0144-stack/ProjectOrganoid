@@ -5874,3 +5874,36 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 37 Lvl_Epitope spine color is published. Do not begin the next pass until separately authorized.
+## 2026-09-30 — Beat 38: Final beep fix — kill critical 0.2 floor + UI sound
+
+**Status:** critical-health combat floor and alarm UI sound published. Maps and materials unchanged. COMPLETE_PASS **63/63** aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**.
+
+**Baseline:** published Beat 37 commit `4b355781d9861235bf407f911be28d9bd6154d45` (spine painted, Lvl_Epitope `92448516`) on `origin/main`. Beat 38 is the ambience subsystem only.
+
+### Audio
+
+- `AudioAmbienceSubsystem`: critical health no longer feeds the combat layer. `TargetCombatVolume` is **0.7** only while combat is active, and **0.0** otherwise. Combat and critical `SW_AlarmPulse` voices use `SetUISound(false)`, stay non-spatial, and play once on the rising edge. If the wave is marked looping, playback uses a transient copy with looping off, so asset `f16ace0e` with `bLooping` false stays a fixed one-shot of **1.2s**, not a looping `10000` duration.
+
+### Combat stimulus
+
+- `NotifyCombatStimulus` still has one caller: `ApplyHealthDelta` for a negative Generic delta. Environmental hazard ticks do not call it. Bare LMB stays inside `BeepClickInjection_Functional` as simulated `InputKey` and asserts `route.no_lmb_combat`. It is not a runtime injector. `Character.cpp` was left as-is because the Beep test still requires Generic damage to start combat ambience (`damage.combat_stimulus_still_works`).
+
+### Hash table
+
+- Unchanged: Reactor `cfb8b9cb`, Admin `2a9e21bb`, Neuro `73e5da44`, Cryo `46e05eb9`, Compute `69043b7a`, Conclusion `7f952f18`, CreditsRoll `f10b4765`, Nathan `73a839ca`, Lvl_Epitope `92448516`, spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`, `SW_AlarmPulse` `f16ace0e`. **34** hashes exact.
+
+### Validation
+
+- Closed-editor Win64 Development build succeeded in **22.41s**. Targeted suite **8/8**, script exit 0. TheConclusion **95**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **45/46** fail (`dirty.neuro`) then **46/46** pass on a clean-editor retry. Respec **78**. Beep **12/12**. Log signatures 0, process count 0, dirty 0. Log: `%TEMP%\b38_targeted_editor.log`. Evidence: `%TEMP%\b38_targeted8_c220fb94960d52ea`.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Conclusion **95**. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Nathan `73a839ca`. Lvl_Epitope `92448516`. Spine mats `151bcdd9` / `25e7f65e` / `33b1cc73`. Reactor `cfb8b9cb`. Admin `2a9e21bb`. Neuro `73e5da44`. Cryo `46e05eb9`. Compute `69043b7a`. Conclusion `7f952f18`. CreditsRoll `f10b4765`. Evidence: `%TEMP%\b38_complete63_ceeca7f42ec64aa785ba79b74acbf484`. Log: `%TEMP%\b38_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- Beat 38 ambience subsystem sources plus this `PROJECT_STATE.md` section are the publish allowlist. OrganoidAIBridge sources stay unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 38 final beep fix is published. Do not begin the next pass until separately authorized.
+
