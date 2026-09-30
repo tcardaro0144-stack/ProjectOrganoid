@@ -5840,3 +5840,37 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 36 combat visibility is published. Do not begin the next pass until separately authorized.
+## 2026-09-30 — Beat 37: Paint Lvl_Epitope spine — kill WorldGridMaterial B&W
+
+**Status:** Lvl_Epitope spine color published. Sector maps unchanged. COMPLETE_PASS **63/63** aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**.
+
+**Baseline:** published Beat 36 commit c66d857ac58ad04b211dfe857dd1680e28205f5f (eat: make combat visible — hosts visible at BeginPlay + FirstCombat reveal + Pursuer bang) on origin/main. Beat 37 paints the persistent spine off WorldGridMaterial.
+
+### Spine
+
+- Lvl_Epitope 1f575c26 -> 92448516. **14** slots painted: **5** concrete, **9** metal, **0** grate. world_grid_remaining **0**. Spine_Landing_Admin and Gate_ResearchWing stayed unique. Collision was not changed and RecastNavMesh was not rebuilt. Lvl_MainMenu c35f269a stays gray.
+
+### Materials
+
+- New materials: M_Epitope_Spine_Concrete 151bcdd9, M_Epitope_Spine_Metal 25e7f65e, M_Epitope_Spine_Grate 33b1cc73. The grate material was created. No current slot classified as grate.
+
+### Hash table
+
+- Unchanged: Reactor cfb8b9cb, Admin 2a9e21bb, Neuro 73e5da44, Cryo 46e05eb9, Compute 69043b7a, Conclusion 7f952f18, CreditsRoll 10b4765, Nathan 73a839ca. **34** hashes exact, plus Lvl_Epitope 92448516 and the three spine materials.
+
+### Validation
+
+- Closed-editor ProjectOrganoidEditor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0. CloseMainWindow true, process count 0, log signatures 0, dirty 0. Beep **12/12**. TheConclusion **95**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Log: %TEMP%\b37_targeted_editor.log. Evidence: %TEMP%\b37_targeted8_240d10094b90e4e2.
+- First complete catalog **FAIL** **62/63**, aggregate **5407**. BiologicalAdaptation_Functional **39/43** ptr_b50cec86-4274-4bd7-8651-a6846e308575 and ptr_b09799ed-4244-a078-ac9b-76954e08e986: alid_activation, PE not spent, host speed stayed **350**. An earlier launch died on curl exit 56 after a telemetry ensure and was discarded. Evidence: %TEMP%\b37_complete63_84fded72878a4e57971117600f9cc050.
+- Isolated retries stayed on the early abort: **39/43** ptr_ea80baff-4014-3f40-7f73-ff99a98d0984 and ptr_ec0a092f-433a-3ce7-320a-e8a462c4ef59. Failed asserts: alid_activation, consumes_exactly_20_pe, host_speed_reduced_40, cooldown_rejects_without_pe_loss. A finished run of that test is **59/59**, not 43. Isolated JSON: %TEMP%\b37_bio_retry. Log: %TEMP%\b37_bio_retry.log.
+- The following catalog passed. BiologicalAdaptation_Functional **59/59** ptr_b7d7ca53-44a6-68dd-2fdd-d38d82decb98. Outcome COMPLETE_PASS **63/63**, aggregate **5423**. CloseMainWindow true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with rm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final. Nathan 73a839ca. Lvl_Epitope 92448516. Evidence: %TEMP%\b37_complete63_8d49bbc2fa6840e487394eadb772518b. Log: %TEMP%\b37_complete_editor.log.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- Beat 37 spine map, three spine materials, and this PROJECT_STATE.md section are the publish allowlist. OrganoidAIBridge spine-color sources stay unstaged.
+- Contaminated object 2fcff0207946d4e5405085747755fc8897ea420 remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 37 Lvl_Epitope spine color is published. Do not begin the next pass until separately authorized.
