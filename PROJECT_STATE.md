@@ -5800,3 +5800,43 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 35 Nathan final Drake colors is published. Do not begin the next pass until separately authorized.
+## 2026-09-30 — Beat 36: Make combat visible — hosts visible at BeginPlay + FirstCombat reveal + Pursuer bang
+
+**Status:** combat visibility C++ published. Maps unchanged on disk. COMPLETE_PASS **63/63** aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**.
+
+**Baseline:** published Beat 35 commit ed5779f43b9b4c172e01898f97bb1ca70ef32a61 (ix: polish Nathan Grant final Drake colors readable) on origin/main. Beat 36 is runtime host visibility and encounter trigger sizing. No map save.
+
+### Hosts
+
+- ProjectOrganoidHostBase: hosts stay visible at BeginPlay. Encounter activation still gates AI only. Previously hidden SetActorHiddenInGame(true) until BeginEncounter() now visible.
+
+### First combat
+
+- AProjectOrganoidFirstCombatTrigger (declared with AProjectOrganoidTransformedScientist, not a separate file): trigger box **500x500x300** in the constructor and BeginPlay. Overlap plays a reveal stinger, then the scientist uses MI_Jacket_Dark, a custom-depth highlight, a Host HP ping, then the Nathan line. Reactor_FirstCombatTrigger stays at (-500,0,-4710), now larger, finds the placed scientist, and calls BeginEncounter().
+
+### Pursuer
+
+- AProjectOrganoidPursuerTrigger: trigger box **500x500x300**. Bang amplitude **22000** (was **14000**). Reactor_PursuerTrigger stays at (-1100,0,-4710), louder.
+
+### Admin / Neuro audit
+
+- RequiresEncounterActivation stays **true** on Host_Admin_SecurityOfficer and Host_Neuro_Researcher. HostCombatLoop and Opening tests require that. Those hosts were never SetActorHiddenInGame; they were dormant until proximity or noise, not invisible. Kept true.
+
+### Hash table
+
+- Maps unchanged on disk (trigger sizing is runtime via BeginPlay): Reactor cfb8b9cb, Admin 2a9e21bb, Neuro 73e5da44, Cryo 46e05eb9, Compute 69043b7a, Conclusion 7f952f18, CreditsRoll 10b4765, Nathan 73a839ca, Lvl_Epitope 1f575c26. Optional follow-up dual-approved Reactor-only save_maps helper 36_save_reactor.py was drafted and not executed. Runtime sizing stays for now. **34** hashes exact.
+
+### Validation
+
+- Closed-editor ProjectOrganoidEditor Win64 Development build succeeded (two incremental compiles). Targeted suite **8/8**, script exit 0. CloseMainWindow true, process count 0, log signatures 0, dirty 0. Beep **12/12**. TheConclusion **95**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Log: %TEMP%\b36_targeted_editor.log.
+- Complete catalog **63/63**, outcome COMPLETE_PASS, aggregate **5423**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Conclusion **95**. CloseMainWindow true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with rm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final. Nathan 73a839ca. Evidence: %TEMP%\b36_complete63_704cf56f8ccc4d55a5ba5a1246cfc0c7. Log: %TEMP%\b36_complete_editor.log.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- Beat 36 host visibility C++ + this PROJECT_STATE.md section are the publish allowlist. OrganoidAIBridge polish sources stay unstaged.
+- Contaminated object 2fcff0207946d4e5405085747755fc8897ea420 remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 36 combat visibility is published. Do not begin the next pass until separately authorized.

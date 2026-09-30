@@ -41,6 +41,7 @@ protected:
 
 private:
 	void ShowNathanLine();
+	void ShowCombatHealthPing();
 	void HandleDeath(AActor* DamageCauser);
 	void GrantLyticCharge(AActor* DamageCauser);
 
@@ -74,9 +75,12 @@ public:
 	void NotifyPlayerOverlap(AActor* OtherActor);
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
 private:
+	void PlayRevealCue();
+
 	UPROPERTY(VisibleAnywhere, Category = "Transformed")
 	TObjectPtr<UBoxComponent> Trigger;
 

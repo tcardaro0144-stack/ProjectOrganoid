@@ -62,6 +62,7 @@ public:
 	AProjectOrganoidPursuerTrigger();
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
 public:

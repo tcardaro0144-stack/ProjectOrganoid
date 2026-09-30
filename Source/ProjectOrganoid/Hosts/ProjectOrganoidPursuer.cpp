@@ -123,7 +123,7 @@ void AProjectOrganoidPursuer::PlayBang()
 	{
 		const float Envelope = 1.f - (static_cast<float>(Index) / static_cast<float>(SampleCount));
 		const float Tone = FMath::Sin(2.f * PI * 70.f * static_cast<float>(Index) / static_cast<float>(SampleRate));
-		Samples[Index] = static_cast<int16>(Tone * Envelope * 14000.f);
+		Samples[Index] = static_cast<int16>(Tone * Envelope * 22000.f);
 	}
 	Wave->QueueAudio(Bytes.GetData(), Bytes.Num());
 	UGameplayStatics::PlaySoundAtLocation(this, Wave, GetActorLocation());
@@ -162,13 +162,22 @@ void AProjectOrganoidPursuer::Despawn()
 	Destroy();
 }
 
+void AProjectOrganoidPursuerTrigger::BeginPlay()
+{
+	Super::BeginPlay();
+	if (Trigger)
+	{
+		Trigger->SetBoxExtent(FVector(500.f, 500.f, 300.f), true);
+	}
+}
+
 AProjectOrganoidPursuerTrigger::AProjectOrganoidPursuerTrigger()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	Trigger = CreateDefaultSubobject<UBoxComponent>(TEXT("Trigger"));
 	SetRootComponent(Trigger);
-	Trigger->SetBoxExtent(FVector(400.f, 600.f, 250.f));
+	Trigger->SetBoxExtent(FVector(500.f, 500.f, 300.f));
 	Trigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Trigger->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Trigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);

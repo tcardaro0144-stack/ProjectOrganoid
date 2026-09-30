@@ -17,6 +17,8 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/DamageType.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundWaveProcedural.h"
 
 AProjectOrganoidTransformedScientist::AProjectOrganoidTransformedScientist()
 {
@@ -42,6 +44,12 @@ AProjectOrganoidTransformedScientist::AProjectOrganoidTransformedScientist()
 	if (BodyMesh.Succeeded())
 	{
 		Mesh->SetSkeletalMeshAsset(BodyMesh.Object);
+	}
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> HostCoatMaterial(
+		TEXT("/Game/Characters/Nathan/MI_Jacket_Dark.MI_Jacket_Dark"));
+	if (HostCoatMaterial.Succeeded())
+	{
+		Mesh->SetMaterial(0, HostCoatMaterial.Object);
 	}
 }
 
@@ -108,6 +116,11 @@ void AProjectOrganoidTransformedScientist::BeginEncounter()
 	bRevealed = true;
 	SetActorHiddenInGame(false);
 	SetCanBeDamaged(true);
+	if (Mesh)
+	{
+		Mesh->SetRenderCustomDepth(true);
+		Mesh->SetCustomDepthStencilValue(252);
+	}
 
 	if (UAnimSequence* Walk = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Walk/MF_Unarmed_Walk_Fwd.MF_Unarmed_Walk_Fwd")))
 	{
@@ -130,7 +143,23 @@ void AProjectOrganoidTransformedScientist::BeginEncounter()
 		Mesh->SetPlayRate(PlayRate);
 	}
 
+	ShowCombatHealthPing();
 	ShowNathanLine();
+}
+
+void AProjectOrganoidTransformedScientist::ShowCombatHealthPing()
+{
+	UWorld* World = GetWorld();
+	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+	AProjectOrganoidGameMode* GameMode = World ? World->GetAuthGameMode<AProjectOrganoidGameMode>() : nullptr;
+	UProjectOrganoidGameplayHUDController* HUD = GameMode && PC ? GameMode->GetHUDControllerForPlayer(PC) : nullptr;
+	if (HUD)
+	{
+		HUD->ShowTransientNotification(
+			FText::FromString(TEXT("Host")),
+			FText::FromString(FString::Printf(TEXT("Transformed scientist — %.0f HP"), Health)),
+			4.f);
+	}
 }
 
 void AProjectOrganoidTransformedScientist::ShowNathanLine()
@@ -191,13 +220,22 @@ void AProjectOrganoidTransformedScientist::GrantLyticCharge(AActor* DamageCauser
 	bLyticChargeGranted = Inventory->TryAddItem(Ammo, InstanceId, 1);
 }
 
+void AProjectOrganoidFirstCombatTrigger::BeginPlay()
+{
+	Super::BeginPlay();
+	if (Trigger)
+	{
+		Trigger->SetBoxExtent(FVector(500.f, 500.f, 300.f), true);
+	}
+}
+
 AProjectOrganoidFirstCombatTrigger::AProjectOrganoidFirstCombatTrigger()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	Trigger = CreateDefaultSubobject<UBoxComponent>(TEXT("Trigger"));
 	SetRootComponent(Trigger);
-	Trigger->SetBoxExtent(FVector(400.f, 600.f, 250.f));
+	Trigger->SetBoxExtent(FVector(500.f, 500.f, 300.f));
 	Trigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Trigger->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Trigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
@@ -209,6 +247,34 @@ void AProjectOrganoidFirstCombatTrigger::NotifyActorBeginOverlap(AActor* OtherAc
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 	NotifyPlayerOverlap(OtherActor);
+}
+
+void AProjectOrganoidFirstCombatTrigger::PlayRevealCue()
+{
+	USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>(this);
+	if (!Wave)
+	{
+		return;
+	}
+	constexpr int32 SampleRate = 22050;
+	constexpr int32 SampleCount = 6615;
+	Wave->SetSampleRate(SampleRate);
+	Wave->NumChannels = 1;
+	Wave->Duration = static_cast<float>(SampleCount) / static_cast<float>(SampleRate);
+	Wave->SoundGroup = SOUNDGROUP_Effects;
+	Wave->bLooping = false;
+
+	TArray<uint8> Bytes;
+	Bytes.SetNumUninitialized(SampleCount * sizeof(int16));
+	int16* Samples = reinterpret_cast<int16*>(Bytes.GetData());
+	for (int32 Index = 0; Index < SampleCount; ++Index)
+	{
+		const float Envelope = 1.f - (static_cast<float>(Index) / static_cast<float>(SampleCount));
+		const float Tone = FMath::Sin(2.f * PI * 110.f * static_cast<float>(Index) / static_cast<float>(SampleRate));
+		Samples[Index] = static_cast<int16>(Tone * Envelope * 18000.f);
+	}
+	Wave->QueueAudio(Bytes.GetData(), Bytes.Num());
+	UGameplayStatics::PlaySoundAtLocation(this, Wave, GetActorLocation());
 }
 
 void AProjectOrganoidFirstCombatTrigger::NotifyPlayerOverlap(AActor* OtherActor)
@@ -225,6 +291,7 @@ void AProjectOrganoidFirstCombatTrigger::NotifyPlayerOverlap(AActor* OtherActor)
 	for (TActorIterator<AProjectOrganoidTransformedScientist> It(World); It; ++It)
 	{
 		bConsumed = true;
+		PlayRevealCue();
 		It->BeginEncounter();
 		break;
 	}

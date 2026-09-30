@@ -115,6 +115,13 @@ void AProjectOrganoidHostBase::BeginPlay()
 	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 	bEncounterActivated = !bRequiresEncounterActivation;
 
+	// Organoid hosts stay visible in-world; encounter activation gates AI, not rendering.
+	SetActorHiddenInGame(false);
+	if (USkeletalMeshComponent* HostMesh = GetMesh())
+	{
+		HostMesh->SetVisibility(true, true);
+	}
+
 	SyncHostPerception();
 	EnsureHostAIController();
 	BindHostPerceptionToController();
