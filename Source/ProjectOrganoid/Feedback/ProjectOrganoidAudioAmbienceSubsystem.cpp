@@ -7,7 +7,9 @@
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "Components/AudioComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 #include "HAL/PlatformStackWalk.h"
+#include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/ReverbEffect.h"
 #include "Sound/SoundBase.h"
@@ -22,6 +24,62 @@ namespace ProjectOrganoidAmbience
 
 	/** Combat/Critical must not keep a looping voice alive at inaudible volume. */
 	static constexpr float LayerSilentVolume = KINDA_SMALL_NUMBER;
+
+	static const TCHAR* AmbienceStateName(EProjectOrganoidAmbienceState State)
+	{
+		switch (State)
+		{
+		case EProjectOrganoidAmbienceState::Exploration: return TEXT("Exploration");
+		case EProjectOrganoidAmbienceState::Tension: return TEXT("Tension");
+		case EProjectOrganoidAmbienceState::Combat: return TEXT("Combat");
+		case EProjectOrganoidAmbienceState::Hazard: return TEXT("Hazard");
+		case EProjectOrganoidAmbienceState::CriticalHealth: return TEXT("CriticalHealth");
+		default: return TEXT("Unknown");
+		}
+	}
+
+	/** Temporary Beat 39 trace. Remove after the click-beep source is confirmed. */
+	static void LogAlarmPulsePlay(UAudioComponent* Component, const TCHAR* Reason)
+	{
+		if (!Component)
+		{
+			return;
+		}
+
+		const FString SoundName = Component->GetSound() ? Component->GetSound()->GetName() : FString();
+		const FString CompName = Component->GetName();
+		if (!SoundName.Contains(TEXT("AlarmPulse")) && !CompName.Contains(TEXT("Combat")) && !CompName.Contains(TEXT("Critical")))
+		{
+			return;
+		}
+
+		UWorld* World = Component->GetWorld();
+		const UProjectOrganoidAudioAmbienceSubsystem* Ambience = World
+			? World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>()
+			: nullptr;
+		APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+		const bool bLmbDown = PC && PC->IsInputKeyDown(EKeys::LeftMouseButton);
+		const bool bLmbJust = PC && PC->WasInputKeyJustPressed(EKeys::LeftMouseButton);
+
+		UE_LOG(LogTemp, Warning,
+			TEXT("OrganoidAlarmPulsePlay t=%.3f reason=%s component=%s sound=%s ui=%s volume=%.3f combat=%s health=%.3f state=%s lmb_down=%s lmb_just=%s"),
+			World ? World->GetTimeSeconds() : -1.0f,
+			Reason,
+			*CompName,
+			*SoundName,
+			Component->bIsUISound ? TEXT("true") : TEXT("false"),
+			Component->VolumeMultiplier,
+			(Ambience && Ambience->IsInCombat()) ? TEXT("true") : TEXT("false"),
+			Ambience ? Ambience->GetHealthNormalized() : -1.0f,
+			Ambience ? AmbienceStateName(Ambience->GetAmbienceState()) : TEXT("none"),
+			bLmbDown ? TEXT("true") : TEXT("false"),
+			bLmbJust ? TEXT("true") : TEXT("false"));
+
+		ANSICHAR Stack[4096];
+		Stack[0] = 0;
+		FPlatformStackWalk::StackWalkAndDump(Stack, UE_ARRAY_COUNT(Stack), 1);
+		UE_LOG(LogTemp, Warning, TEXT("OrganoidAlarmPulseStack:\n%s"), ANSI_TO_TCHAR(Stack));
+	}
 
 	static void ApplySilentAwareLayerPlayback(
 		UAudioComponent* Component,
@@ -58,6 +116,7 @@ namespace ProjectOrganoidAmbience
 			}
 			if (!Component->IsPlaying())
 			{
+				LogAlarmPulsePlay(Component, TEXT("rising_edge"));
 				Component->Play();
 				if (bOneShotConsumed)
 				{
@@ -69,6 +128,7 @@ namespace ProjectOrganoidAmbience
 
 		if (!Component->IsPlaying())
 		{
+			LogAlarmPulsePlay(Component, TEXT("layer_play"));
 			Component->Play();
 		}
 	}
@@ -519,7 +579,7 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateTargetsForState(EProjectOrgan
 		TargetAmbientVolume = 0.25f;
 		TargetTensionVolume = 0.45f;
 		TargetCombatVolume = FMath::Clamp(0.55f + CombatIntensity * 0.45f, 0.55f, 1.0f);
-		TargetCriticalVolume = HealthNormalized <= TensionHealthThreshold ? 0.25f : 0.0f;
+		TargetCriticalVolume = (bCombatActive && HealthNormalized <= TensionHealthThreshold) ? 0.25f : 0.0f;
 		TargetMixPitch = 1.04f;
 		TargetMixVolume = 1.15f;
 		break;
@@ -536,9 +596,9 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateTargetsForState(EProjectOrgan
 	case EProjectOrganoidAmbienceState::CriticalHealth:
 		TargetAmbientVolume = 0.15f;
 		TargetTensionVolume = 0.55f;
-		// Critical health uses the critical layer only. Combat volume stays at 0 unless combat is actually active.
+		// Alarm pulse only while combat is active. Low health alone does not play it.
 		TargetCombatVolume = bCombatActive ? 0.7f : 0.0f;
-		TargetCriticalVolume = 1.0f;
+		TargetCriticalVolume = bCombatActive ? 1.0f : 0.0f;
 		TargetMixPitch = 0.90f;
 		TargetMixVolume = 1.2f;
 		break;

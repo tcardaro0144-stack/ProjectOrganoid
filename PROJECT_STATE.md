@@ -5906,4 +5906,52 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 38 final beep fix is published. Do not begin the next pass until separately authorized.
+## 2026-09-30 — Beat 39: Kill critical-layer beep when combat off — no beep on low HP alone
+
+**Status:** critical-layer alarm is silent unless combat is active. Maps and materials unchanged. COMPLETE_PASS **63/63** aggregate **5431**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. PursuerIntro **28**. WeaponRoster **49**. SyringeKit **46**. ResearchStationRespec **78**. TheConclusion **95**. AmbienceLayerPlayback **36/36**. DeconAudioIsolation **33/33**. RoomEntryBeep **35/35**.
+
+**Baseline:** published Beat 38 commit `49f63f754582c381505d8c1f76058d2ea3aa1bd6` (critical 0.2 combat floor killed) on `origin/main`. Beat 39 gates the critical layer on combat.
+
+### Audio
+
+- `AudioAmbienceSubsystem`: `OrganoidCriticalLayer` at critical health (`<= 0.30`) is volume **1.0** only while combat is active, and **0.0** otherwise. The tense pulse is **0.25** at health `<= 0.55` only while `bCombatActive`. Combat volume stays **0.0** with combat off. Alarm layers stay non-UI, non-spatial, and one-shot on the rising edge. `LogAlarmPulsePlay` is in the build and logs `OrganoidAlarmPulsePlay` plus a stack: reason, component, sound, UI flag, volume, combat, health, ambience state, `lmb_down`, `lmb_just`.
+
+### Click path
+
+- Plain LMB does not start `SW_AlarmPulse`. `IA_Fire_Runtime` on Left Mouse calls `HandleFire` → `FireEquippedWeapon` → `Fire`. Empty magazine, reloading, or no weapon makes `CanFire` false and plays nothing. A fired round calls `ReportGunfireNoise` → `PlayGunfireAtLocation`. `GunfireSound` is null by default, so that path reports AI hearing and does not play a wave. It never calls `NotifyCombatStimulus`.
+- `NotifyCombatStimulus` still has one caller: `ApplyHealthDelta` for a negative Generic delta. Hazard ticks log and do not call it. LMB does not change health.
+- No Content asset except `SW_AlarmPulse` itself references that wave. No widget `OnClicked` handler plays a sound.
+- The testing-bot click is only `BeepClickInjection_Functional.cpp` simulated `InputKey` (`CreateSimulated`). That module is editor-only and is not in the game.
+
+### Content/Audio
+
+- `SW_AlarmPulse` `f16ace0e`, `bLooping` false, **1.2s**, `26460` samples, 22050 Hz, 1 channel. `SW_FacilityBed` `654eb3d5`, looping, **4.0s**. `SW_TensionBed` `5bfb7854`, looping, **4.0s**. `SW_HazardHiss` `3359e3f1`, looping, **8.0s**. No SoundCue. No `878.57` metadata. `878.57` Hz is the earlier PCM measurement.
+
+### Other PlaySound sites
+
+- `ProjectOrganoidAudioSubsystem.cpp` gunfire plays only if `GunfireSound` is set, and only after a successful shot. Footsteps do not beep. Heartbeat uses `SetUISound(true)` with a null sound by default. Weak-point impact, the transformed-scientist reveal (110 Hz one-shot), and the pursuer bang (70 Hz one-shot) are not the click beep.
+
+### Tests
+
+- `AmbienceLayerPlayback_Functional` **36/36**, `DeconAudioIsolation_Functional` **33/33**, `RoomEntryBeep_Functional` **35/35**. Critical health with combat off expects a silent critical layer. The pulse is **0.25** only while combat is active and health is `<= 0.55`, and **1.0** only while combat is active in critical health. Decon and RoomEntry had the same old “critical layer audible” assert and were updated with it. The eight new ambience checks move the catalog aggregate from **5423** to **5431**.
+
+### Hash table
+
+- Unchanged: Reactor `cfb8b9cb`, Admin `2a9e21bb`, Neuro `73e5da44`, Cryo `46e05eb9`, Compute `69043b7a`, Conclusion `7f952f18`, CreditsRoll `f10b4765`, Nathan `73a839ca`, Lvl_Epitope `92448516`, spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`, `SW_AlarmPulse` `f16ace0e`. **34** hashes exact.
+
+### Validation
+
+- Closed-editor Win64 Development build succeeded in **17.47s**. Targeted suite **8/8**, script exit 0. TheConclusion **95**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Beep **12/12**. Log signatures 0, process count 0. Log: `%TEMP%\b39_targeted_editor.log`. Evidence: `%TEMP%\b39_targeted8_5bd3341728047dce`.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5431**. Beep **12/12**. Host **33/33**. Bio **59/59**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Conclusion **95**. AmbienceLayer **36**. Decon **33**. RoomEntry **35**. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Nathan `73a839ca`. Lvl_Epitope `92448516`. Spine mats `151bcdd9` / `25e7f65e` / `33b1cc73`. Reactor `cfb8b9cb`. Admin `2a9e21bb`. Neuro `73e5da44`. Cryo `46e05eb9`. Compute `69043b7a`. Conclusion `7f952f18`. CreditsRoll `f10b4765`. `SW_AlarmPulse` `f16ace0e`. Evidence: `%TEMP%\b39_complete63_6cd699f14e12406ea04f4ab96255868a`. Log: `%TEMP%\b39_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- Beat 39 ambience subsystem, the three playtest updates, and this `PROJECT_STATE.md` section are the publish allowlist. OrganoidAIBridge sources stay unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 39 critical-layer beep fix is published. Do not begin the next pass until separately authorized.
+
 

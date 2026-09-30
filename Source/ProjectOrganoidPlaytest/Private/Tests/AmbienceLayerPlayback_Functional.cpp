@@ -82,7 +82,9 @@ namespace
 			bAnyAssertFailed = false;
 			bCombatArmed = false;
 			bCombatCleared = false;
+			bTenseHealthSet = false;
 			bCriticalArmed = false;
+			bCriticalCombatArmed = false;
 			bCriticalCleared = false;
 			BaselineZoneId.Reset();
 			DirtyBefore.Reset();
@@ -417,6 +419,35 @@ namespace
 				WaitSeconds = 0.0f;
 			}
 			WaitSeconds += DeltaTime;
+			if (bTenseHealthSet)
+			{
+				const float CriticalVolume = Sub->GetCriticalLayerVolume();
+				const bool bTenseReady = CriticalVolume >= 0.20f && CriticalVolume <= 0.30f && Sub->IsInCombat();
+				if (!bTenseReady && WaitSeconds < LayerSettleSeconds)
+				{
+					return;
+				}
+				AssertTrue(Record, TEXT("tense.critical_volume_0_25"),
+					bTenseReady,
+					TEXT("0.25"), VolumeText(CriticalVolume), CriticalLayerName, false);
+				AssertTrue(Record, TEXT("tense.only_while_combat"),
+					Sub->IsInCombat(),
+					TEXT("true"), Sub->IsInCombat() ? TEXT("true") : TEXT("false"), TEXT("combat"), false);
+				if (!CallNotifyHealthChanged(Sub, Character->GetMaxHealth(), Character->GetMaxHealth()))
+				{
+					FailAndStop(Owner, Record, TEXT("NotifyHealthChanged restore before combat-off is not callable."));
+					return;
+				}
+				if (bAnyAssertFailed)
+				{
+					FailAndStop(Owner, Record, TEXT("Tense critical pulse did not stay at 0.25 while combat was active."));
+					return;
+				}
+				WaitSeconds = 0.0f;
+				Stage = EStage::CombatOff;
+				Owner.SetStage(TEXT("CombatOff"));
+				return;
+			}
 			UAudioComponent* Combat = FindLayer(Character, CombatLayerName);
 			const bool bReady = Sub->GetCombatLayerVolume() >= AudibleVolume && Combat && Combat->IsPlaying();
 			if (!bReady && WaitSeconds < LayerSettleSeconds)
@@ -432,15 +463,26 @@ namespace
 			AssertTrue(Record, TEXT("combat_on.sound_alarm_pulse"),
 				SoundIsAlarmPulse(Combat),
 				AlarmPulseToken, Combat && Combat->GetSound() ? Combat->GetSound()->GetName() : TEXT("none"), CombatLayerName, false);
+			AssertTrue(Record, TEXT("combat_on.critical_silent_at_full_health"),
+				Sub->GetCriticalLayerVolume() <= SilentVolume,
+				TEXT("0"), VolumeText(Sub->GetCriticalLayerVolume()), CriticalLayerName, false);
 			AssertZoneUnchanged(Record, TEXT("combat_on.zone_unchanged"));
 			if (bAnyAssertFailed)
 			{
 				FailAndStop(Owner, Record, TEXT("Combat layer did not start when combat became active."));
 				return;
 			}
-			WaitSeconds = 0.0f;
-			Stage = EStage::CombatOff;
-			Owner.SetStage(TEXT("CombatOff"));
+			if (!bTenseHealthSet)
+			{
+				if (!CallNotifyHealthChanged(Sub, Character->GetMaxHealth() * 0.50f, Character->GetMaxHealth()))
+				{
+					FailAndStop(Owner, Record, TEXT("NotifyHealthChanged for tense health is not callable."));
+					return;
+				}
+				bTenseHealthSet = true;
+				WaitSeconds = 0.0f;
+				return;
+			}
 		}
 
 		void TickCombatOff(UProjectOrganoidPlaytestEditorSubsystem& Owner, FOrganoidPlaytestRecord& Record, float DeltaTime)
@@ -509,29 +551,77 @@ namespace
 			}
 			WaitSeconds += DeltaTime;
 			UAudioComponent* Critical = FindLayer(Character, CriticalLayerName);
-			const bool bReady = Sub->GetCriticalLayerVolume() >= AudibleVolume && Critical && Critical->IsPlaying();
-			if (!bReady && WaitSeconds < LayerSettleSeconds)
+			if (!bCriticalCombatArmed)
+			{
+				const bool bSilentReady = Sub->GetAmbienceState() == EProjectOrganoidAmbienceState::CriticalHealth
+					&& !Sub->IsInCombat()
+					&& Sub->GetCriticalLayerVolume() <= SilentVolume
+					&& Sub->GetCombatLayerVolume() <= SilentVolume
+					&& Critical && !Critical->IsPlaying();
+				if (!bSilentReady && WaitSeconds < LayerSettleSeconds)
+				{
+					return;
+				}
+				AssertTrue(Record, TEXT("critical_on.state"),
+					Sub->GetAmbienceState() == EProjectOrganoidAmbienceState::CriticalHealth,
+					TEXT("CriticalHealth"),
+					Sub->GetAmbienceState() == EProjectOrganoidAmbienceState::CriticalHealth ? TEXT("CriticalHealth") : TEXT("Other"),
+					TEXT("Ambience"), false);
+				AssertTrue(Record, TEXT("critical_on.combat_off"),
+					!Sub->IsInCombat(),
+					TEXT("false"), Sub->IsInCombat() ? TEXT("true") : TEXT("false"), TEXT("combat"), false);
+				AssertTrue(Record, TEXT("critical_on.volume_zero"),
+					Sub->GetCriticalLayerVolume() <= SilentVolume,
+					TEXT("0"), VolumeText(Sub->GetCriticalLayerVolume()), CriticalLayerName, false);
+				AssertTrue(Record, TEXT("critical_on.not_playing"),
+					Critical && !Critical->IsPlaying(),
+					TEXT("false"), BoolText(Critical && Critical->IsPlaying()), CriticalLayerName, false);
+				AssertTrue(Record, TEXT("critical_on.combat_volume_zero"),
+					Sub->GetCombatLayerVolume() <= SilentVolume,
+					TEXT("0"), VolumeText(Sub->GetCombatLayerVolume()), CombatLayerName, false);
+				AssertTrue(Record, TEXT("critical_on.sound_alarm_pulse"),
+					SoundIsAlarmPulse(Critical),
+					AlarmPulseToken, Critical && Critical->GetSound() ? Critical->GetSound()->GetName() : TEXT("none"), CriticalLayerName, false);
+				AssertZoneUnchanged(Record, TEXT("critical_on.zone_unchanged"));
+				if (bAnyAssertFailed)
+				{
+					FailAndStop(Owner, Record, TEXT("Critical health played an alarm while combat was off."));
+					return;
+				}
+				if (!CallSetCombatActive(Sub, true))
+				{
+					FailAndStop(Owner, Record, TEXT("SetCombatActive(true) during CriticalHealth is not callable."));
+					return;
+				}
+				bCriticalCombatArmed = true;
+				WaitSeconds = 0.0f;
+				return;
+			}
+
+			const bool bCombatReady = Sub->IsInCombat()
+				&& Sub->GetCriticalLayerVolume() >= 0.95f
+				&& Critical && Critical->IsPlaying();
+			if (!bCombatReady && WaitSeconds < LayerSettleSeconds)
 			{
 				return;
 			}
-			AssertTrue(Record, TEXT("critical_on.state"),
-				Sub->GetAmbienceState() == EProjectOrganoidAmbienceState::CriticalHealth,
-				TEXT("CriticalHealth"),
-				Sub->GetAmbienceState() == EProjectOrganoidAmbienceState::CriticalHealth ? TEXT("CriticalHealth") : TEXT("Other"),
-				TEXT("Ambience"), false);
-			AssertTrue(Record, TEXT("critical_on.volume_audible"),
-				Sub->GetCriticalLayerVolume() >= AudibleVolume,
-				TEXT(">=0.05"), VolumeText(Sub->GetCriticalLayerVolume()), CriticalLayerName, false);
-			AssertTrue(Record, TEXT("critical_on.playing"),
+			AssertTrue(Record, TEXT("critical_combat.volume_one"),
+				Sub->GetCriticalLayerVolume() >= 0.95f,
+				TEXT("1.0"), VolumeText(Sub->GetCriticalLayerVolume()), CriticalLayerName, false);
+			AssertTrue(Record, TEXT("critical_combat.playing"),
 				Critical && Critical->IsPlaying(),
 				TEXT("true"), BoolText(Critical && Critical->IsPlaying()), CriticalLayerName, false);
-			AssertTrue(Record, TEXT("critical_on.sound_alarm_pulse"),
-				SoundIsAlarmPulse(Critical),
-				AlarmPulseToken, Critical && Critical->GetSound() ? Critical->GetSound()->GetName() : TEXT("none"), CriticalLayerName, false);
-			AssertZoneUnchanged(Record, TEXT("critical_on.zone_unchanged"));
+			AssertTrue(Record, TEXT("critical_combat.only_while_combat"),
+				Sub->IsInCombat(),
+				TEXT("true"), Sub->IsInCombat() ? TEXT("true") : TEXT("false"), TEXT("combat"), false);
 			if (bAnyAssertFailed)
 			{
-				FailAndStop(Owner, Record, TEXT("Critical layer did not start when CriticalHealth became active."));
+				FailAndStop(Owner, Record, TEXT("Critical layer did not reach 1.0 when combat became active."));
+				return;
+			}
+			if (!CallSetCombatActive(Sub, false))
+			{
+				FailAndStop(Owner, Record, TEXT("SetCombatActive(false) after critical combat is not callable."));
 				return;
 			}
 			WaitSeconds = 0.0f;
@@ -652,7 +742,9 @@ namespace
 		bool bAnyAssertFailed = false;
 		bool bCombatArmed = false;
 		bool bCombatCleared = false;
+		bool bTenseHealthSet = false;
 		bool bCriticalArmed = false;
+		bool bCriticalCombatArmed = false;
 		bool bCriticalCleared = false;
 		FString BaselineZoneId;
 		TArray<FString> DirtyBefore;

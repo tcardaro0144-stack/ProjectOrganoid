@@ -658,8 +658,9 @@ namespace
 				FString::Printf(TEXT("%.1f"), Health), TEXT("vitals"), false);
 			AssertTrue(Record, TEXT("E.critical_state"), bCriticalState, TEXT("CriticalHealth"),
 				Ambience ? UEnum::GetValueAsString(Ambience->GetAmbienceState()) : TEXT("none"), TEXT("ambience"), false);
-			AssertTrue(Record, TEXT("E.critical_layer_audible"), Ambience && Ambience->GetCriticalLayerVolume() >= SilentVolume,
-				TEXT(">=0.05"), FString::Printf(TEXT("%.3f"), Ambience ? Ambience->GetCriticalLayerVolume() : -1.0f),
+			AssertTrue(Record, TEXT("E.critical_layer_silent"),
+				Ambience && !Ambience->IsInCombat() && Ambience->GetCriticalLayerVolume() <= SilentVolume,
+				TEXT("0"), FString::Printf(TEXT("%.3f"), Ambience ? Ambience->GetCriticalLayerVolume() : -1.0f),
 				TEXT("OrganoidCriticalLayer"), false);
 			AssertTrue(Record, TEXT("E.hiss_still_playing"), HissPlaying(World), TEXT("true"),
 				HissPlaying(World) ? TEXT("true") : TEXT("false"), TEXT("HazardAudio"), false);
