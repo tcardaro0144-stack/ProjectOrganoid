@@ -7,9 +7,7 @@
 #include "ProjectOrganoidPowerSubsystem.h"
 #include "Components/AudioComponent.h"
 #include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
 #include "HAL/PlatformStackWalk.h"
-#include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/ReverbEffect.h"
 #include "Sound/SoundBase.h"
@@ -24,62 +22,6 @@ namespace ProjectOrganoidAmbience
 
 	/** Combat/Critical must not keep a looping voice alive at inaudible volume. */
 	static constexpr float LayerSilentVolume = KINDA_SMALL_NUMBER;
-
-	static const TCHAR* AmbienceStateName(EProjectOrganoidAmbienceState State)
-	{
-		switch (State)
-		{
-		case EProjectOrganoidAmbienceState::Exploration: return TEXT("Exploration");
-		case EProjectOrganoidAmbienceState::Tension: return TEXT("Tension");
-		case EProjectOrganoidAmbienceState::Combat: return TEXT("Combat");
-		case EProjectOrganoidAmbienceState::Hazard: return TEXT("Hazard");
-		case EProjectOrganoidAmbienceState::CriticalHealth: return TEXT("CriticalHealth");
-		default: return TEXT("Unknown");
-		}
-	}
-
-	/** Temporary Beat 39 trace. Remove after the click-beep source is confirmed. */
-	static void LogAlarmPulsePlay(UAudioComponent* Component, const TCHAR* Reason)
-	{
-		if (!Component)
-		{
-			return;
-		}
-
-		const FString SoundName = Component->GetSound() ? Component->GetSound()->GetName() : FString();
-		const FString CompName = Component->GetName();
-		if (!SoundName.Contains(TEXT("AlarmPulse")) && !CompName.Contains(TEXT("Combat")) && !CompName.Contains(TEXT("Critical")))
-		{
-			return;
-		}
-
-		UWorld* World = Component->GetWorld();
-		const UProjectOrganoidAudioAmbienceSubsystem* Ambience = World
-			? World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>()
-			: nullptr;
-		APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
-		const bool bLmbDown = PC && PC->IsInputKeyDown(EKeys::LeftMouseButton);
-		const bool bLmbJust = PC && PC->WasInputKeyJustPressed(EKeys::LeftMouseButton);
-
-		UE_LOG(LogTemp, Warning,
-			TEXT("OrganoidAlarmPulsePlay t=%.3f reason=%s component=%s sound=%s ui=%s volume=%.3f combat=%s health=%.3f state=%s lmb_down=%s lmb_just=%s"),
-			World ? World->GetTimeSeconds() : -1.0f,
-			Reason,
-			*CompName,
-			*SoundName,
-			Component->bIsUISound ? TEXT("true") : TEXT("false"),
-			Component->VolumeMultiplier,
-			(Ambience && Ambience->IsInCombat()) ? TEXT("true") : TEXT("false"),
-			Ambience ? Ambience->GetHealthNormalized() : -1.0f,
-			Ambience ? AmbienceStateName(Ambience->GetAmbienceState()) : TEXT("none"),
-			bLmbDown ? TEXT("true") : TEXT("false"),
-			bLmbJust ? TEXT("true") : TEXT("false"));
-
-		ANSICHAR Stack[4096];
-		Stack[0] = 0;
-		FPlatformStackWalk::StackWalkAndDump(Stack, UE_ARRAY_COUNT(Stack), 1);
-		UE_LOG(LogTemp, Warning, TEXT("OrganoidAlarmPulseStack:\n%s"), ANSI_TO_TCHAR(Stack));
-	}
 
 	static void ApplySilentAwareLayerPlayback(
 		UAudioComponent* Component,
@@ -116,7 +58,6 @@ namespace ProjectOrganoidAmbience
 			}
 			if (!Component->IsPlaying())
 			{
-				LogAlarmPulsePlay(Component, TEXT("rising_edge"));
 				Component->Play();
 				if (bOneShotConsumed)
 				{
@@ -128,7 +69,6 @@ namespace ProjectOrganoidAmbience
 
 		if (!Component->IsPlaying())
 		{
-			LogAlarmPulsePlay(Component, TEXT("layer_play"));
 			Component->Play();
 		}
 	}

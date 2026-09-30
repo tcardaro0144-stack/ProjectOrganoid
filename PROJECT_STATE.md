@@ -5955,3 +5955,60 @@ Three new packages outside that list:
 - Beat 39 critical-layer beep fix is published. Do not begin the next pass until separately authorized.
 
 
+
+## 2026-09-30 — Beat 40: NavMesh rebuild check
+
+**Status:** no NavMesh save. Catalog log string `NAVMESH NEEDS TO BE REBUILT` count **0**. Facility map hashes stay at the published prefixes.
+
+**Baseline:** published Beat 39 commit `c9ea1e694d8784b4081205a07df904910b98c742` on `origin/main`. Recast can still report `needs_rebuild` after the facility paint. The Beat 41 catalog log did not print the rebuild warning, so `rebuild_epitope_navmesh` was not run and no map was saved for it.
+
+### Decision
+
+- Keep Lvl_Epitope `92448516`, Admin `2a9e21bb`, Neuro `73e5da44`, Cryo `46e05eb9`, Compute `69043b7a`, Reactor `cfb8b9cb`.
+
+### Next boundary
+
+- Beat 41 paints the main menu. NavMesh packages stay untouched.
+
+## 2026-09-30 — Beat 41: Paint Lvl_MainMenu — kill WorldGridMaterial gray grid
+
+**Status:** main menu gray grid is gone. COMPLETE_PASS **63/63** aggregate **5431**. Facility hashes held. Temporary beep play logs are removed.
+
+**Baseline:** published Beat 39 commit `c9ea1e694d8784b4081205a07df904910b98c742`. Beat 40 did not rewrite maps.
+
+### Main menu
+
+- `Lvl_MainMenu` `c35f269a` to `12bcf614`. **40** `WorldGridMaterial` slots on `Admin_DirectorSuite_*` cubes now use `M_Epitope_Spine_Concrete` `151bcdd9`. `world_grid_remaining` **0**. No new materials were created. Spine material packages were not saved.
+
+### Hashes held
+
+- Lvl_Epitope `92448516`. Admin `2a9e21bb`. Neuro `73e5da44`. Cryo `46e05eb9`. Compute `69043b7a`. Reactor `cfb8b9cb`. Conclusion `7f952f18`. Nathan `73a839ca`. CreditsRoll `f10b4765`. Spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`. `SW_AlarmPulse` `f16ace0e`. **34** hashes exact.
+
+### Audio cleanup
+
+- Critical health still sets `TargetCriticalVolume` to **1.0** only while combat is active, and **0.0** otherwise. The tense pulse stays **0.25** at health `<= 0.55` only while `bCombatActive`. Combat volume stays **0.0** with combat off. Alarm layers stay non-UI, non-spatial, and one-shot on the rising edge.
+- Temporary `LogAlarmPulsePlay`, `OrganoidAlarmPulsePlay`, `OrganoidAlarmPulseStack`, and `OrganoidAllAudioPlay` are removed from `ProjectOrganoidAudioAmbienceSubsystem.cpp`. `ProjectOrganoidAudioSubsystem.cpp` is back to the published Beat 39 file. No debug stack dump remains on play.
+
+### Beep audit
+
+- `BeepClickInjection_Functional` **12/12**. Log: `%TEMP%\b41_beep_log.txt`. Every play from the ambience subsystem and the audio subsystem had `lmb_down=true` count **0** and `lmb_just=true` count **0**. No gunfire, footstep, heartbeat, or `SW_HazardHiss` play.
+- `t=0` `SW_FacilityBed` on `OrganoidAmbientLayer`, volume **0.000**, from BeginPlay `EnsureMusicLayers`. Silent start, mouse up.
+- `t=0` `SW_TensionBed` on `OrganoidTensionLayer`, volume **0.000**, same BeginPlay path.
+- `t=56.285` `SW_AlarmPulse` on `OrganoidCombatLayer`, volume **0.285**, combat true, health **0.920**. Stack is `UpdateLayerVolumes` from `Tick`, the damage-stimulus stage.
+- `t=59.478` `SW_AlarmPulse`, volume **0.074**, combat true, health **1.000**, same tick path, the later combat stage.
+- The click is not `SW_AlarmPulse`. The looping beds start once at volume 0 when the pawn begins play. The alarm wave plays only from the ambience tick while combat is active.
+
+### Validation
+
+- Closed-editor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0. Beep **12/12**. Log: `%TEMP%\b41_targeted_editor.log`. Evidence: `%TEMP%\b41_targeted8_3fc915fa459e9d44`.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5431**. Beep **12/12**. Host **33/33**. Bio **59/59**. Ambience **36**. Decon **33**. RoomEntry **35**. Conclusion **95**. Respec **78**. SyringeKit **46**. WeaponRoster **49**. Pursuer **28**. FirstCombat **32**. NodeZero **44**. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Nathan `73a839ca`. Lvl_Epitope `92448516`. Lvl_MainMenu `12bcf614`. Evidence: `%TEMP%\b41_complete63_285e983953fa4eb6adc5a8e31cf0c031`. Log: `%TEMP%\b41_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- This publish allowlist is `PROJECT_STATE.md`, `Content/Maps/Lvl_MainMenu.umap`, and the ambience subsystem cleanup. OrganoidAIBridge sources stay unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 41 main-menu paint is published. Do not begin the next pass until separately authorized.
