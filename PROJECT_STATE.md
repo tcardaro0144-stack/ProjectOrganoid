@@ -6012,3 +6012,48 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 41 main-menu paint is published. Do not begin the next pass until separately authorized.
+
+
+## 2026-09-30 — Beat 42: Fix sign + full world color Lvl_Epitope — kill gray screenshot
+
+**Status:** Lvl_Epitope spine is no longer the flat gray blockout. A readable sign sits on Lvl_Epitope. COMPLETE_PASS **63/63** aggregate **5431**. Admin and the other facility packages were not saved.
+
+**Baseline:** published Beat 41 commit `f1fb9b3ea13addf8f507222a547bc8a295cc4dad` on `origin/main`. Lvl_MainMenu stays `12bcf614`.
+
+### Lvl_Epitope
+
+- `Lvl_Epitope` `92448516` to `a7de2844`. `world_grid_remaining` **0**. Closed-editor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0, log signatures 0, process count 0. Beep **12/12**. Evidence: `%TEMP%\b42_targeted8_9d1e5b50ea2df3b9`. Log: `%TEMP%\b42_targeted_editor.log`. `%TEMP%\b42_complete63.ps1` was written with that targeted pass, then the catalog below was run from it.
+
+### WorldGridMaterial audit
+
+- Lvl_Epitope had no `WorldGridMaterial` slots. Its only **14** material slots were the already-painted spine pieces: **5** `M_Epitope_Spine_Concrete` and **9** `M_Epitope_Spine_Metal`. Those flat colors still read as a gray blockout.
+- Checkerboard slots are on the streaming sectors: `SL_Epitope_Admin` **76**, `SL_Epitope_NeuroGenetics` **28**, `SL_Epitope_Cryo` **11**, `SL_Epitope_Reactor` **11**, `SL_Epitope_Compute` **10**.
+- The live sample is lights and hazards (`Light_*`, `EmergencyLight_*`, `Hazard_*`), plus Neuro props, and Admin pieces `Admin_S1_Vestibule_Lintel`, `Admin_S1_Reception_Lintel`, `Admin_S1_Reception_Desk`, `Admin_S1_Reception_Logo`, `Admin_Hub_Opening_Cut`, `Admin_ConferenceRoom_Glass`, `Admin_ConferenceRoom_Projector`, `Admin_ConferenceRoom_Screen`, `Admin_ConferenceRoom_Seat_01`, and `Admin_ConferenceRoom_Seat_02`. The sample cap listed **20** of Admin's **76**.
+- Named Admin wall and floor shells (`Admin_FloorPlate`, `Wall_Perimeter_*`, `Wall_Corridor_*`, vestibule and reception floors) already use `M_Admin_*` with gray false.
+
+### Sign
+
+- The string `EPITOPE — Prepared Immunity.` (em dash) is on Admin twice, overlapping: `Admin_Brand_PreparedImmunity` and `Admin_WC_Brand_Epitope`. The plaque is `M_Admin_Public_Panel`. The text material is `DefaultTextMaterialOpaque` with Roboto Distance Field. Saving those actors would change Admin `2a9e21bb`, which this beat forbids, so they were left as they are.
+- A new sign was added on Lvl_Epitope in front of that pair at `(1450, 470, 260)`. `Epitope_Sign_PreparedImmunity` uses `M_Epitope_Sign` `3591bc7a`. No `WorldGridMaterial`. `Epitope_Sign_PreparedImmunity_Text` reads `EPITOPE | Prepared Immunity`, world size **14**, Roboto Distance Field, `DefaultTextMaterialOpaque`.
+
+### Spine color
+
+- **5** landings use `M_Epitope_Floor` `7c0752af` (dark). **5** bridges and **4** ramps use `M_Epitope_Wall` `22dae66e` (warm). Collision profiles were restored. RecastNavMesh was not rebuilt.
+
+### Hashes held
+
+- MainMenu `12bcf614`. Admin `2a9e21bb`. Neuro `73e5da44`. Cryo `46e05eb9`. Compute `69043b7a`. Reactor `cfb8b9cb`. Conclusion `7f952f18`. Nathan `73a839ca`. CreditsRoll `f10b4765`. Spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`. `SW_AlarmPulse` `f16ace0e`. Lvl_Epitope moved to `a7de2844`.
+
+### Validation
+
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5431**. Beep **12/12**. Host **33/33**. Bio **59/59**. Ambience **36**. Decon **33**. RoomEntry **35**. Conclusion **95**. Respec **78**. SyringeKit **46**. WeaponRoster **49**. Pursuer **28**. FirstCombat **32**. NodeZero **44**. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Nathan `73a839ca`. Lvl_Epitope `a7de2844`. Lvl_MainMenu `12bcf614`. Evidence: `%TEMP%\b42_complete63_19ebcc1041164904a1772bef928a993b`. Log: `%TEMP%\b42_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- This publish allowlist is `PROJECT_STATE.md`, `Content/Maps/Lvl_Epitope.umap`, `M_Epitope_Floor`, `M_Epitope_Wall`, and `M_Epitope_Sign`. OrganoidAIBridge sources stay unstaged. Admin still has **76** `WorldGridMaterial` slots.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 42 epitope color and sign are published. Do not begin the next pass until separately authorized.
