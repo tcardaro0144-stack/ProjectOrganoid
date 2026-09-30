@@ -120,6 +120,22 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* FireAction;
 
+	/** Left stick. Bound to HandleMove. Keyboard move stays on MoveAction. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* MoveGamepadAction;
+
+	/** Right stick. Bound to HandleLook. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* LookGamepadAction;
+
+	/** Right trigger. Bound to HandleFire. LMB stays on IA_Fire_Runtime. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* FireGamepadAction;
+
+	/** Face button bottom (A). Bound to HandleJump. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* JumpGamepadAction;
+
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* TacticalAction;
 
@@ -231,6 +247,9 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void HandleMove(const FInputActionValue& Value);
+	void HandleLook(const FInputActionValue& Value);
+	void HandleJump();
 	void HandleInteract();
 	void HandleFire();
 	void HandleReload();

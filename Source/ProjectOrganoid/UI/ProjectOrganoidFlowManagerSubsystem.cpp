@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidFlowManagerSubsystem.h"
+#include "ProjectOrganoidIntroWidget.h"
 #include "ProjectOrganoidLoadingScreenWidget.h"
 #include "ProjectOrganoidGameMode.h"
 #include "ProjectOrganoidMainMenuGameMode.h"
@@ -177,7 +178,33 @@ void UProjectOrganoidFlowManagerSubsystem::TravelToGameplayLevel(FName LevelName
 void UProjectOrganoidFlowManagerSubsystem::StartNewGame(FName OverrideGameplayLevel)
 {
 	PendingLoadSlot.Reset();
-	TravelToGameplayLevel(OverrideGameplayLevel);
+	const FName Target = OverrideGameplayLevel.IsNone() ? GameplayLevelName : OverrideGameplayLevel;
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		TravelToGameplayLevel(Target);
+		return;
+	}
+
+	if (UProjectOrganoidIntroWidget* Intro = UProjectOrganoidIntroWidget::Show(World))
+	{
+		TWeakObjectPtr<UProjectOrganoidFlowManagerSubsystem> WeakThis(this);
+		TWeakObjectPtr<UProjectOrganoidIntroWidget> WeakIntro(Intro);
+		World->GetTimerManager().SetTimer(IntroTravelHandle, [WeakThis, WeakIntro, Target]()
+		{
+			if (WeakIntro.IsValid())
+			{
+				WeakIntro->Dismiss();
+			}
+			if (WeakThis.IsValid())
+			{
+				WeakThis->TravelToGameplayLevel(Target);
+			}
+		}, 2.4f, false);
+		return;
+	}
+
+	TravelToGameplayLevel(Target);
 }
 
 void UProjectOrganoidFlowManagerSubsystem::LoadGameAndTravel(const FString& SlotName, FName OverrideGameplayLevel)

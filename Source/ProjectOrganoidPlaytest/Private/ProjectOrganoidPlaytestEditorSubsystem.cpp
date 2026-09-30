@@ -1,4 +1,5 @@
 #include "ProjectOrganoidPlaytestEditorSubsystem.h"
+#include "ProjectOrganoidGameMode.h"
 #include "ProjectOrganoidPlaytestApi.h"
 #include "ProjectOrganoidPlaytestLogSink.h"
 #include "ProjectOrganoidPlaytestRegistry.h"
@@ -169,6 +170,7 @@ TSharedRef<FJsonObject> UProjectOrganoidPlaytestEditorSubsystem::RequestRun(cons
 
 	ArchiveActive();
 	ActiveRecord = Record;
+	AProjectOrganoidGameMode::SetAutomatedPlaytestActive(true);
 	ActiveCase = Case;
 	bStopRequested = false;
 	bStartedPieOurselves = false;
@@ -235,6 +237,7 @@ void UProjectOrganoidPlaytestEditorSubsystem::SetStage(const FString& Stage)
 
 void UProjectOrganoidPlaytestEditorSubsystem::CompleteActive(EOrganoidPlaytestState State, const FString& Reason)
 {
+	AProjectOrganoidGameMode::SetAutomatedPlaytestActive(false);
 	if (!ActiveRecord.IsValid() || OrganoidPlaytestStateIsTerminal(ActiveRecord->State))
 	{
 		return;

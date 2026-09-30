@@ -6100,3 +6100,47 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 43 streaming-sector checkerboard paint is published. Do not begin the next pass until separately authorized.
+
+## 2026-09-30 — Beat 44: Nathan cooler + controller + options + tutorial + intro + access + sign overlap fix
+
+**Status:** Nathan clothing retint, gamepad, title options, tutorial, new-game intro, access check, and the Admin sign overlap are published. COMPLETE_PASS **63/63** aggregate **5431**.
+
+**Baseline:** published Beat 43 commit `e99b18a27bce19b79be5ff143fb2285d3f2e9115` on `origin/main`.
+
+### Nathan
+
+- `SKM_NathanGrant_Final` `73a839ca` to `ad26a13a`. Still the mannequin mesh, same **13** slots. Clothing retinted cooler: dark leather jacket `MI_Jacket_Dark` `36600a39`, tactical henley and cargo, combat boots, roughness, specular, and a normal pin on the parent. Skin, hair, eyes, and stubble were left as they were.
+
+### Title, tutorial, intro
+
+- `Lvl_MainMenu` `12bcf614` to `4f408e60`. `WBP_Options` is on the title screen behind the new OPTIONS button (graphics master/effects/music and the control list). A non-colliding concrete anchor uses spine concrete. Spine concrete `151bcdd9` stayed.
+- `Lvl_Epitope` `a7de2844` to `b9ea609f`. `WBP_Tutorial` plus `DT_Tutorial_Controls` show WASD, mouse, and gamepad. `Tutorial_Controls_Start` is a marker at the epitope origin. The tutorial is hit-test invisible. `BP_IntroCinematic` under `/Game/Cinematics/` pans a camera with the text `EPITOPE | Prepared Immunity`. New Game shows it for **2.4s**, then travels to epitope.
+
+### Admin sign
+
+- Admin `ff5fe26b` to `ae9756d0`. Duplicate `Admin_Brand_PreparedImmunity` is hidden. `Admin_WC_Brand_Epitope` keeps the plaque and now reads `EPITOPE | Prepared Immunity`. The sign overlap is fixed.
+
+### Controller and access
+
+- Gamepad `IA_Move_Gamepad`, `IA_Look_Gamepad`, `IA_Fire_Gamepad`, and `IA_Jump_Gamepad` bind the same move, look, fire, and jump. Left mouse stays `IA_Fire_Runtime`. Interact is the X button. No blocking volume at the vestibule start `(200,0,118)` or `Reactor_FirstCombatTrigger` `(-500,0,-4710)`. Floor and perimeter stay walkable.
+
+### Hashes held
+
+- Neuro `1c8a9bd7`. Cryo `4f517b8e`. Compute `fa8df783`. Reactor `2f6dbb21`. Conclusion `7f952f18`. CreditsRoll `f10b4765`. Floor `7c0752af`. Wall `22dae66e`. Sign material `3591bc7a`. Spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`. `SW_AlarmPulse` `f16ace0e`. **34** hashes exact, plus `Lvl_Epitope` `b9ea609f`, `Lvl_MainMenu` `4f408e60`, Admin `ae9756d0`, and Nathan `ad26a13a`.
+
+### Validation
+
+- Closed-editor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0, process count 0, log signatures 0, dirty 0. Beep **12/12**. Evidence: `%TEMP%\b44_targeted8_6dafc2863dac78b2`. Log: `%TEMP%\b44_targeted_editor.log`. Tutorial card **10** hits. Gamepad mapping **30** hits. LMB fire still passes Beep. Options and the intro run from the title OPTIONS button and New Game.
+- Complete catalog first run: `FAIL` **62/63**, aggregate **5426**. `OpeningInvestigation_Functional` **65/66** `ptr_4ae0f37e`, gap **5**. Second catalog: `AmbienceLayerPlayback_Functional` **28/29** `ptr_e36cf3f3` failed `critical_combat.playing` expected true actual false. `BiologicalAdaptation_Functional` **59/59** `ptr_402fdae2` passed. `OpeningInvestigation_Functional` **71/71** `ptr_2c5a60ff` passed.
+- Isolated `AmbienceLayerPlayback_Functional` **36/36** `ptr_3997a5e5`. The one-shot re-arms once the layer drops to the inaudible floor **0.01**, so a leftover trace after the previous pulse does not swallow the next rising edge. No map was saved for that fix. Log: `%TEMP%\b44_ambience_retry.log`.
+- Full catalog `COMPLETE_PASS` **63/63** aggregate **5431**. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. Ambience **36/36** `ptr_c43bd968`. Opening **71/71** `ptr_4e829c87`. Bio **59/59** `ptr_a08ad7e9`. NAVMESH rebuild count **0**. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Nathan `ad26a13a`. `Lvl_Epitope` `b9ea609f`. `Lvl_MainMenu` `4f408e60`. Admin `ae9756d0`. Evidence: `%TEMP%\b44_complete63_d4c3d5b421ee457b91eab19e66cb0f64`. Log: `%TEMP%\b44_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- This publish allowlist is `PROJECT_STATE.md`, Nathan final mesh and materials, `Lvl_MainMenu`, `Lvl_Epitope`, Admin, `WBP_Options`, `WBP_Tutorial`, `DT_Tutorial_Controls`, `BP_IntroCinematic`, character input, the options/tutorial/intro widgets, and the ambience one-shot re-arm. OrganoidAIBridge sources stay unstaged.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 44 Nathan cooler, controller, options, tutorial, intro, access, and sign fix are published. Do not begin the next pass until separately authorized.

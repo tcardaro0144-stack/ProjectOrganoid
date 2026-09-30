@@ -15,6 +15,22 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "ProjectOrganoidLevelManagerSubsystem.h"
+#include "ProjectOrganoidTutorialWidget.h"
+namespace
+{
+	bool GAutomatedPlaytestActive = false;
+}
+
+void AProjectOrganoidGameMode::SetAutomatedPlaytestActive(bool bActive)
+{
+	GAutomatedPlaytestActive = bActive;
+}
+
+bool AProjectOrganoidGameMode::IsAutomatedPlaytestActive()
+{
+	return GAutomatedPlaytestActive;
+}
+
 AProjectOrganoidGameMode::AProjectOrganoidGameMode()
 {
 	DefaultPawnClass = AProjectOrganoidCharacter::StaticClass();
@@ -126,6 +142,10 @@ void AProjectOrganoidGameMode::TryStartEpitopePlay()
 	if (bAdminReady || bTimedOut)
 	{
 		World->GetTimerManager().ClearTimer(EpitopeReadyTimerHandle);
+		if (APlayerController* ReadyPC = UGameplayStatics::GetPlayerController(World, 0))
+		{
+			UProjectOrganoidTutorialWidget::ShowForPlayer(ReadyPC);
+		}
 		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 		{
 			EnsurePossessedGameplayPawn(It->Get());

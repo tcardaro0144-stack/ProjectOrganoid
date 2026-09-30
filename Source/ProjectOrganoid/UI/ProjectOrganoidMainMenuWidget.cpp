@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectOrganoidMainMenuWidget.h"
+#include "ProjectOrganoidOptionsWidget.h"
 #include "ProjectOrganoidSaveSubsystem.h"
 #include "ProjectOrganoidSettingsSubsystem.h"
 #include "ProjectOrganoidFlowManagerSubsystem.h"
@@ -275,6 +276,21 @@ void UProjectOrganoidMainMenuWidget::EnsureVisibleMenuLayout()
 			HAlign_Left);
 	}
 
+	if (!OptionsButton)
+	{
+		OptionsButton = WidgetTree->FindWidget<UButton>(TEXT("OptionsButton"));
+	}
+	if (!OptionsButton)
+	{
+		OptionsButton = ProjectOrganoidMenuUI::MakeFixedMenuButton(
+			WidgetTree,
+			MenuBox,
+			TEXT("OptionsButton"),
+			TEXT("OptionsButton_Label"),
+			FText::FromString(TEXT("OPTIONS")),
+			HAlign_Left);
+	}
+
 	if (!QuitButton)
 	{
 		QuitButton = WidgetTree->FindWidget<UButton>(TEXT("QuitButton"));
@@ -442,6 +458,10 @@ void UProjectOrganoidMainMenuWidget::BindWidgetCallbacks()
 	{
 		LoadSlot2Button->OnClicked.AddUniqueDynamic(this, &UProjectOrganoidMainMenuWidget::HandleLoadSlot2Clicked);
 	}
+	if (OptionsButton)
+	{
+		OptionsButton->OnClicked.AddUniqueDynamic(this, &UProjectOrganoidMainMenuWidget::HandleOptionsClicked);
+	}
 	if (QuitButton)
 	{
 		QuitButton->OnClicked.AddUniqueDynamic(this, &UProjectOrganoidMainMenuWidget::HandleQuitClicked);
@@ -511,6 +531,14 @@ void UProjectOrganoidMainMenuWidget::HandleLoadSlot1Clicked()
 void UProjectOrganoidMainMenuWidget::HandleLoadSlot2Clicked()
 {
 	LoadGameFromSlot(2);
+}
+
+void UProjectOrganoidMainMenuWidget::HandleOptionsClicked()
+{
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		UProjectOrganoidOptionsWidget::ShowForPlayer(PC);
+	}
 }
 
 void UProjectOrganoidMainMenuWidget::HandleQuitClicked()

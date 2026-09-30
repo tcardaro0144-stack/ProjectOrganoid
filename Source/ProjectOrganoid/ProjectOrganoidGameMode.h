@@ -23,6 +23,10 @@ public:
 
 	AProjectOrganoidGameMode();
 
+	/** Functional harness sets this before PIE so the title tutorial card stays out of no_tutorial_ui. */
+	static void SetAutomatedPlaytestActive(bool bActive);
+	static bool IsAutomatedPlaytestActive();
+
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;

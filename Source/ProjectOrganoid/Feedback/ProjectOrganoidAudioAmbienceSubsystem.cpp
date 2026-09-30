@@ -20,8 +20,8 @@ namespace ProjectOrganoidAmbience
 	static const FName ReverbTag(TEXT("ProjectOrganoidAmbience"));
 	static const FName EnvironmentReverbTag(TEXT("ProjectOrganoidEnvironment"));
 
-	/** Combat/Critical must not keep a looping voice alive at inaudible volume. */
-	static constexpr float LayerSilentVolume = KINDA_SMALL_NUMBER;
+	/** Combat/Critical one-shots re-arm once the layer is inaudible. Matches the playtest silent floor so a leftover 0.001 does not swallow the next rising edge. */
+	static constexpr float LayerSilentVolume = 0.01f;
 
 	static void ApplySilentAwareLayerPlayback(
 		UAudioComponent* Component,

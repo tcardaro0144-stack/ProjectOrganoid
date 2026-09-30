@@ -264,6 +264,10 @@ void AProjectOrganoidCharacter::EnsureRuntimeInput()
 	MakeAction(MouseLookAction, TEXT("IA_MouseLook_Runtime"), EInputActionValueType::Axis2D);
 	MakeAction(InteractAction, TEXT("IA_Interact_Runtime"), EInputActionValueType::Boolean);
 	MakeAction(FireAction, TEXT("IA_Fire_Runtime"), EInputActionValueType::Boolean);
+	MakeAction(MoveGamepadAction, TEXT("IA_Move_Gamepad"), EInputActionValueType::Axis2D);
+	MakeAction(LookGamepadAction, TEXT("IA_Look_Gamepad"), EInputActionValueType::Axis2D);
+	MakeAction(FireGamepadAction, TEXT("IA_Fire_Gamepad"), EInputActionValueType::Boolean);
+	MakeAction(JumpGamepadAction, TEXT("IA_Jump_Gamepad"), EInputActionValueType::Boolean);
 	MakeAction(TacticalAction, TEXT("IA_Tactical_Runtime"), EInputActionValueType::Boolean);
 	MakeAction(ReloadAction, TEXT("IA_Reload_Runtime"), EInputActionValueType::Boolean);
 	MakeAction(AbilityAction, TEXT("IA_Ability_Runtime"), EInputActionValueType::Boolean);
@@ -323,6 +327,11 @@ void AProjectOrganoidCharacter::EnsureRuntimeInput()
 	RuntimeMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
 	RuntimeMappingContext->MapKey(InteractAction, EKeys::E);
 	RuntimeMappingContext->MapKey(FireAction, EKeys::LeftMouseButton);
+	RuntimeMappingContext->MapKey(MoveGamepadAction, EKeys::Gamepad_Left2D);
+	RuntimeMappingContext->MapKey(LookGamepadAction, EKeys::Gamepad_Right2D);
+	RuntimeMappingContext->MapKey(FireGamepadAction, EKeys::Gamepad_RightTrigger);
+	RuntimeMappingContext->MapKey(JumpGamepadAction, EKeys::Gamepad_FaceButton_Bottom);
+	RuntimeMappingContext->MapKey(InteractAction, EKeys::Gamepad_FaceButton_Left);
 	RuntimeMappingContext->MapKey(TacticalAction, EKeys::RightMouseButton);
 	RuntimeMappingContext->MapKey(ReloadAction, EKeys::R);
 	RuntimeMappingContext->MapKey(AbilityAction, EKeys::Q);
@@ -344,7 +353,7 @@ void AProjectOrganoidCharacter::ApplyRuntimeMappingContext()
 		// Priority 1 so mouse-look mappings win over a content IMC that may bind a
 		// different IA_MouseLook object (keyboard can still come from IMC_Default).
 		Subsystem->AddMappingContext(RuntimeMappingContext, 1);
-		UE_LOG(LogProjectOrganoid, Log, TEXT("Runtime Enhanced Input mapping applied (WASD / mouse look / E / LMB / RMB / H)."));
+		UE_LOG(LogProjectOrganoid, Log, TEXT("Runtime Enhanced Input mapping applied (WASD / mouse look / E / LMB / RMB / H / gamepad stick move look / RT fire / A jump / X interact)."));
 	}
 }
 
@@ -693,6 +702,21 @@ void AProjectOrganoidCharacter::ApplyLookLimits()
 
 	PlayerController->PlayerCameraManager->ViewPitchMin = -50.0f;
 	PlayerController->PlayerCameraManager->ViewPitchMax = 65.0f;
+}
+
+void AProjectOrganoidCharacter::HandleMove(const FInputActionValue& Value)
+{
+	Move(Value);
+}
+
+void AProjectOrganoidCharacter::HandleLook(const FInputActionValue& Value)
+{
+	Look(Value);
+}
+
+void AProjectOrganoidCharacter::HandleJump()
+{
+	Jump();
 }
 
 void AProjectOrganoidCharacter::HandleInteract()
@@ -1488,6 +1512,23 @@ void AProjectOrganoidCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		if (FireAction)
 		{
 			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleFire);
+		}
+		if (MoveGamepadAction)
+		{
+			EnhancedInputComponent->BindAction(MoveGamepadAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::HandleMove);
+		}
+		if (LookGamepadAction)
+		{
+			EnhancedInputComponent->BindAction(LookGamepadAction, ETriggerEvent::Triggered, this, &AProjectOrganoidCharacter::HandleLook);
+		}
+		if (FireGamepadAction)
+		{
+			EnhancedInputComponent->BindAction(FireGamepadAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleFire);
+		}
+		if (JumpGamepadAction)
+		{
+			EnhancedInputComponent->BindAction(JumpGamepadAction, ETriggerEvent::Started, this, &AProjectOrganoidCharacter::HandleJump);
+			EnhancedInputComponent->BindAction(JumpGamepadAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		}
 		if (ReloadAction)
 		{

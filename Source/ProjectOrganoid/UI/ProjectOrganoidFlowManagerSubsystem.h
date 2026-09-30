@@ -105,6 +105,7 @@ protected:
 	FName PendingGameplayLevel = NAME_None;
 	float LoadingStartTime = 0.0f;
 	FTimerHandle HideLoadingHandle;
+	FTimerHandle IntroTravelHandle;
 
 	FDelegateHandle PostLoadMapHandle;
 

@@ -109,6 +109,9 @@ protected:
 	TObjectPtr<UButton> LoadSlot2Button;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Menu|Widgets")
+	TObjectPtr<UButton> OptionsButton;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Menu|Widgets")
 	TObjectPtr<UButton> QuitButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Menu|Widgets")
@@ -144,6 +147,9 @@ protected:
 
 	UFUNCTION()
 	void HandleLoadSlot2Clicked();
+
+	UFUNCTION()
+	void HandleOptionsClicked();
 
 	UFUNCTION()
 	void HandleQuitClicked();
