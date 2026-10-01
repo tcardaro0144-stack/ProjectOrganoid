@@ -6179,3 +6179,41 @@ Three new packages outside that list:
 ### Next boundary
 
 - Beat 45 options screen is published. Do not begin the next pass until separately authorized.
+
+## 2026-09-30 — Beat 46: MainMenu colored + NavMesh rebuilt + reception door + Nathan readable in menu light
+
+**Status:** Main menu walls, floors, and desks use Admin zone colors. Main-menu paths were rebuilt. A reception exit door is on Admin. Nathan’s clothing reads under menu light. COMPLETE_PASS **63/63** aggregate **5431**.
+
+**Baseline:** published Beat 45 commit `85b1129950b761b8b496f37e20c5fc8b2b73edff` on `origin/main`.
+
+### Main menu
+
+- `Lvl_MainMenu` `4f408e60` to `511af4de`. **43** slots repainted with Admin zone materials: warm executive on floors and desks, blue-steel restricted on walls, tan service on the rest. World-grid slots left **0**. Gray concrete slots left **0**. A nav bounds volume was added and paths were rebuilt. `RecastNavMesh-Default` on the main menu now reports `needs_rebuild` false. `Lvl_Epitope` stayed `b9ea609f`.
+
+### Reception door
+
+- `Admin_Reception_Door` is on Admin at the hub opening `(2280, 90, 150)`, beside `Admin_Hub_Opening_Cut`. It is visible and set to no collision so the path through stays open. The vestibule `BP_AdminAccessDoor` and `Gate_ResearchWing` were left where they were. Admin `ae9756d0` to `90877d13`.
+
+### Nathan
+
+- Clothing reads in the bright menu light: lighter leather jacket, charcoal henley, olive cargo, the same skin tone, and blue eyes with no emissive visor. The mesh is still `SKM_NathanGrant_Final` with **13** slots. Hash `ad26a13a` to `2f4ee97e`. Jacket `fc64e978`. Over-the-shoulder is unchanged: `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Targeted log hits **10**.
+
+### Hashes held
+
+- Neuro `1c8a9bd7`. Cryo `4f517b8e`. Compute `fa8df783`. Reactor `2f6dbb21`. Conclusion `7f952f18`. CreditsRoll `f10b4765`. Floor `7c0752af`. Wall `22dae66e`. Sign material `3591bc7a`. Spine mats Concrete `151bcdd9`, Metal `25e7f65e`, Grate `33b1cc73`. `SW_AlarmPulse` `f16ace0e`. **34** hashes exact, plus `Lvl_Epitope` `b9ea609f`, `Lvl_MainMenu` `511af4de`, Admin `90877d13`, and Nathan `2f4ee97e`.
+
+### Validation
+
+- Closed-editor Win64 Development build succeeded. Targeted suite **8/8**, script exit 0. TheConclusion **95**. NodeZero **44**. FirstCombat **32**. Pursuer **28**. WeaponRoster **49**. SyringeKit **46**. Respec **78**. Beep **12/12**. Process count 0, log signatures 0. `NAVMESH NEEDS TO BE REBUILT` count **0**. Evidence: `%TEMP%\b46_targeted8_f8bf78052c8aff42`. Log: `%TEMP%\b46_targeted_editor.log`. `%TEMP%\b46_complete63.ps1` was prepared and not run from that step.
+- Complete catalog **63/63**, outcome `COMPLETE_PASS`, aggregate **5431**, script exit 0. `CloseMainWindow` true, process count 0, log signatures 0, dirty 0. The log has no `NAVMESH NEEDS TO BE REBUILT` line. OTS log hits **76** with `arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final`. Beep **12/12** `ptr_e654ef25`. Host **33/33** `ptr_0b5bfb3e`. Bio **59/59** `ptr_091eda58`. Ambience **36** `ptr_68220f81`. Decon **33** `ptr_1c3698bb`. RoomEntry **35** `ptr_e359a1c0`. Conclusion **95** `ptr_d37e4396`. Respec **78** `ptr_28c5f4ba`. SyringeKit **46** `ptr_5bc5dd6b`. WeaponRoster **49** `ptr_5cf7ffbf`. Pursuer **28** `ptr_bcd6060b`. FirstCombat **32** `ptr_69013210`. NodeZero **44** `ptr_2a57f3d6`. Two early connection failures happened while the editor was starting. Nathan `2f4ee97e`. `Lvl_MainMenu` `511af4de`. Admin `90877d13`. `Lvl_Epitope` `b9ea609f`. Evidence: `%TEMP%\b46_complete63_19e3f65b192147d4baa62387be9925ae`. Log: `%TEMP%\b46_complete_editor.log`.
+
+### Current operational state
+
+- Unreal closed. Dirty **0** at last clean close.
+- This publish allowlist is `PROJECT_STATE.md`, `Lvl_MainMenu`, Admin, and the Nathan final mesh and material instances. OrganoidAIBridge sources stay unstaged. `Lvl_Epitope` was not saved.
+- Contaminated object `b2fcff0207946d4e5405085747755fc8897ea420` remains an unreachable dangling commit.
+
+### Next boundary
+
+- Beat 46 main menu color, navmesh rebuild, reception door, and Nathan menu-light retint are published. Do not begin the next pass until separately authorized.
+
