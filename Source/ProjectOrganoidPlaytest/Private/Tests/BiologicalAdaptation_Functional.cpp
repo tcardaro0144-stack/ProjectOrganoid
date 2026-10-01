@@ -672,22 +672,35 @@ namespace
 			}
 			case EProof::ValidActivate:
 			{
-				FillPE(Character, 100.0f);
-				if (!SetReserveExact(Character, 9))
+				if (RejectPhase == 0)
 				{
-					FailAndStop(Owner, Record, TEXT("Failed to set reserve for Neural Slow ammo proof."));
-					return;
+					FillPE(Character, 100.0f);
+					if (!SetReserveExact(Character, 9))
+					{
+						FailAndStop(Owner, Record, TEXT("Failed to set reserve for Neural Slow ammo proof."));
+						return;
+					}
+					Weapon->SetCurrentMagazine(7);
+					MagBefore = Weapon->GetCurrentMagazine();
+					ReserveBefore = ReserveOf(Character);
+					GunfireBefore = Weapon->GetGunfireReportCount();
+					HostActor->ActivateBioShield();
+					HostHealthBefore = HostActor->Health;
+					HostBaselineSpeed = HostActor->GetCharacterMovement() ? HostActor->GetCharacterMovement()->MaxWalkSpeed : 0.0f;
+					PlaceNearHost(Character, HostActor, 250.0f);
+					WaitSeconds = 0.0f;
+					RejectPhase = 1;
+					break;
 				}
-				Weapon->SetCurrentMagazine(7);
-				MagBefore = Weapon->GetCurrentMagazine();
-				ReserveBefore = ReserveOf(Character);
-				GunfireBefore = Weapon->GetGunfireReportCount();
-				HostActor->ActivateBioShield();
-				HostHealthBefore = HostActor->Health;
-				HostBaselineSpeed = HostActor->GetCharacterMovement() ? HostActor->GetCharacterMovement()->MaxWalkSpeed : 0.0f;
-				const bool bHadShield = HostActor->HasBioShield();
 
-				PlaceNearHost(Character, HostActor, 250.0f);
+				WaitSeconds += DeltaTime;
+				OrganoidPlaytestActions::FaceActor(Character, HostActor);
+				if (WaitSeconds < 0.35f)
+				{
+					break;
+				}
+
+				const bool bHadShield = HostActor->HasBioShield();
 				const float PEBefore = Character->GetPEEnergy();
 				const bool bActivated = Adapt->TryActivateEquipped();
 				AssertTrue(Record, TEXT("valid_activation"), bActivated, TEXT("true"), bActivated ? TEXT("true") : TEXT("false"), TEXT("NeuralSlow"));
@@ -708,6 +721,7 @@ namespace
 
 				ActivationRealTime = FPlatformTime::Seconds();
 				WaitSeconds = 0.0f;
+				RejectPhase = 0;
 				Proof = EProof::WaitDuration;
 				break;
 			}

@@ -14,12 +14,14 @@ except ImportError:
 
 AUDIO_DIR = "/Game/Audio/Ambient"
 BEDS = {
-    "SW_FacilityBed": {"kind": "brown", "seconds": 4.0, "gain": 0.22},
-    "SW_TensionBed": {"kind": "rumble", "seconds": 4.0, "gain": 0.18},
+    # edge_fade zeros both loop ends so playback does not open on a full-scale sample.
+    "SW_FacilityBed": {"kind": "brown", "seconds": 4.0, "gain": 0.22, "looping": True, "edge_fade": 0.05},
+    "SW_TensionBed": {"kind": "rumble", "seconds": 4.0, "gain": 0.18, "looping": True, "edge_fade": 0.05},
     # UV-C/decon telegraph: dark ventilation + faint electrical grain.
     # No 2400 Hz sine, no alarm pulse. 8 s loop with cosine crossfade.
-    "SW_HazardHiss": {"kind": "hiss", "seconds": 8.0, "gain": 0.20, "fade": 0.5},
-    "SW_AlarmPulse": {"kind": "pulse", "seconds": 1.2, "gain": 0.12},
+    "SW_HazardHiss": {"kind": "hiss", "seconds": 8.0, "gain": 0.20, "fade": 0.5, "looping": True, "edge_fade": 0.05},
+    # One-shot 880 Hz double pulse. Sample 0 is forced to 0; the tone peak stays in the body.
+    "SW_AlarmPulse": {"kind": "pulse", "seconds": 1.2, "gain": 0.12, "looping": False, "edge_fade": 0.0},
 }
 
 
@@ -48,7 +50,20 @@ def _write_wav(path, samples, sample_rate=22050):
         wav.writeframes(b"".join(struct.pack("<h", sample) for sample in samples))
 
 
-def _generate_samples(kind, seconds, gain, sample_rate=22050, fade_seconds=0.0):
+def _edge_fade(raw, fade_n):
+    count = len(raw)
+    fade_n = min(int(fade_n), count // 4)
+    if fade_n <= 1:
+        return raw
+    span = float(fade_n - 1)
+    for i in range(fade_n):
+        weight = 0.5 - 0.5 * math.cos(math.pi * i / span)
+        raw[i] *= weight
+        raw[count - 1 - i] *= weight
+    return raw
+
+
+def _generate_samples(kind, seconds, gain, sample_rate=22050, fade_seconds=0.0, edge_fade_seconds=0.0):
     count = int(sample_rate * seconds)
     fade_n = int(sample_rate * fade_seconds) if fade_seconds > 0.0 else 0
     total = count + fade_n
@@ -108,6 +123,12 @@ def _generate_samples(kind, seconds, gain, sample_rate=22050, fade_seconds=0.0):
 
     mean = sum(raw) / float(len(raw)) if raw else 0.0
     raw = [value - mean for value in raw]
+    edge_n = int(sample_rate * edge_fade_seconds) if edge_fade_seconds > 0.0 else 0
+    if edge_n > 0:
+        raw = _edge_fade(raw, edge_n)
+    if raw:
+        raw[0] = 0.0
+        raw[-1] = 0.0
     return [_clamp_sample(value * 32767.0) for value in raw]
 
 
@@ -120,6 +141,7 @@ def write_bed_wav(name, dest_dir=None):
         spec["seconds"],
         spec["gain"],
         fade_seconds=spec.get("fade", 0.0),
+        edge_fade_seconds=spec.get("edge_fade", 0.0),
     )
     _write_wav(wav_path, samples)
     return wav_path
@@ -137,7 +159,7 @@ def import_wav(src_path, dest_name):
     task.set_editor_property("destination_name", dest_name)
     task.set_editor_property("replace_existing", True)
     task.set_editor_property("automated", True)
-    task.set_editor_property("save", True)
+    task.set_editor_property("save", False)
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 
     asset_path = f"{AUDIO_DIR}/{dest_name}"
@@ -146,9 +168,10 @@ def import_wav(src_path, dest_name):
         report(f"import failed: {asset_path}")
         return None
 
+    looping = bool(BEDS.get(dest_name, {}).get("looping", False))
     for prop in ("looping", "bLooping", "b_looping"):
         try:
-            asset.set_editor_property(prop, True)
+            asset.set_editor_property(prop, looping)
             break
         except Exception:
             continue
@@ -187,7 +210,7 @@ def rebuild_hazard_hiss_only():
 
 if __name__ == "__main__":
     if unreal:
-        rebuild_hazard_hiss_only()
-    else:
-        path = write_bed_wav("SW_HazardHiss")
-        print(path)
+        raise SystemExit("Refusing an in-editor import. Write the WAVs outside Unreal; apply_beat50_beds imports them.")
+    for bed_name in BEDS:
+        bed_path = write_bed_wav(bed_name)
+        print(bed_path)
