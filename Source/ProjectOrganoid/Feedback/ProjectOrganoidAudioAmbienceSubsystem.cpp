@@ -16,6 +16,20 @@
 #include "Sound/SoundWave.h"
 #include "ProjectOrganoidAudioSubsystem.h"
 
+UProjectOrganoidAudioAmbienceSubsystem::UProjectOrganoidAudioAmbienceSubsystem()
+{
+	const TCHAR* Beds[] = {
+		TEXT("/Game/Audio/Ambient/SW_FacilityBed.SW_FacilityBed"),
+		TEXT("/Game/Audio/Ambient/SW_TensionBed.SW_TensionBed"),
+		TEXT("/Game/Audio/Ambient/SW_HazardHiss.SW_HazardHiss"),
+		TEXT("/Game/Audio/Ambient/SW_AlarmPulse.SW_AlarmPulse")
+	};
+	for (const TCHAR* Path : Beds)
+	{
+		CookedAmbienceBeds.Add(TSoftObjectPtr<USoundBase>(FSoftObjectPath(Path)));
+	}
+}
+
 namespace ProjectOrganoidAmbience
 {
 	static const FName ReverbTag(TEXT("ProjectOrganoidAmbience"));
@@ -405,9 +419,9 @@ void UProjectOrganoidAudioAmbienceSubsystem::RefreshSectorPowerStress()
 		return;
 	}
 
-	// Cryo seeds Blackout, and the facility rollup then reports Blackout everywhere.
-	// That was slamming Admin and the main menu into the 0.55/0.85 mix at view-appear.
-	// Stress follows the sector the player is in. No active sublevel uses FacilityWide, which seeds Online.
+	// Cryo seeds Blackout and Neuro/Reactor seed Emergency. That flag is recorded here
+	// for power gameplay. It does not drive the mix: a lit room was slamming TensionBed
+	// to 0.85 at full health with no hazard and no combat.
 	EProjectOrganoidSubLevelTag ActiveTag = EProjectOrganoidSubLevelTag::None;
 	if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
 	{
@@ -477,7 +491,7 @@ EProjectOrganoidAmbienceState UProjectOrganoidAudioAmbienceSubsystem::EvaluateDe
 		return EProjectOrganoidAmbienceState::Hazard;
 	}
 
-	if (bSectorPowerStress || HealthNormalized <= TensionHealthThreshold)
+	if (HealthNormalized <= TensionHealthThreshold)
 	{
 		return EProjectOrganoidAmbienceState::Tension;
 	}

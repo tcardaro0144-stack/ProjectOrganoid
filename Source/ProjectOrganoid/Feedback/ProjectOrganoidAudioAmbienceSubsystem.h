@@ -7,6 +7,7 @@
 #include "ProjectOrganoidInteractionTypes.h"
 #include "ProjectOrganoidLevelTypes.h"
 #include "ProjectOrganoidPowerTypes.h"
+#include "Sound/SoundBase.h"
 #include "ProjectOrganoidAudioAmbienceSubsystem.generated.h"
 
 class AProjectOrganoidCharacter;
@@ -62,6 +63,8 @@ class UProjectOrganoidAudioAmbienceSubsystem : public UTickableWorldSubsystem
 	GENERATED_BODY()
 
 public:
+
+	UProjectOrganoidAudioAmbienceSubsystem();
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -271,6 +274,10 @@ public:
 	float GetMixVolume() const { return CurrentMixVolume; }
 
 protected:
+
+	/** Keeps the four quiet beds in the Shipping cook. Playback still uses the runtime paths. */
+	UPROPERTY()
+	TArray<TSoftObjectPtr<USoundBase>> CookedAmbienceBeds;
 
 	UPROPERTY()
 	TWeakObjectPtr<AProjectOrganoidCharacter> BoundCharacter;
