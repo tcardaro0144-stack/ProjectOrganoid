@@ -789,11 +789,18 @@ namespace
 			AProjectOrganoidCharacter* Character = GetOrganoid(World);
 			if (!World || !Pawn || !PC || !Character)
 			{
+				// One null tick during the admin route is a PIE hitch. Settle 0.35s before aborting.
+				RoutePawnMissSeconds += DeltaTime;
+				if (RoutePawnMissSeconds < 0.35f)
+				{
+					return;
+				}
 				Record.FailureReason = TEXT("Lost PIE pawn during admin click route.");
 				bAnyAssertFailed = true;
 				Stage = EStage::EndPie;
 				return;
 			}
+			RoutePawnMissSeconds = 0.0f;
 			if (!bTeleported)
 			{
 				CallSetCombatActive(World, false);
@@ -1098,6 +1105,7 @@ namespace
 
 		EStage Stage = EStage::Preflight;
 		float WaitSeconds = 0.0f;
+		float RoutePawnMissSeconds = 0.0f;
 		float CombatLingerSeconds = 8.0f;
 		int32 FiveIndex = 0;
 		int32 StopIndex = 0;

@@ -6251,3 +6251,12 @@ Beat 50 — Rebuild audio beds from quiet generator — kill hard click + full-s
 - BiologicalAdaptation valid_activation waits 0.35s after Nathan is placed 250 units from the host with camera lag back on before TryActivateEquipped isolated 59/59 ptr_206b0c56-4a29-a164-5f4f-63b57f171a00 activation true PE 20 host speed 210
 - Complete catalog COMPLETE_PASS 63/63 5431/5431 Beep 12/12 Host 33/33 Bio 59/59 ptr_7c588714-442a-c430-8047-2f8ad886a0d8 Ambience 36 Decon 33 RoomEntry 35 Conclusion 95 Respec 78 SyringeKit 46 WeaponRoster 49 Pursuer 28 FirstCombat 32 NodeZero 44 dirty 0 proc 0 sig 0 NAVMESH 0 OTS 76 arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final evidence %TEMP%\b50_complete63_3 log %TEMP%\b50_complete_editor.log isolated %TEMP%\b50_bio_fixed.log targeted %TEMP%\b50_targeted2_editor.log evidence %TEMP%\b50_targeted8_2
 - Startup after the quiet beds AmbienceLayerPlayback startup.combat_volume_zero actual 0.0000 startup.critical_volume_zero actual 0.0000 startup.combat_not_playing false startup.critical_not_playing false BeepClickInjection baseline.idle_no_alarm false and lmb.no_combat_from_shot false alarm starts only on combat_inject
+
+---
+Beat 51 — MainMenu sign fully visible + bot reaches reception door + Beep route abort + Decon 0.30 boundary
+- Lvl_MainMenu eb02ca55 -> 6990c206 sign EPITOPE | Prepared Immunity full in gameplay camera left of center light shaft dark plaque no clipping M_Epitope_Sign 3591bc7a still
+- Admin 78c02518 -> f005fb5b gap Y 0-180 header Z 300 Admin_Hub_Opening_Cut NoCollision door NoCollision bot (2281,90,123) 1.4 from (2280,90) Beat51BotWalk 6/6 ptr_f73f8773 walk log %TEMP%\b51_bot_walk_beep_log.txt no OrganoidAlarmPulsePlay no HazardHiss no NotifyCombatStimulus combat false health 1.0 FacilityBed holds 0.550 tension holds 0.850 power-stress
+- Lvl_Epitope 3035bdeb unchanged Neuro 611acee9 Cryo 4f517b8e Compute fa8df783 Reactor 2f6dbb21
+- Beep 9/12 route abort Lost PIE pawn at 33.5s -> wait 0.35s if pawn missing isolated 12/12 ptr_c5a68ed8 catalog Beep 12/12 ptr_f51e95a0
+- Decon 30/31 health 30.0 healthN 0.300 Hazard vs CriticalHealth -> drain until HealthNormalized <= 0.30 isolated 33/33 ptr_4a843680 catalog Decon 33/33
+- COMPLETE_PASS 63/63 5431 Host 33/33 Bio 59/59 Ambience 36 RoomEntry 35 Conclusion 95 Respec 78 SyringeKit 46 WeaponRoster 49 Pursuer 28 FirstCombat 32 NodeZero 44 dirty 0 proc 0 sig 0 NAVMESH 0 OTS 76 arm=180 socket=(0,45,22) fov=92 mesh=SKM_NathanGrant_Final evidence %TEMP%\b51_complete63_2 log %TEMP%\b51_complete_editor.log

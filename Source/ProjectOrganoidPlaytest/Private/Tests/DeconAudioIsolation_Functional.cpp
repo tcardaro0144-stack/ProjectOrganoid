@@ -639,8 +639,9 @@ namespace
 			UProjectOrganoidAudioAmbienceSubsystem* Ambience = World ? World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>() : nullptr;
 			WaitSeconds += DeltaTime;
 			const float Health = Character ? Character->GetHealth() : -1.0f;
-			const float MaxHealth = Character ? Character->GetMaxHealth() : 100.0f;
-			const bool bCriticalHp = Health >= 0.0f && Health <= MaxHealth * 0.30f + 0.05f;
+			const float HealthNormalized = Ambience ? Ambience->GetHealthNormalized() : -1.0f;
+			// Match EvaluateDesiredState: Hazard wins until normalized health is actually <= 0.30.
+			const bool bCriticalHp = HealthNormalized >= 0.0f && HealthNormalized <= 0.30f;
 			if (!bCriticalHp && WaitSeconds < 22.0f)
 			{
 				if (Ambience && Ambience->IsInCombat())
