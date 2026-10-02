@@ -12,6 +12,48 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
+#include "HAL/PlatformMisc.h"
+#include "Misc/FileHelper.h"
+
+void UProjectOrganoidAudioSubsystem::LogAllAudioPlay(const TCHAR* Reason, const USoundBase* Sound, float Volume) const
+{
+	UWorld* World = GetWorld();
+	const UProjectOrganoidAudioAmbienceSubsystem* Ambience = World ? World->GetSubsystem<UProjectOrganoidAudioAmbienceSubsystem>() : nullptr;
+	const APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+	const bool bLmbDown = PC && PC->IsInputKeyDown(EKeys::LeftMouseButton);
+	const bool bLmbJust = PC && PC->WasInputKeyJustPressed(EKeys::LeftMouseButton);
+	const TCHAR* StateName = TEXT("none");
+	if (Ambience)
+	{
+		switch (Ambience->GetAmbienceState())
+		{
+		case EProjectOrganoidAmbienceState::Exploration: StateName = TEXT("Exploration"); break;
+		case EProjectOrganoidAmbienceState::Tension: StateName = TEXT("Tension"); break;
+		case EProjectOrganoidAmbienceState::Combat: StateName = TEXT("Combat"); break;
+		case EProjectOrganoidAmbienceState::Hazard: StateName = TEXT("Hazard"); break;
+		case EProjectOrganoidAmbienceState::CriticalHealth: StateName = TEXT("CriticalHealth"); break;
+		default: break;
+		}
+	}
+	const FString Line = FString::Printf(
+		TEXT("LogAllAudioPlay sound=%s reason=%s volume=%.3f combat=%s health=%.3f state=%s lmb_down=%s lmb_just=%s\r\n"),
+		Sound ? *Sound->GetName() : TEXT("none"),
+		Reason ? Reason : TEXT("none"),
+		Volume,
+		(Ambience && Ambience->IsInCombat()) ? TEXT("true") : TEXT("false"),
+		Ambience ? Ambience->GetHealthNormalized() : -1.0f,
+		StateName,
+		bLmbDown ? TEXT("true") : TEXT("false"),
+		bLmbJust ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *Line.TrimEnd());
+	const FString TempDir = FPlatformMisc::GetEnvironmentVariable(TEXT("TEMP"));
+	if (!TempDir.IsEmpty())
+	{
+		const FString Path = TempDir / TEXT("b52_all_audio_log.txt");
+		FFileHelper::SaveStringToFile(Line, *Path, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+	}
+}
 
 void UProjectOrganoidAudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -170,6 +212,7 @@ void UProjectOrganoidAudioSubsystem::EnsureHeartbeatAudio(AProjectOrganoidCharac
 	if (!HeartbeatAudio->IsPlaying())
 	{
 		HeartbeatAudio->Play();
+		LogAllAudioPlay(TEXT("managed_heartbeat_play"), HeartbeatLoopSound, HeartbeatVolume);
 	}
 }
 
@@ -231,6 +274,7 @@ bool UProjectOrganoidAudioSubsystem::PlayFootstepAtLocation(
 			}
 		}
 		UGameplayStatics::PlaySoundAtLocation(World, FootstepSound, Location, Volume, 1.0f, 0.0f);
+		LogAllAudioPlay(TEXT("footstep"), FootstepSound, Volume);
 	}
 
 	ReportSpatialNoise(Location, NoiseInstigator, Loudness, MaxRange, ResolvedTag);
@@ -268,6 +312,7 @@ void UProjectOrganoidAudioSubsystem::PlayGunfireAtLocation(
 			}
 		}
 		UGameplayStatics::PlaySoundAtLocation(World, GunfireSound, Location, Volume, 1.0f, 0.0f);
+		LogAllAudioPlay(TEXT("gunfire"), GunfireSound, Volume);
 	}
 
 	ReportSpatialNoise(Location, NoiseInstigator, Loudness, MaxRange, ProjectOrganoidNoiseTags::Gunfire);

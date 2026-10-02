@@ -199,4 +199,8 @@ protected:
 	void UpdatePostProcessSettings(float DeltaTime);
 	void ReportSpatialNoise(const FVector& Location, AActor* NoiseInstigator, float Loudness, float MaxRange, FName NoiseTag) const;
 	AProjectOrganoidCharacter* ResolveLocalCharacter() const;
+
+public:
+	/** Temporary Beat 52 trace. Remove after the doorbell source is identified. */
+	void LogAllAudioPlay(const TCHAR* Reason, const USoundBase* Sound, float Volume) const;
 };

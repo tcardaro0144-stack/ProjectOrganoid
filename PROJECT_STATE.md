@@ -6260,3 +6260,13 @@ Beat 51 — MainMenu sign fully visible + bot reaches reception door + Beep rout
 - Beep 9/12 route abort Lost PIE pawn at 33.5s -> wait 0.35s if pawn missing isolated 12/12 ptr_c5a68ed8 catalog Beep 12/12 ptr_f51e95a0
 - Decon 30/31 health 30.0 healthN 0.300 Hazard vs CriticalHealth -> drain until HealthNormalized <= 0.30 isolated 33/33 ptr_4a843680 catalog Decon 33/33
 - COMPLETE_PASS 63/63 5431 Host 33/33 Bio 59/59 Ambience 36 RoomEntry 35 Conclusion 95 Respec 78 SyringeKit 46 WeaponRoster 49 Pursuer 28 FirstCombat 32 NodeZero 44 dirty 0 proc 0 sig 0 NAVMESH 0 OTS 76 arm=180 socket=(0,45,22) fov=92 mesh=SKM_NathanGrant_Final evidence %TEMP%\b51_complete63_2 log %TEMP%\b51_complete_editor.log
+
+---
+Beat 52 — Audio initial state Exploration not Tension — kill 0.55/0.85 slam at view-appear
+- View-appear ding was the power-stress mix not the doorbell. FacilityBed 0.550 and TensionBed 0.850 same frame, combat false, health 1.0, mouse up, about 18ms after the view. SW_AlarmPulse 05119e3d did not play there. Cryo seeds Blackout and the facility rollup treated that as stress everywhere, so Admin and the main menu started in Tension
+- Stress now follows the sector you are actually in. Admin and the menu are Online, so the first state is Exploration: FacilityBed target 1.0, Tension target 0. Alarm rules unchanged: critical 1.0 only while combat is active otherwise 0, tense 0.25 only while combat is active and health is low, combat volume 0 when combat is off, alarm non-UI non-spatial one-shot re-arms at the 0.01 floor
+- Enable Editor Sounds false. PIE enter and exit sounds false. Editor log never named CompileSuccess. StartPlayInEditor_Cue does not play
+- Beat52ViewAppear 8/8 ptr_7e9e132f view_appear Exploration ambient 1.000 tension 0.000 FacilityBed 0 to 1.0 quiet brown 60d04103 Tension 0 no SW_AlarmPulse at t=0 on Lvl_Epitope and Lvl_MainMenu. Log %TEMP%\b52_view_appear_log.txt
+- Targeted 8/8 Beep 12/12 ptr_0c201dfa dirty 0 proc 0 sig 0 NAVMESH 0 log %TEMP%\b52_targeted_editor.log evidence %TEMP%\b52_targeted8_tension
+- COMPLETE_PASS 63/63 5431/5431 Beep 12/12 ptr_9c958735 Host 33/33 Bio 59/59 Ambience 36 Decon 33 RoomEntry 35 Conclusion 95 Respec 78 SyringeKit 46 WeaponRoster 49 Pursuer 28 FirstCombat 32 NodeZero 44 dirty 0 proc 0 sig 0 NAVMESH 0 OTS 76 arm=180 socket=(0,45,22) fov=92 lag=10 mesh=SKM_NathanGrant_Final evidence %TEMP%\b52_complete63 log %TEMP%\b52_complete_editor.log
+- Held Lvl_Epitope 3035bdeb Admin f005fb5b Neuro 611acee9 MainMenu 6990c206 FacilityBed 60d04103 TensionBed fa2a6cda HazardHiss 0ae075d5 AlarmPulse 05119e3d Nathan 3ca93fea sign 3591bc7a Cryo 4f517b8e Compute fa8df783 Reactor 2f6dbb21

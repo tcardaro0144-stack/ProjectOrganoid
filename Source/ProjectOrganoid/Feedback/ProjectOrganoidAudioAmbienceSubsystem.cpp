@@ -14,6 +14,7 @@
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
 #include "Sound/SoundWave.h"
+#include "ProjectOrganoidAudioSubsystem.h"
 
 namespace ProjectOrganoidAmbience
 {
@@ -59,6 +60,13 @@ namespace ProjectOrganoidAmbience
 			if (!Component->IsPlaying())
 			{
 				Component->Play();
+				if (UWorld* World = Component->GetWorld())
+				{
+					if (UProjectOrganoidAudioSubsystem* Audio = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+					{
+						Audio->LogAllAudioPlay(TEXT("layer_oneshot_play"), Component->GetSound(), Volume);
+					}
+				}
 				if (bOneShotConsumed)
 				{
 					*bOneShotConsumed = true;
@@ -70,6 +78,13 @@ namespace ProjectOrganoidAmbience
 		if (!Component->IsPlaying())
 		{
 			Component->Play();
+			if (UWorld* World = Component->GetWorld())
+			{
+				if (UProjectOrganoidAudioSubsystem* Audio = World->GetSubsystem<UProjectOrganoidAudioSubsystem>())
+				{
+					Audio->LogAllAudioPlay(TEXT("layer_loop_play"), Component->GetSound(), Volume);
+				}
+			}
 		}
 	}
 }
@@ -390,12 +405,9 @@ void UProjectOrganoidAudioAmbienceSubsystem::RefreshSectorPowerStress()
 		return;
 	}
 
-	if (Power->GetFacilityPowerState() == EProjectOrganoidPowerState::Blackout)
-	{
-		NotifySectorPowerStress(true);
-		return;
-	}
-
+	// Cryo seeds Blackout, and the facility rollup then reports Blackout everywhere.
+	// That was slamming Admin and the main menu into the 0.55/0.85 mix at view-appear.
+	// Stress follows the sector the player is in. No active sublevel uses FacilityWide, which seeds Online.
 	EProjectOrganoidSubLevelTag ActiveTag = EProjectOrganoidSubLevelTag::None;
 	if (UProjectOrganoidLevelManagerSubsystem* Levels = World->GetSubsystem<UProjectOrganoidLevelManagerSubsystem>())
 	{
@@ -552,13 +564,42 @@ void UProjectOrganoidAudioAmbienceSubsystem::UpdateLayerVolumes(float DeltaTime)
 	CombatLayerVolume = FMath::FInterpTo(CombatLayerVolume, TargetCombatVolume, DeltaTime, LayerInterpSpeed);
 	CriticalLayerVolume = FMath::FInterpTo(CriticalLayerVolume, TargetCriticalVolume, DeltaTime, LayerInterpSpeed);
 
+	auto LogAudibleOnset = [this](UAudioComponent* Comp, float Volume, const TCHAR* Reason)
+	{
+		if (!Comp)
+		{
+			return;
+		}
+		static TWeakObjectPtr<UWorld> CachedWorld;
+		static TSet<FName> Heard;
+		if (CachedWorld.Get() != GetWorld())
+		{
+			Heard.Reset();
+			CachedWorld = GetWorld();
+		}
+		const bool bAudible = Volume > 0.05f;
+		if (bAudible && !Heard.Contains(Comp->GetFName()))
+		{
+			Heard.Add(Comp->GetFName());
+			if (UProjectOrganoidAudioSubsystem* Audio = GetWorld() ? GetWorld()->GetSubsystem<UProjectOrganoidAudioSubsystem>() : nullptr)
+			{
+				Audio->LogAllAudioPlay(Reason, Comp->GetSound(), Volume);
+			}
+		}
+		else if (!bAudible)
+		{
+			Heard.Remove(Comp->GetFName());
+		}
+	};
 	if (AmbientLayerAudio)
 	{
 		AmbientLayerAudio->SetVolumeMultiplier(AmbientLayerVolume);
+		LogAudibleOnset(AmbientLayerAudio, AmbientLayerVolume, TEXT("ambient_audible_onset"));
 	}
 	if (TensionLayerAudio)
 	{
 		TensionLayerAudio->SetVolumeMultiplier(TensionLayerVolume);
+		LogAudibleOnset(TensionLayerAudio, TensionLayerVolume, TEXT("tension_audible_onset"));
 	}
 	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CombatLayerAudio, CombatLayerVolume, true, true, &bCombatAlarmOneShotConsumed);
 	ProjectOrganoidAmbience::ApplySilentAwareLayerPlayback(CriticalLayerAudio, CriticalLayerVolume, true, true, &bCriticalAlarmOneShotConsumed);
